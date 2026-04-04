@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = Base.Resources.Common.Overview;
+    bool isAvailableAssetsOpen = ViewBag.IsAvailableAssetsOpen ?? false;
+    bool isAssetsReservedByUserOpen = ViewBag.IsAssetsReservedByUserOpen ?? false;
+}
+
+@model AssetsOverviewViewModel
+
+<h2 class="text-center mb-3">@App.Resources.ViewModel.AssetViewModel.AssetsOverview</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <!-- Search Form -->
+    <form method="get">
+        <div class="input-group search-bar">
+            <input type="text" name="searchTerm" value="@Context.Request.Query["searchTerm"]"
+                   class="form-control" placeholder="@Base.Resources.Common.Search"/>
+            <button type="submit" class="btn btn-orange">@Base.Resources.Common.Search</button>
+        </div>
+    </form>
+    
+    @if (User.IsInRole("members") || User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins") || User.IsInRole("pixels"))
+    {
+        <a asp-action="CreateNewAsset" class="btn btn-orange">@App.Resources.ViewModel.AssetViewModel.CreateNewAsset</a>
+    }
+    
+</div>
+
+<div class="accordion" id="accordionAssets">
+    <!-- Available Assets Section -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingAvailable">
+            <button class="accordion-button @(isAvailableAssetsOpen ? "" : "collapsed")" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseAvailable" aria-expanded="@(isAvailableAssetsOpen.ToString().ToLower())" aria-controls="collapseAvailable">
+                @App.Resources.ViewModel.AssetViewModel.AvailableAssets
+            </button>
+        </h2>
+        <div id="collapseAvailable" class="accordion-collapse collapse @(isAvailableAssetsOpen ? "show" : "")" aria-labelledby="headingAvailable">
+            <div class="accordion-body">
+                @await Html.PartialAsync("_AssetListPartial", Model.AvailableAssets)
+            </div>
+        </div>
+    </div>
+
+    <!-- Users reserved Assets Section -->
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingReserved">
+            <button class="accordion-button @(isAssetsReservedByUserOpen ? "" : "collapsed")" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseReserved" aria-expanded="@(isAssetsReservedByUserOpen.ToString().ToLower())" aria-controls="collapseReserved">
+                @App.Resources.ViewModel.AssetViewModel.UsersReservations
+            </button>
+        </h2>
+        <div id="collapseReserved" class="accordion-collapse collapse @(isAssetsReservedByUserOpen ? "show" : "")" aria-labelledby="headingReserved">
+            <div class="accordion-body">
+                @await Html.PartialAsync("_AssetListPartial", Model.AssetsReservedByUser)
+            </div>
+        </div>
+    </div>
+</div>

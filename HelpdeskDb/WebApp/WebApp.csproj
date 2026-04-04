@@ -1,0 +1,255 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>aspnet-WebApp-33a2fbbc-c09f-4572-927a-5f174ccebc89</UserSecretsId>
+        <NoWarn>CS1591</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+        <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
+        <PackageReference Include="DotNetEnv" Version="3.1.1" />
+        <PackageReference Include="FreeIPA.DotNet" Version="1.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.3" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.2" />
+        <PackageReference Include="System.DirectoryServices.Protocols" Version="10.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\App.BLL.Contracts\App.BLL.Contracts.csproj" />
+        <ProjectReference Include="..\App.BLL\App.BLL.csproj" />
+        <ProjectReference Include="..\App.DAL.EF\App.DAL.EF.csproj" />
+        <ProjectReference Include="..\App.DTO\App.DTO.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <_ContentIncludedByDefault Remove="Views\Rooms\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Rooms\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Rooms\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Rooms\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Rooms\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Properties\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Properties\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Properties\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Properties\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Properties\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Owners\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Owners\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Owners\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Owners\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Owners\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\OwnerProperties\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\OwnerProperties\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\OwnerProperties\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\OwnerProperties\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\OwnerProperties\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\LocationsInCupboards\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\LocationsInCupboards\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\LocationsInCupboards\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\LocationsInCupboards\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\LocationsInCupboards\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Locations\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Locations\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Locations\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Locations\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Locations\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CupboardsInRooms\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CupboardsInRooms\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CupboardsInRooms\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CupboardsInRooms\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CupboardsInRooms\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Cupboards\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Cupboards\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Cupboards\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Cupboards\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Cupboards\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CategoryProperties\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CategoryProperties\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CategoryProperties\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CategoryProperties\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\CategoryProperties\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Categories\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Categories\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Categories\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Categories\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Categories\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Assets\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Assets\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Assets\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Assets\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Assets\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Roles\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Roles\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Roles\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Roles\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Roles\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\UserRoles\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\UserRoles\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\UserRoles\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\UserRoles\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\UserRoles\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Users\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Users\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Users\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Users\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Users\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\AccessDenied.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ConfirmEmail.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ConfirmEmailChange.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ExternalLogin.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ForgotPassword.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ForgotPasswordConfirmation.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Lockout.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Login.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\LoginWith2fa.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\LoginWithRecoveryCode.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Logout.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\ChangePassword.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\DeletePersonalData.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\Disable2fa.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\DownloadPersonalData.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\Email.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\EnableAuthenticator.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\ExternalLogins.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\GenerateRecoveryCodes.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\PersonalData.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\ResetAuthenticator.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\SetPassword.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\ShowRecoveryCodes.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\TwoFactorAuthentication.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\_Layout.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\_ManageNav.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\_StatusMessage.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Manage\_ViewImports.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\Register.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\RegisterConfirmation.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ResendEmailConfirmation.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ResetPassword.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\ResetPasswordConfirmation.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\_StatusMessage.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Account\_ViewImports.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\Error.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\_ValidationScriptsPartial.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\_ViewImports.cshtml" />
+        <_ContentIncludedByDefault Remove="Areas\Identity\Pages\_ViewStart.cshtml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <UpToDateCheckInput Remove="Views\Assets\Create.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Delete.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Details.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Edit.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Index.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Create.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Delete.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Details.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Edit.cshtml" />
+        <UpToDateCheckInput Remove="Views\Assets\Index.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserRoles\Create.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserRoles\Delete.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserRoles\Details.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserRoles\Edit.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserRoles\Index.cshtml" />
+        <UpToDateCheckInput Remove="Views\Users\Create.cshtml" />
+        <UpToDateCheckInput Remove="Views\Users\Delete.cshtml" />
+        <UpToDateCheckInput Remove="Views\Users\Details.cshtml" />
+        <UpToDateCheckInput Remove="Views\Users\Edit.cshtml" />
+        <UpToDateCheckInput Remove="Views\Users\Index.cshtml" />
+        <UpToDateCheckInput Remove="Areas\Identity\Pages\Account\Manage\Index.cshtml" />
+        <UpToDateCheckInput Remove="Areas\Identity\Pages\Account\Manage\_Layout.cshtml" />
+        <UpToDateCheckInput Remove="Areas\Identity\Pages\Account\Manage\_ManageNav.cshtml" />
+        <UpToDateCheckInput Remove="Areas\Identity\Pages\Account\Manage\_StatusMessage.cshtml" />
+        <UpToDateCheckInput Remove="Areas\Identity\Pages\Account\Manage\_ViewImports.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserAssets\Create.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserAssets\Delete.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserAssets\Details.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserAssets\Edit.cshtml" />
+        <UpToDateCheckInput Remove="Views\UserAssets\Index.cshtml" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="Areas\Admin\Views\Assets\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Assets\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Assets\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Assets\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Assets\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Categories\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Categories\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Categories\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Categories\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Categories\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CategoryAssets\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CategoryAssets\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CategoryAssets\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CategoryAssets\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CategoryAssets\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CupboardsInRooms\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CupboardsInRooms\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CupboardsInRooms\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CupboardsInRooms\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\CupboardsInRooms\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Cupboards\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Cupboards\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Cupboards\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Cupboards\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Cupboards\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationAssets\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationAssets\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationAssets\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationAssets\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationAssets\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationsInCupboards\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationsInCupboards\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationsInCupboards\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationsInCupboards\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\LocationsInCupboards\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Locations\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Locations\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Locations\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Locations\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Locations\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\OwnerAssets\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\OwnerAssets\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\OwnerAssets\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\OwnerAssets\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\OwnerAssets\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Owners\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Owners\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Owners\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Owners\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Owners\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\RemovedAssets\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\RemovedAssets\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\RemovedAssets\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\RemovedAssets\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\RemovedAssets\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Rooms\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Rooms\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Rooms\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Rooms\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Rooms\Index.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Users\Create.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Users\Delete.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Users\Details.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Users\Edit.cshtml" />
+      <AdditionalFiles Include="Areas\Admin\Views\Users\Index.cshtml" />
+    </ItemGroup>
+
+</Project>

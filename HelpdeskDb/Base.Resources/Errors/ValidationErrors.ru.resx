@@ -1,0 +1,47 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="ValueBetween" xml:space="preserve">
+        <value>Значение '{0}' должно быть в пределах от {1} до {2}.</value>
+    </data>
+    <data name="Required" xml:space="preserve">
+        <value>Поле '{0}' обязательно для заполнения.</value>
+    </data>
+    <data name="StringLengthBetween" xml:space="preserve">
+        <value>'{0}' должно быть минимум {2} и максимально {1} символов.</value>
+    </data>
+    <data name="UsernameRegex" xml:space="preserve">
+        <value>Неверный формат имени пользователя. Имя пользователя должно соответствовать следующим требованиям:
+&lt;ul&gt;&lt;li&gt;Должно начинаться с буквы или цифры.&lt;/li&gt; &lt;li&gt;Может содержать буквы, цифры, точки (.) и подчёркивания (_).&lt;/li&gt; &lt;li&gt;Не должно содержать две подряд идущие точки (.) или подчёркивания (_).&lt;/li&gt; &lt;li&gt;Должно заканчиваться буквой или цифрой.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+    <data name="InvalidEmail" xml:space="preserve">
+        <value>Поле '{0}' не является действительным адресом электронной почты.</value>
+    </data>
+    <data name="ConfirmationPasswordMatch" xml:space="preserve">
+        <value>Пароли не совпадают.</value>
+    </data>
+    <data name="MaxLengthValidationError" xml:space="preserve">
+        <value>Максимальная длина поля '{0}' не должна превышать {1} символов.</value>
+    </data>
+    <data name="MinLenghtValidationError" xml:space="preserve">
+        <value>Минимальная длина поля '{0}' не должна быть меньше чем {1} символов.</value>
+    </data>
+    <data name="FirstnameRegex" xml:space="preserve">
+        <value>Недопустимый формат имени. Имя должно соответствовать следующим требованиям:
+&lt;ul&gt; &lt;li&gt;Начинаться с заглавной буквы (включая эстонские символы: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Содержать только строчные буквы после первой (ä, ö, ü, õ, š, ž и латинские a–z).&lt;/li&gt; &lt;li&gt;Может включать дефис (`-`) или пробел (` `), но не оба вместе.&lt;/li&gt; &lt;li&gt;Каждая часть имени после разделителя должна начинаться с заглавной буквы.&lt;/li&gt; &lt;li&gt;Не допускаются цифры, специальные символы или подряд идущие пробелы/дефисы.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+    <data name="LastnameRegex" xml:space="preserve">
+        <value>Недопустимый формат фамилии. Фамилия должна соответствовать следующим требованиям:
+&lt;ul&gt; &lt;li&gt;Начинаться с заглавной буквы (включая эстонские символы: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Содержать только строчные буквы после первой (ä, ö, ü, õ, š, ž и латинские a–z).&lt;/li&gt; &lt;li&gt;Не допускаются дефисы, пробелы, цифры или специальные символы.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+</root>

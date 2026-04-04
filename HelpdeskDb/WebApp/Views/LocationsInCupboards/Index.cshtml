@@ -1,0 +1,49 @@
+@model IEnumerable<App.BLL.DTO.LocationInCupboard>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h4>@App.Resources.Domain.LocationInCupboard.LocationInCupboardTitle</h4>
+
+<p>
+    <a asp-action="Create">@Base.Resources.Common.CreateNewLink</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Cupboard)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Location!.ShelfNum)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Location!.Column)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Cupboard!.CodeName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Location!.ShelfNum)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Location!.Column)
+            </td>
+            @if (User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins"))
+            {
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">@Base.Resources.Common.EditLink</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">@Base.Resources.Common.DeleteLink</a>
+                </td>
+            }
+        </tr>
+}
+    </tbody>
+</table>

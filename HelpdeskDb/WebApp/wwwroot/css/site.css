@@ -1,0 +1,104 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+.btn-orange {
+  background-color: #f0941d;
+  color: white;
+  border: none;
+}
+
+.btn-orange:hover {
+  background-color: #ffa80d;
+  color: white;
+}
+
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: #ffa80d;
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.search-bar {
+  width: 25rem;
+}
+
+.assets-container .header-row {
+  background-color: #f0941d;
+}
+
+.row, .row-border, .header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 10%;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+}
+
+.text-truncate {
+  display: block;
+  text-overflow: ellipsis;
+}
+
+.row:hover:not(.header-row) {
+  background-color: #f9f9f9;
+}
+
+.col:hover {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  background-color: #ffffff; /* rgba(255, 255, 255, 0.9); */
+  z-index: 10;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.header-col:hover {
+  background-color: initial;
+}
+
+.row-border {
+  border: 1px solid #ccc;
+  margin-top: 0.2rem;
+}

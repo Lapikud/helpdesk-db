@@ -1,0 +1,15 @@
+{
+  "AssetReservations": "Бронирование имущества",
+  "AssetReservationSingular": "Бронирование имущества",
+  "AssetId": "Имущество",
+  "UserId": "Пользователь",
+  "ReservationFrom": "Бронь с",
+  "ReservationTo": "Бронь по",
+  "AssetIdPrompt": "Выберите имущество",
+  "UserIdPrompt": "Выберите пользователя",
+  "Expired": "Истекший",
+  "Removed": "Удаленный",
+  "IsReturned": "Возвращён",
+  "Yes": "Да",
+  "No": "Нет"
+}

@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+@if (User.Identity?.IsAuthenticated ?? false)
+{
+    <h2 class="text-center mb-4">@Base.Resources.Common.Welcome</h2>
+    <div class="d-flex justify-content-center">
+        <a asp-action="Overview" class="btn btn-orange btn-lg px-4 py-2 fs-2">@Base.Resources.Common.Overview</a>
+    </div>
+}
+else
+{
+    <h2 class="text-center mb-4">@Base.Resources.Common.WelcomePleaseLogIn</h2>
+}

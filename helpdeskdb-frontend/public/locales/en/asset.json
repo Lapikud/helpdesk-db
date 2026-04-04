@@ -1,0 +1,11 @@
+{
+  "AssetName": "Asset name",
+  "AssetNamePrompt": "Enter an asset name (e.g., hammer/glue...)",
+  "LastTakenBy": "Last Taken By",
+  "Assets": "Assets",
+  "AssetSingular": "Asset",
+  "SerialNumber": "Serial Number",
+  "SerialNumberPrompt": "Enter serial number (optional)",
+  "Barcode": "Barcode",
+  "BarcodePrompt": "Enter barcode (optional)"
+}

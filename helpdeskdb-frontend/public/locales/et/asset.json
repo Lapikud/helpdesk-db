@@ -1,0 +1,11 @@
+{
+  "AssetName": "Vara nimetus",
+  "AssetNamePrompt": "Sisestage vara nimetus (nt haamer/liim...)",
+  "LastTakenBy": "Viimati võttis",
+  "Assets": "Varad",
+  "AssetSingular": "Vara",
+  "SerialNumber": "Seerianumber",
+  "SerialNumberPrompt": "Sisestage seerianumber (valikuline)",
+  "Barcode": "Ribakood",
+  "BarcodePrompt": "Sisestage ribakood (valikuline)"
+}

@@ -1,0 +1,10 @@
+{
+  "Actions": "Действия",
+  "NoAssetsToDisplay": "Нет имуществ для отображения",
+  "Remove": "Удалить",
+  "Reserve": "Зарезервировать",
+  "ChangeReservationTime": "Изменить время резервирования",
+  "RemoveReservation": "Удалить резервирование",
+  "Returned": "Возвращён",
+  "NotYetReturned": "Ещё не возвращён"
+}

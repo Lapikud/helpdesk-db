@@ -1,0 +1,41 @@
+@model WebApp.ViewModels.OwnerAssetCreateEditVm
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>@Base.Resources.Common.EditTitle</h1>
+
+<h4>@App.Resources.Domain.OwnerAssets.OwnerAssetsSingular</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="OwnerAsset.Owner" class="control-label"></label>
+                <select asp-for="OwnerAsset.OwnerId" class="form-control" asp-items="Model.OwnerSelectList"></select>
+                <span asp-validation-for="OwnerAsset.OwnerId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="OwnerAsset.Asset" class="control-label"></label>
+                <select asp-for="OwnerAsset.AssetId" class="form-control" asp-items="Model.AssetSelectList"></select>
+                <span asp-validation-for="OwnerAsset.AssetId" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="OwnerAsset.Id" />
+            <div class="form-group">
+                <button type="submit" value="Save" class="btn btn-primary">
+                    @Base.Resources.Common.SaveButton
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">@Base.Resources.Common.BackToListLink</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,18 @@
+{
+  "AssetName": "Vara",
+  "CategoryName": "Kategooria",
+  "RoomName": "Tuba",
+  "OwnerName": "Omanik",
+  "CupboardName": "Kapp",
+  "ShelfNum": "Riiuli Number",
+  "Column": "Veerg",
+  "ClosestReservationBy": "Lähim broneering",
+  "AssetsOverview": "Varade ülevaade",
+  "AssetsReservedByUser": "Varad broneeritud kasutaja poolt",
+  "CreateNewAsset": "Loo uus vara",
+  "AvailableAssets": "Saadaolevad varad",
+  "Category": "Kategooria",
+  "Location": "Asukoht",
+  "Owner": "Omanik",
+  "SerialNumber": "Seerianumber"
+}

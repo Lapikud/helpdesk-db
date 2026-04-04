@@ -1,0 +1,73 @@
+﻿@model AssetCreateEditViewModel
+
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>@Base.Resources.Common.EditTitle</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Asset.AssetName" class="control-label"></label>
+                <input asp-for="Asset.AssetName" class="form-control" />
+                <span asp-validation-for="Asset.AssetName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Asset.Comment" class="control-label"></label>
+                <input asp-for="Asset.Comment" class="form-control" />
+                <span asp-validation-for="Asset.Comment" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Asset.SerialNumber" class="control-label"></label>
+                <input asp-for="Asset.SerialNumber" class="form-control" />
+                <span asp-validation-for="Asset.SerialNumber" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Asset.Barcode" class="control-label"></label>
+                <input asp-for="Asset.Barcode" class="form-control" />
+                <span asp-validation-for="Asset.Barcode" class="text-danger"></span>
+            </div>
+            @* CATEGORY *@
+            <div class="form-group">
+                <label asp-for="SelectedCategoryId" class="control-label"></label>
+                <select asp-for="SelectedCategoryId" class="form-control" asp-items="Model.Categories"></select>
+                <span asp-validation-for="SelectedCategoryId" class="text-danger"></span>
+            </div>
+            <input type="hidden" name="CatId" value="@Model.Asset.CategoryAssetsCollection!.ToList().First().Id" />
+            @* Owner *@
+            <div class="form-group">
+                <label asp-for="SelectedOwnerId" class="control-label"></label>
+                <select asp-for="SelectedOwnerId" class="form-control" asp-items="Model.Owners"></select>
+                <span asp-validation-for="SelectedOwnerId" class="text-danger"></span>
+            </div>
+            <input type="hidden" name="OwnId" value="@Model.Asset.OwnerAssets!.ToList().First().Id" />
+            @* Location *@
+            <div class="form-group">
+                <label asp-for="@Model.SelectedLocationId" class="control-label"></label>
+                <select asp-for="@Model.SelectedLocationId" class="form-control" asp-items="Model.Locations"></select>
+                <span asp-validation-for="@Model.SelectedLocationId" class="text-danger"></span>
+            </div>
+            <input type="hidden" name="LocId" value="@Model.Asset.LocationsAssetsCollection!.ToList().First().Id" />
+            @* <input type="hidden" name="lastTakenBy" asp-for="Asset.LastTakenBy" /> *@
+            <input type="hidden" asp-for="Asset.Id" />
+            <div class="form-group">
+                <button type="submit" value="Save" class="btn btn-primary">
+                    @Base.Resources.Common.SaveButton
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Overview">@Base.Resources.Common.BackToListLink</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

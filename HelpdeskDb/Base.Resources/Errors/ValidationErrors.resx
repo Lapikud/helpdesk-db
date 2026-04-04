@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="ConfirmationPasswordMatch" xml:space="preserve">
+        <value>The passwords do not match.</value>
+    </data>
+    <data name="InvalidEmail" xml:space="preserve">
+        <value>The '{0}' field is not a valid email address.</value>
+    </data>
+    <data name="Required" xml:space="preserve">
+        <value>The '{0}' field is required.</value>
+    </data>
+    <data name="StringLengthBetween" xml:space="preserve">
+        <value>The '{0}' must be at least {2} and at max {1} characters long.</value>
+    </data>
+    <data name="UsernameRegex" xml:space="preserve">
+        <value>Invalid username format. Usernames must meet the following criteria:
+
+                &lt;ul&gt;
+                    &lt;li&gt;Begin with a letter or a digit.&lt;/li&gt;
+                    &lt;li&gt;Can contain letters, digits, periods (.), or underscores (_).&lt;/li&gt;
+                    &lt;li&gt;Cannot contain two consecutive periods (.) or underscores (_).&lt;/li&gt;
+                    &lt;li&gt;End with a letter or a digit.&lt;/li&gt;
+                &lt;/ul&gt;</value>
+    </data>
+    <data name="ValueBetween" xml:space="preserve">
+        <value>The '{0}' must be between {1} and {2}.</value>
+    </data>
+    <data name="MaxLengthValidationError" xml:space="preserve">
+        <value>The maximum length of field '{0}' must not be greater than {1} symbols.</value>
+    </data>
+    <data name="MinLenghtValidationError" xml:space="preserve">
+        <value>The minimum length of field '{0}' must not be less than {1} symbols.</value>
+    </data>
+    <data name="FirstnameRegex" xml:space="preserve">
+        <value>Invalid first name format. First name must meet the following criteria:
+&lt;ul&gt; &lt;li&gt;Start with a capital letter (including Estonian characters: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Contain only lowercase letters after the first (ä, ö, ü, õ, š, ž, and Latin letters a–z).&lt;/li&gt; &lt;li&gt;Can include a hyphen (`-`) or a space (` `), but not both together.&lt;/li&gt; &lt;li&gt;Each part of the first name after a separator must start with a capital letter.&lt;/li&gt; &lt;li&gt;No digits, special characters, or consecutive spaces/hyphens are allowed.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+    <data name="LastnameRegex" xml:space="preserve">
+        <value>Invalid last name format. Last Name must meet the following criteria:
+&lt;ul&gt; &lt;li&gt;Start with a capital letter (including Estonian characters: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Contain only lowercase letters after the first (ä, ö, ü, õ, š, ž, and Latin letters a–z).&lt;/li&gt; &lt;li&gt;No hyphens, spaces, digits, or special characters are allowed.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+</root>

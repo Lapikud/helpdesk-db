@@ -1,0 +1,13 @@
+{
+  "AttemptedValueIsInvalid": "Введённое значение '{{input}}' недопустимо для поля '{{field}}'.",
+  "MissingBindRequiredValue": "Значение для свойства '{{field}}' не было указано.",
+  "MissingKeyOrValue": "Требуется значение.",
+  "MissingRequestBodyRequiredValue": "Требуется непустое тело запроса.",
+  "NonPropertyAttemptedValueIsInvalid": "Введённое значение '{{input}}' недопустимо.",
+  "NonPropertyUnknownValueIsInvalid": "Указанное значение недопустимо.",
+  "NonPropertyValueMustBeANumber": "Значение должно быть числом.",
+  "UnknownValueIsInvalid": "Значение '{{input}}' недопустимо.",
+  "ValueIsInvalid": "Значение '{{input}}' недопустимо.",
+  "ValueMustBeANumber": "Значение '{{input}}' должно быть числом.",
+  "ValueMustNotBeNull": "Значение '{{input}}' не должно быть пустым."
+}

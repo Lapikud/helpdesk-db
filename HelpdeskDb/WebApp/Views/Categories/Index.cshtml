@@ -1,0 +1,46 @@
+@model IEnumerable<App.BLL.DTO.Category>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>@App.Resources.Domain.Category.Categories</h1>
+
+@if (User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins"))
+{
+    <p>
+        <a asp-action="Create">@Base.Resources.Common.CreateNewLink</a>
+    </p>
+}
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.CategoryName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Comment)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.CategoryName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Comment)
+            </td>
+            @if (User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins"))
+            {
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">@Base.Resources.Common.EditLink</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">@Base.Resources.Common.DeleteLink</a>
+                </td>
+            }
+    </tr>
+}
+    </tbody>
+</table>

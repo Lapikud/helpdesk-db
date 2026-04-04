@@ -1,0 +1,80 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="AppName" xml:space="preserve">
+        <value>Lapikud Helpdesk Базаданных</value>
+    </data>
+    <data name="Assets" xml:space="preserve">
+        <value>Имущества</value>
+    </data>
+    <data name="Categories" xml:space="preserve">
+        <value>Категории</value>
+    </data>
+    <data name="CategoryAssets" xml:space="preserve">
+        <value>Имущества категорий</value>
+    </data>
+    <data name="Locations" xml:space="preserve">
+        <value>Местоположения</value>
+    </data>
+    <data name="LocationInCupboards" xml:space="preserve">
+        <value>Местоположения в шкафах</value>
+    </data>
+    <data name="LocationAssets" xml:space="preserve">
+        <value>Места имуществ</value>
+    </data>
+    <data name="CupboardsInRooms" xml:space="preserve">
+        <value>Шкафы в комнатах</value>
+    </data>
+    <data name="Cupboards" xml:space="preserve">
+        <value>Шкафы</value>
+    </data>
+    <data name="UserAssets" xml:space="preserve">
+        <value>Имущества пользователя</value>
+    </data>
+    <data name="OwnerAssets" xml:space="preserve">
+        <value>Имущества владельцев</value>
+    </data>
+    <data name="Owners" xml:space="preserve">
+        <value>Владельцы</value>
+    </data>
+    <data name="RemovedAssets" xml:space="preserve">
+        <value>Удаленные имущества</value>
+    </data>
+    <data name="Rooms" xml:space="preserve">
+        <value>Комнаты</value>
+    </data>
+    <data name="Admin" xml:space="preserve">
+        <value>Админ</value>
+    </data>
+    <data name="User" xml:space="preserve">
+        <value>Пользователь</value>
+    </data>
+    <data name="Roles" xml:space="preserve">
+        <value>Роли</value>
+    </data>
+    <data name="Users" xml:space="preserve">
+        <value>Пользователи</value>
+    </data>
+    <data name="UserRoles" xml:space="preserve">
+        <value>Роли пользователя</value>
+    </data>
+    <data name="RefreshTokens" xml:space="preserve">
+        <value>Токены обновления</value>
+    </data>
+    <data name="UserManagement" xml:space="preserve">
+        <value>Управление пользователями</value>
+    </data>
+    <data name="AssetReservations" xml:space="preserve">
+        <value>Бронирования имущества</value>
+    </data>
+</root>

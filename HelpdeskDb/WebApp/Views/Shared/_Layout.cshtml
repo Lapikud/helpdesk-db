@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"] - (LAP);</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/WebApp.styles.css" asp-append-version="true"/>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <div class="container-fluid">
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@App.Resources.Views.Shared._Layout.AppName</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                    aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <ul class="navbar-nav flex-grow-1">
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">@Base.Resources.Common.Home</a>
+                    </li>
+                    
+                    @if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        if (User.IsInRole("members") || User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins") || User.IsInRole("pixels"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link text-dark dropdown-toggle" href="javascript:{}" id="userDropdown"
+                                   role="button" data-bs-toggle="dropdown" aria-expanded="false">@App.Resources.Views.Shared._Layout.User</a>
+                                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                                    <a class="dropdown-item text-dark" asp-area="" asp-controller="AssetReservations"
+                                       asp-action="Index">@App.Resources.Views.Shared._Layout.AssetReservations</a>
+                                    @* Idk about categories, should default users be able to add them? *@
+                                    <a class="dropdown-item text-dark" asp-area="" asp-controller="Categories"
+                                       asp-action="Index">@App.Resources.Views.Shared._Layout.Categories</a>
+                                    <a class="dropdown-item text-dark" asp-area="" asp-controller="Owners"
+                                       asp-action="Index">@App.Resources.Views.Shared._Layout.Owners</a>
+                                    <a class="dropdown-item text-dark" asp-area="" asp-controller="RemovedAssets"
+                                       asp-action="Index">@App.Resources.Views.Shared._Layout.RemovedAssets</a>
+                                </div>
+                            </li>           
+                        }
+                    }
+
+                    @if (User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link text-dark dropdown-toggle" href="javascript:{}" id="adminDropdown"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">@App.Resources.Views.Shared._Layout.Admin</a>
+                            <div class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="AssetReservations"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.AssetReservations</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Assets"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Assets</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Categories"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Categories</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="CategoryAssets"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.CategoryAssets</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Cupboards"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Cupboards</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="CupboardsInRooms"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.CupboardsInRooms</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Locations"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Locations</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="LocationAssets"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.LocationAssets</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="LocationsInCupboards"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.LocationInCupboards</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Owners"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Owners</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="OwnerAssets"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.OwnerAssets</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Rooms"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Rooms</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="RemovedAssets"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.RemovedAssets</a>
+                                
+                                <hr class="dropdown-divider">
+
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Users"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Users</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="Roles"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.Roles</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="UserRoles"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.UserRoles</a>
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="RefreshTokens"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.RefreshTokens</a>
+
+                                <hr class="dropdown-divider">
+                                
+                                <a class="dropdown-item text-dark" asp-area="admin" asp-controller="UserManagement"
+                                   asp-action="Index">@App.Resources.Views.Shared._Layout.UserManagement</a>
+                                
+                            </div>
+                        </li>                          
+                    }            
+                    
+                    @* <li class="nav-item"> *@
+                    @*     <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">@Base.Resources.Common.Privacy</a> *@
+                    @* </li> *@
+                    
+                    <partial name="_LanguageSelection"/>
+                </ul>
+                <partial name="_LoginPartial"/>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+</div>
+
+<footer class="border-top footer text-muted">
+    <div class="container">
+        &copy; 2025 - @App.Resources.Views.Shared._Layout.AppName - <a asp-area="" asp-controller="Home" asp-action="Privacy">@Base.Resources.Common.Privacy</a> |
+        <a href="/swagger">Api</a> |
+        @Thread.CurrentThread.CurrentCulture.Name | @Thread.CurrentThread.CurrentUICulture.Name
+    </div>
+</footer>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,96 @@
+﻿@model List<App.BLL.DTO.ViewModels.AssetViewModel>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">@App.Resources.Views.Shared._AssetListPartial.NoAssetsToDisplay</p>
+}
+else
+{
+    <div class="assets-container">
+        <!-- Table Header -->
+        <div class="row header-row text-white font-weight-bold rounded">
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().AssetName)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().SerialNumber)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().CategoryName)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().OwnerName)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().RoomName)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().CupboardName)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().ShelfNum)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().Column)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().ClosestReservationBy)
+            </div>
+            <div class="col p-3 text-center header-col">
+                @Html.DisplayNameFor(model => model.First().AddedAt)
+            </div>
+            @if (User.IsInRole("members") || User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins") || User.IsInRole("pixels"))
+            {
+                <div class="col p-3 text-center header-col">
+                    @App.Resources.Views.Shared._AssetListPartial.Actions
+                </div>
+            }
+        </div>
+        @foreach (var asset in Model)
+        {
+            <div class="row border-bottom rounded mb-2 row-border">
+                <div class="col p-3 text-center text-truncate">@asset.AssetName</div>
+                <div class="col p-3 text-center text-truncate">@(asset.SerialNumber == null || asset.SerialNumber.IsWhiteSpace() ? "-" : asset.SerialNumber)</div>
+                <div class="col p-3 text-center text-truncate">@asset.CategoryName</div>
+                <div class="col p-3 text-center text-truncate">@asset.OwnerName</div>
+                <div class="col p-3 text-center text-truncate">@asset.RoomName</div>
+                <div class="col p-3 text-center text-truncate">@asset.CupboardName</div>
+                <div class="col p-3 text-center text-truncate">@asset.ShelfNum</div>
+                <div class="col p-3 text-center text-truncate">@asset.Column</div>
+                <div class="col p-3 text-center text-truncate">@asset.ClosestReservationBy</div>
+                <div class="col p-3 text-center text-truncate">@asset.AddedAt</div>
+                @if (User.IsInRole("members") || User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins") || User.IsInRole("pixels"))
+                {
+                    <div class="col p-3 text-center text-truncate">
+                        @App.Resources.Views.Shared._AssetListPartial.Actions:
+                        @if (asset.Reserved && asset.ReservationId != null)
+                        {
+                            <a asp-action="ChangeReservationTime" asp-route-reservationId="@asset.ReservationId" class="btn btn-orange">Change reservation time</a>
+                            <form asp-action="Returned" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@asset.Id"/>
+                                <button type="submit" class="btn btn-orange">Returned</button>
+                            </form>  
+                            <form asp-action="RemoveReservation" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@asset.Id"/>
+                                <button type="submit" class="btn btn-orange">Remove Reservation</button>
+                            </form>  
+                        }
+                        else
+                        {
+                            if (asset.Reserved) {
+                                <span class="text-danger">
+                                    Not yet Returned
+                                </span>
+                            } else {
+                                
+                                <a asp-action="Reserve" asp-route-id="@asset.Id" class="btn btn-orange">@App.Resources.Views.Shared._AssetListPartial.Reserve</a>
+                            }
+                        }
+                        <a asp-action="Edit" asp-route-id="@asset.Id" class="btn btn-orange">@Base.Resources.Common.EditLink</a>
+                        <a asp-action="Remove" asp-route-id="@asset.Id" class="btn btn-orange">@App.Resources.Views.Shared._AssetListPartial.Remove</a>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

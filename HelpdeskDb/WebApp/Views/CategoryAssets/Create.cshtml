@@ -1,0 +1,43 @@
+@model WebApp.ViewModels.CategoryAssetCreateEditViewModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>@Base.Resources.Common.CreateTitle</h1>
+
+<h1>@App.Resources.Domain.CategoryAssets.CategoryAssetsSingular</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="CategoryAssets.Category" class="control-label"></label>
+                <select asp-for="CategoryAssets.CategoryId" class ="form-control" asp-items="Model.CategorySelectList"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="CategoryAssets.Asset" class="control-label"></label>
+                <select asp-for="CategoryAssets.AssetId" class ="form-control" asp-items="Model.AssetSelectList"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="CategoryAssets.Comment" class="control-label"></label>
+                <input asp-for="CategoryAssets.Comment" class="form-control" />
+                <span asp-validation-for="CategoryAssets.Comment" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <button type="submit" value="Create" class="btn btn-primary">
+                    @Base.Resources.Common.CreateButton
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">@Base.Resources.Common.BackToListLink</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

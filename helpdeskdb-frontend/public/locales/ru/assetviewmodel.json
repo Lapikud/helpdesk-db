@@ -1,0 +1,18 @@
+{
+  "AssetName": "Имущество",
+  "CategoryName": "Категория",
+  "RoomName": "Комната",
+  "OwnerName": "Владелец",
+  "CupboardName": "Шкаф",
+  "ShelfNum": "Номер Полки",
+  "Column": "Колонка",
+  "ClosestReservationBy": "Ближайшее бронирование",
+  "AssetsOverview": "Обзор имуществ",
+  "AvailableAssets": "Доступные имущества",
+  "CreateNewAsset": "Создать новое имущество",
+  "AssetsReservedByUser": "Имущества зарезервированы пользователем",
+  "Category": "Категория",
+  "Location": "Местоположение",
+  "Owner": "Владелец",
+  "SerialNumber": "Серийный номер"
+}

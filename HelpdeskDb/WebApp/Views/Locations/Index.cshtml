@@ -1,0 +1,46 @@
+@model IEnumerable<App.BLL.DTO.Location>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h4>@App.Resources.Domain.Location.Locations</h4>
+
+<p>
+    <a asp-action="Create">@Base.Resources.Common.CreateNewLink</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.LocationName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ShelfNum)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Column)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.LocationName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ShelfNum)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Column)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">@Base.Resources.Common.EditLink</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">@Base.Resources.Common.DeleteLink</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

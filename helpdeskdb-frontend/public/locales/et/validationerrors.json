@@ -1,0 +1,16 @@
+{
+  "ValueBetween": "'{{field}}' peab olema vahemikus {{min}} kuni {{max}}.",
+  "Required": "Väli '{{field}}' on kohustuslik.",
+  "StringLengthBetween": "'{{field}}' peab olema vähemalt {{min}} ja maksimaalselt {{max}} tähemärki pikk.",
+  "UsernameRegex": "Vale kasutajanime vorming. Kasutajanimed peavad vastama järgmistele kriteeriumidele: Peab algama tähe või numbriga. Võib sisaldada tähti, numbreid, punkte (.) või alljooni (_). Ei tohi sisaldada kahte järjestikust punkti (.) ega alljoont (_). Peab lõppema tähe või numbriga.",
+  "InvalidEmail": "Väli '{{field}}' ei ole kehtiv e-posti aadress.",
+  "ConfirmationPasswordMatch": "Paroolid ei ühti.",
+  "MaxLengthValidationError": "Välja '{{field}}' maksimum pikkus ei tohi olla suurem kui {{max}} tähemärki.",
+  "MinLenghtValidationError": "Välja '{{field}}' minimum pikkus ei tohi olla vähem kui {{min}} tähemärki. ",
+  "FirstnameRegex": "Vale kasutajanime vorming. Kasutajanimi peab vastama järgmistele nõudmistele: Alustada suure tähega (ka eesti tähed: Ä, Ö, Ü, Õ, Š, Ž). Koosneda ainult väikestest tähtedest pärast esimest (ä, ö, ü, õ, š, ž ja ladina tähed a–z). Võib sisaldada sidekriipsu (`-`) või tühikut (` `), kuid mitte mõlemat korraga. Iga osa nimest pärast eraldajat peab algama suure tähega. Ei lubata numbreid, spetsiaalmärke ega järjestikuseid tühikuid/sidekriipse.",
+  "LastnameRegex": "Vale perenime vorming. Perenimi peab vastama järgmistele nõudmistele: Alustada suure tähega (ka eesti tähed: Ä, Ö, Ü, Õ, Š, Ž). Koosneda ainult väikestest tähtedest pärast esimest (ä, ö, ü, õ, š, ž ja ladina tähed a–z). Ei lubata sidekriipse, tühikuid, numbreid ega erimärke.",
+  "UsernameTaken": "Kasutajanimi '{{value}}' juba võetud.",
+  "EmailTaken": "Kasutaja e-postiga '{{value}}' juba olemas.",
+  "BothDatesRequired": "Palun valige reserveerimiseks nii algus- kui ka lõppkuupäev.",
+  "ReservationToMustBeAfterFrom": "Reserveerimise lõppkuupäev peab olema pärast alguskuupäeva."
+}

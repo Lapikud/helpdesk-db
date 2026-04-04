@@ -1,0 +1,131 @@
+﻿<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Comment" xml:space="preserve">
+        <value>Комментарий</value>
+    </data>
+    <data name="CommentPrompt" xml:space="preserve">
+        <value>Введите комментарий</value>
+    </data>
+    <data name="AddedAt" xml:space="preserve">
+        <value>Добавлено</value>
+    </data>
+    <data name="RemovedAt" xml:space="preserve">
+        <value>Удалено</value>
+    </data>
+    <data name="Privacy" xml:space="preserve">
+        <value>Конфиденциальность</value>
+    </data>
+    <data name="Home" xml:space="preserve">
+        <value>Главная</value>
+    </data>
+    <data name="Search" xml:space="preserve">
+        <value>Поиск...</value>
+    </data>
+    <data name="Actions" xml:space="preserve">
+        <value>Действия</value>
+    </data>
+    <data name="CreatedBy" xml:space="preserve">
+        <value>Создал</value>
+    </data>
+    <data name="BackToListLink" xml:space="preserve">
+        <value>Вернуться к списку</value>
+    </data>
+    <data name="ConfirmPassword" xml:space="preserve">
+        <value>Подтвердите пароль</value>
+    </data>
+    <data name="CreateAccountTitle" xml:space="preserve">
+        <value>Создать новый аккаунт.</value>
+    </data>
+    <data name="WelcomePleaseLogIn" xml:space="preserve">
+        <value>Добро пожаловать! Пожалуйста войдите чтобы продолжить.</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Общий обзор</value>
+    </data>
+    <data name="CreateButton" xml:space="preserve">
+        <value>Создать</value>
+    </data>
+    <data name="CreateNewLink" xml:space="preserve">
+        <value>Создать...</value>
+    </data>
+    <data name="CreateTitle" xml:space="preserve">
+        <value>Создать</value>
+    </data>
+    <data name="DeleteButton" xml:space="preserve">
+        <value>Удалить</value>
+    </data>
+    <data name="DeleteLink" xml:space="preserve">
+        <value>Удалить</value>
+    </data>
+    <data name="DeleteTitle" xml:space="preserve">
+        <value>Удалить</value>
+    </data>
+    <data name="DeleteConfirmQuestion" xml:space="preserve">
+        <value>Вы уверены, что хотите удалить это?</value>
+    </data>
+    <data name="DetailsLink" xml:space="preserve">
+        <value>Подробнее</value>
+    </data>
+    <data name="DetailsTitle" xml:space="preserve">
+        <value>Подробности</value>
+    </data>
+    <data name="EditLink" xml:space="preserve">
+        <value>Изменить</value>
+    </data>
+    <data name="EditTitle" xml:space="preserve">
+        <value>Изменить</value>
+    </data>
+    <data name="Email" xml:space="preserve">
+        <value>Эмайл</value>
+    </data>
+    <data name="ForgotPasswordHyperLink" xml:space="preserve">
+        <value>Забыли свой пароль?</value>
+    </data>
+    <data name="LoginLink" xml:space="preserve">
+        <value>Войти</value>
+    </data>
+    <data name="LoginTitle" xml:space="preserve">
+        <value>Вход</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Пароль</value>
+    </data>
+    <data name="Register" xml:space="preserve">
+        <value>Зарегистрироваться</value>
+    </data>
+    <data name="RegisterHyperLink" xml:space="preserve">
+        <value>Зарегестрироваться как новый пользователь</value>
+    </data>
+    <data name="RegisterTitle" xml:space="preserve">
+        <value>Зарегестрироваться как пользователь</value>
+    </data>
+    <data name="RememberMe" xml:space="preserve">
+        <value>Запомнить меня?</value>
+    </data>
+    <data name="SaveButton" xml:space="preserve">
+        <value>Сохранить</value>
+    </data>
+    <data name="UsernameTitle" xml:space="preserve">
+        <value>Имя пользователя</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Имя пользователя</value>
+    </data>
+    <data name="Welcome" xml:space="preserve">
+        <value>Добро пожаловать!</value>
+    </data>
+    <data name="Logout" xml:space="preserve">
+        <value>Выйти</value>
+    </data>
+</root>

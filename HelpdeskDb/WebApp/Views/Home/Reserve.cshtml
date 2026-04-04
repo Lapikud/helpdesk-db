@@ -1,0 +1,56 @@
+﻿@model WebApp.ViewModels.AssetReservationCreateEditVm
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>AssetReservation</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Reserve">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            @* User *@
+            <div class="form-group">
+                <label asp-for="SelectedUserId" class="control-label"></label>
+                <select asp-for="SelectedUserId" class="form-control" asp-items="Model.UserSelectList" disabled></select>
+                <span asp-validation-for="SelectedUserId" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="AssetReservation.UserId" />
+            <input type="hidden" asp-for="SelectedUserId" />
+            @* Asset *@
+            <div class="form-group">
+                <label asp-for="SelectedAssetId" class="control-label"></label>
+                <select asp-for="SelectedAssetId" class="form-control" asp-items="Model.AssetSelectList" disabled></select>
+                <span asp-validation-for="SelectedAssetId" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="AssetReservation.AssetId" />
+            <input type="hidden" asp-for="SelectedAssetId" />
+            
+            <div class="form-group">
+                <label asp-for="AssetReservation.ReservationFrom" class="control-label"></label>
+                <input asp-for="AssetReservation.ReservationFrom" class="form-control" />
+                <span asp-validation-for="AssetReservation.ReservationFrom" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AssetReservation.ReservationTo" class="control-label"></label>
+                <input asp-for="AssetReservation.ReservationTo" class="form-control" />
+                <span asp-validation-for="AssetReservation.ReservationTo" class="text-danger"></span>
+            </div>
+            
+            <button type="submit" value="Confirm Reservation" class="btn btn-danger">
+                Reserve
+            </button>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Overview">@Base.Resources.Common.BackToListLink</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

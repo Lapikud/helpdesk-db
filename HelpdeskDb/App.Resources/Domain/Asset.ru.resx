@@ -1,0 +1,32 @@
+﻿<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="AssetName" xml:space="preserve">
+        <value>Название имущества</value>
+    </data>
+    <data name="AssetNamePrompt" xml:space="preserve">
+        <value>Введите название имущества (например: молоток/клей...)</value>
+    </data>
+    <data name="Assets" xml:space="preserve">
+        <value>Имущества</value>
+    </data>
+    <data name="AssetSingular" xml:space="preserve">
+        <value>Имущество</value>
+    </data>
+    <data name="Barcode" xml:space="preserve">
+        <value>Штрихкод</value>
+    </data>
+    <data name="SerialNumber" xml:space="preserve">
+        <value>Серийный номер</value>
+    </data>
+</root>

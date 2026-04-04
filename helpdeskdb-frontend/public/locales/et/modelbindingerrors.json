@@ -1,0 +1,13 @@
+{
+  "AttemptedValueIsInvalid": "Esitatud väärtus '{1}' pole kehtiv omadusele '{0}'.",
+  "MissingBindRequiredValue": "Atribuudi '{0}' väärtus on puudu.",
+  "MissingKeyOrValue": "Väärtus on nõutud.",
+  "MissingRequestBodyRequiredValue": "Nõutud päringu keha puudub.",
+  "NonPropertyAttemptedValueIsInvalid": "Esitatud väärtus '{0}' ei ole sobilik.",
+  "NonPropertyUnknownValueIsInvalid": "Esitatud väärtus ei ole kehtiv.",
+  "NonPropertyValueMustBeANumber": "Väärtus peab olema number.",
+  "UnknownValueIsInvalid": "Väärtus '{0}' ei ole sobilik.",
+  "ValueIsInvalid": "Väärtus '{0}' ei ole sobilik.",
+  "ValueMustBeANumber": "Väärtus '{0}' peab olema number.",
+  "ValueMustNotBeNull": "Väärtus '{0}' ei tohi olla 'null'."
+}

@@ -1,0 +1,41 @@
+@model WebApp.ViewModels.RemovedAssetCreateEditVm
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>@Base.Resources.Common.EditTitle</h1>
+
+<h4>@App.Resources.Domain.RemovedAssets.RemovedAssetsSingular</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="RemovedAsset.Asset" class="control-label"></label>
+                <select asp-for="RemovedAsset.AssetId" class="form-control" asp-items="Model.AssetSelectList"></select>
+                <span asp-validation-for="RemovedAsset.AssetId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RemovedAsset.Comment" class="control-label"></label>
+                <input asp-for="RemovedAsset.Comment" class="form-control" />
+                <span asp-validation-for="RemovedAsset.Comment" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="RemovedAsset.Id" />
+            <div class="form-group">
+                <button type="submit" value="Save" class="btn btn-primary">
+                    @Base.Resources.Common.SaveButton
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">@Base.Resources.Common.BackToListLink</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

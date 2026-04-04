@@ -1,0 +1,8 @@
+{
+  "LocationName": "Location Code",
+  "ShelfNum": "Shelf Number",
+  "Column": "Column",
+  "LocationNamePrompt": "Enter a Location codename",
+  "Locations": "Locations",
+  "LocationSingular": "Location"
+}

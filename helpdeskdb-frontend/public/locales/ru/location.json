@@ -1,0 +1,8 @@
+{
+  "Column": "Колонка",
+  "LocationName": "Код места",
+  "ShelfNum": "Номер Полки",
+  "LocationNamePrompt": "Введите название места",
+  "Locations": "Местоположения",
+  "LocationSingular": "Местоположение"
+}

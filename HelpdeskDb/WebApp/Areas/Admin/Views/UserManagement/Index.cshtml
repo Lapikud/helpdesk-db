@@ -1,0 +1,46 @@
+@using App.Domain.Identity
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.EntityFrameworkCore
+@model List<WebApp.Areas.Admin.ViewModels.UserManagementVm>
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>Users</h1>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Username</th>
+        <th>Roles</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@Html.DisplayFor(modelItem => item.User.Username)</td>
+            <td>
+                <ul>
+                    @foreach (var role in item.AllRoles)
+                    {
+                        <li>
+                            @role.Name
+                            @if (item.UserRoles.Any(r => r.Id == role.Id))
+                            {
+                                <a asp-action="RoleRemove" asp-route-userId="@item.User.Id" asp-route-roleId="@role.Id">Remove</a>
+                            }
+                            else
+                            {
+                                <a asp-action="RoleAdd" asp-route-userId="@item.User.Id" asp-route-roleId="@role.Id">Add</a>
+                            }
+                        </li>
+                    }
+                </ul>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

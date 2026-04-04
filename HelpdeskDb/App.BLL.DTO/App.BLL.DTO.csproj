@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\App.DAL.DTO\App.DAL.DTO.csproj" />
+      <ProjectReference Include="..\App.Resources\App.Resources.csproj" />
+      <ProjectReference Include="..\Base.Contracts\Base.Contracts.csproj" />
+      <ProjectReference Include="..\Base.Resources\Base.Resources.csproj" />
+    </ItemGroup>
+
+</Project>

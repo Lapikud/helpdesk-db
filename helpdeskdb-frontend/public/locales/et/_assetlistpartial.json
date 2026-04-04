@@ -1,0 +1,10 @@
+{
+  "Actions": "Tegevused",
+  "NoAssetsToDisplay": "Kuvamiseks pole ühtegi vara",
+  "Remove": "Eemalda",
+  "Reserve": "Broneeri",
+  "ChangeReservationTime": "Muuda broneeringu aega",
+  "RemoveReservation": "Eemalda broneering",
+  "Returned": "Tagastatud",
+  "NotYetReturned": "Pole veel tagastatud"
+}

@@ -1,0 +1,46 @@
+@model WebApp.ViewModels.AssetReservationCreateEditVm
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>AssetReservation</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="AssetReservation.UserId" class="control-label"></label>
+                <select asp-for="AssetReservation.UserId" class ="form-control" asp-items="Model.UserSelectList"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="AssetReservation.AssetId" class="control-label"></label>
+                <select asp-for="AssetReservation.AssetId" class ="form-control" asp-items="Model.AssetSelectList"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="AssetReservation.ReservationFrom" class="control-label"></label>
+                <input asp-for="AssetReservation.ReservationFrom" class="form-control" />
+                <span asp-validation-for="AssetReservation.ReservationFrom" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AssetReservation.ReservationTo" class="control-label"></label>
+                <input asp-for="AssetReservation.ReservationTo" class="form-control" />
+                <span asp-validation-for="AssetReservation.ReservationTo" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

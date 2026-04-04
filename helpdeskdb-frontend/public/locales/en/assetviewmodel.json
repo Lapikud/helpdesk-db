@@ -1,0 +1,18 @@
+{
+  "AssetName": "Asset",
+  "CategoryName": "Category",
+  "OwnerName": "Owner",
+  "RoomName": "Room",
+  "CupboardName": "Cupboard",
+  "ShelfNum": "Shelf Number",
+  "Column": "Column",
+  "ClosestReservationBy": "Closest reservation by",
+  "AssetsOverview": "Assets overview",
+  "AvailableAssets": "Available assets",
+  "AssetsReservedByUser": "Assets reserved by user",
+  "CreateNewAsset": "Create new asset",
+  "Category": "Category",
+  "Owner": "Owner",
+  "Location": "Location",
+  "SerialNumber": "Serial Number"
+}

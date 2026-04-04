@@ -1,0 +1,35 @@
+﻿<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Asset" xml:space="preserve">
+        <value>Имущество</value>
+    </data>
+    <data name="User" xml:space="preserve">
+        <value>Имя пользователя</value>
+    </data>
+    <data name="AssetReservationMultiple" xml:space="preserve">
+        <value>Бронирование имущества</value>
+    </data>
+    <data name="AssetReservationSingular" xml:space="preserve">
+        <value>Бронирования имущества</value>
+    </data>
+    <data name="ReservationFrom" xml:space="preserve">
+        <value>Бронирование начиная с</value>
+    </data>
+    <data name="ReservationTo" xml:space="preserve">
+        <value>Бронирование до</value>
+    </data>
+    <data name="IsReturned" xml:space="preserve">
+        <value>Возвращено?</value>
+    </data>
+</root>

@@ -1,0 +1,64 @@
+@using Base.Helpers
+@model IEnumerable<App.BLL.DTO.AssetReservation>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+@if (User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins"))
+{
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+}
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Asset)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ReservationFrom)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ReservationTo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsReturned)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Asset!.AssetName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ReservationFromLocal)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ReservationToLocal)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.User!.Username)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.IsReturned)
+            </td>
+            @if (item.UserId.Equals(User.GetUserId()) && item.ReservationTo >= DateTime.UtcNow)
+            {
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            }
+    </tr>
+}
+    </tbody>
+</table>

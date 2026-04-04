@@ -1,0 +1,16 @@
+{
+  "ConfirmationPasswordMatch": "The passwords do not match.",
+  "InvalidEmail": "The '{{field}}' field is not a valid email address.",
+  "Required": "The '{{field}}' field is required.",
+  "StringLengthBetween": "The '{{field}}' must be at least {{min}} and at max {{max}} characters long.",
+  "UsernameRegex": "Invalid username format. Usernames must meet the following criteria: Begin with a letter or a digit. Can contain letters, digits, periods (.), or underscores (_). Cannot contain two consecutive periods (.) or underscores (_). End with a letter or a digit.",
+  "ValueBetween": "The '{{field}}' must be between {{min}} and {{max}}.",
+  "MaxLengthValidationError": "The maximum length of field '{{field}}' must not be greater than {{max}} symbols.",
+  "MinLenghtValidationError": "The minimum length of field '{{field}}' must not be less than {{min}} symbols.",
+  "FirstnameRegex": "Invalid first name format. First name must meet the following criteria: Start with a capital letter (including Estonian characters: Ä, Ö, Ü, Õ, Š, Ž). Contain only lowercase letters after the first (ä, ö, ü, õ, š, ž, and Latin letters a–z). Can include a hyphen (`-`) or a space (` `), but not both together. Each part of the first name after a separator must start with a capital letter. No digits, special characters, or consecutive spaces/hyphens are allowed.",
+  "LastnameRegex": "Invalid last name format. Last Name must meet the following criteria: Start with a capital letter (including Estonian characters: Ä, Ö, Ü, Õ, Š, Ž). Contain only lowercase letters after the first (ä, ö, ü, õ, š, ž, and Latin letters a–z). No hyphens, spaces, digits, or special characters are allowed.",
+  "UsernameTaken": "Username '{{value}}' already taken.",
+  "EmailTaken": "User with email '{{value}}' already exists.",
+  "BothDatesRequired": "Please select both a start and an end date for the reservation.",
+  "ReservationToMustBeAfterFrom": "The reservation end date must be after the start date."
+}

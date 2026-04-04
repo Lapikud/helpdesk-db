@@ -1,0 +1,13 @@
+{
+  "AttemptedValueIsInvalid": "The attempted value '{1}' is not valid for '{0}'.",
+  "MissingBindRequiredValue": "A value for the '{0}' property was not provided.",
+  "MissingKeyOrValue": "A value is required.",
+  "MissingRequestBodyRequiredValue": "A non-empty request body is required.",
+  "NonPropertyAttemptedValueIsInvalid": "The attempted value '{0}' is not valid.",
+  "NonPropertyUnknownValueIsInvalid": "The supplied value is invalid.",
+  "NonPropertyValueMustBeANumber": "The value must be a number.",
+  "UnknownValueIsInvalid": "The value '{0}' is invalid.",
+  "ValueIsInvalid": "The value '{0}' is invalid.",
+  "ValueMustNotBeNull": "The value '{0}' must not be null.",
+  "ValueMustBeANumber": "The value '{0}' must be a number."
+}

@@ -1,0 +1,5 @@
+{
+    "Title": "Remove Reservation",
+    "ConfirmQuestion": "Are you sure you want to remove this reservation?",
+    "ConfirmButton": "Remove"
+}

@@ -1,0 +1,15 @@
+{
+  "AssetReservations": "Asset Reservations",
+  "AssetReservationSingular": "Asset Reservation",
+  "AssetId": "Asset",
+  "UserId": "User",
+  "ReservationFrom": "Reserved From",
+  "ReservationTo": "Reserved To",
+  "AssetIdPrompt": "Select an asset",
+  "UserIdPrompt": "Select a user",
+  "Expired": "Expired",
+  "Removed": "Removed",
+  "IsReturned": "Returned",
+  "Yes": "Yes",
+  "No": "No"
+}

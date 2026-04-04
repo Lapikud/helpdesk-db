@@ -1,0 +1,383 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Domain\Asset.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Asset.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Category.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Category.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CategoryAssets.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>CategoryAssets.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Cupboard.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Cupboard.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CupboardInRoom.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>CupboardInRoom.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CupboardInRoom.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>CupboardInRoom.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CupboardInRoom.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>CupboardInRoom.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Location.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Location.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CupboardInRoom.et.resx">
+        <DependentUpon>CupboardInRoom.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CupboardInRoom.ru.resx">
+        <DependentUpon>CupboardInRoom.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Cupboard.ru.resx">
+        <DependentUpon>Cupboard.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Cupboard.et.resx">
+        <DependentUpon>Cupboard.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CategoryAssets.ru.resx">
+        <DependentUpon>CategoryAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\CategoryAssets.et.resx">
+        <DependentUpon>CategoryAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Category.ru.resx">
+        <DependentUpon>Category.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Category.et.resx">
+        <DependentUpon>Category.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Asset.ru.resx">
+        <DependentUpon>Asset.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Asset.et.resx">
+        <DependentUpon>Asset.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Location.et.resx">
+        <DependentUpon>Location.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Location.ru.resx">
+        <DependentUpon>Location.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationAssets.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>LocationAssets.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationInCupboard.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>LocationInCupboard.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationAssets.et.resx">
+        <DependentUpon>LocationAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationAssets.ru.resx">
+        <DependentUpon>LocationAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Owner.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Owner.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationInCupboard.et.resx">
+        <DependentUpon>LocationInCupboard.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\LocationInCupboard.ru.resx">
+        <DependentUpon>LocationInCupboard.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Owner.et.resx">
+        <DependentUpon>Owner.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Owner.ru.resx">
+        <DependentUpon>Owner.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\OwnerAssets.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>OwnerAssets.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\OwnerAssets.et.resx">
+        <DependentUpon>OwnerAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\OwnerAssets.ru.resx">
+        <DependentUpon>OwnerAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\RemovedAssets.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>RemovedAssets.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\RemovedAssets.et.resx">
+        <DependentUpon>RemovedAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\RemovedAssets.ru.resx">
+        <DependentUpon>RemovedAssets.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Room.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Room.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Room.et.resx">
+        <DependentUpon>Room.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Room.ru.resx">
+        <DependentUpon>Room.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUser.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>AppUser.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppRole.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>AppRole.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUser.et.resx">
+        <DependentUpon>AppUser.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUser.ru.resx">
+        <DependentUpon>AppUser.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppRole.et.resx">
+        <DependentUpon>AppRole.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppRole.ru.resx">
+        <DependentUpon>AppRole.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUserRole.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>AppUserRole.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUserRole.et.resx">
+        <DependentUpon>AppUserRole.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\Identity\AppUserRole.ru.resx">
+        <DependentUpon>AppUserRole.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="ViewModel\AssetViewModel.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>AssetViewModel.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_Layout.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>_Layout.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LoginPartial.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>_LoginPartial.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LanguageSelectionPartial.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>_LanguageSelectionPartial.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_AssetListPartial.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>_AssetListPartial.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_Layout.et.resx">
+        <DependentUpon>_Layout.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_Layout.ru.resx">
+        <DependentUpon>_Layout.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LoginPartial.et.resx">
+        <DependentUpon>_LoginPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LoginPartial.ru.resx">
+        <DependentUpon>_LoginPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\CreateNewAsset.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>CreateNewAsset.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\Remove.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Remove.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Errors\ValidationErrors.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>ValidationErrors.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\AssetReservation.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>AssetReservation.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\AssetReservation.et.resx">
+        <DependentUpon>AssetReservation.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Domain\AssetReservation.ru.resx">
+        <DependentUpon>AssetReservation.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="ViewModel\AssetViewModel.et.resx">
+        <DependentUpon>AssetViewModel.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="ViewModel\AssetViewModel.ru.resx">
+        <DependentUpon>AssetViewModel.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\CreateNewAsset.et.resx">
+        <DependentUpon>CreateNewAsset.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\CreateNewAsset.ru.resx">
+        <DependentUpon>CreateNewAsset.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\Remove.et.resx">
+        <DependentUpon>Remove.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Home\Remove.ru.resx">
+        <DependentUpon>Remove.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_AssetListPartial.et.resx">
+        <DependentUpon>_AssetListPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_AssetListPartial.ru.resx">
+        <DependentUpon>_AssetListPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LanguageSelectionPartial.et.resx">
+        <DependentUpon>_LanguageSelectionPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Views\Shared\_LanguageSelectionPartial.ru.resx">
+        <DependentUpon>_LanguageSelectionPartial.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Errors\ValidationErrors.et.resx">
+        <DependentUpon>ValidationErrors.resx</DependentUpon>
+      </EmbeddedResource>
+      <EmbeddedResource Update="Errors\ValidationErrors.ru.resx">
+        <DependentUpon>ValidationErrors.resx</DependentUpon>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Domain\Asset.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Asset.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Category.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Category.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\CategoryAssets.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>CategoryAssets.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Cupboard.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Cupboard.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\CupboardInRoom.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>CupboardInRoom.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Location.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Location.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\LocationAssets.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>LocationAssets.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\LocationInCupboard.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>LocationInCupboard.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Owner.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Owner.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\OwnerAssets.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>OwnerAssets.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\RemovedAssets.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>RemovedAssets.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Room.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Room.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Identity\AppUser.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>AppUser.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Identity\AppRole.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>AppRole.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\Identity\AppUserRole.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>AppUserRole.resx</DependentUpon>
+      </Compile>
+      <Compile Update="ViewModel\AssetViewModel.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>AssetViewModel.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Shared\_Layout.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>_Layout.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Shared\_LoginPartial.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>_LoginPartial.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Shared\_LanguageSelectionPartial.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>_LanguageSelectionPartial.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Shared\_AssetListPartial.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>_AssetListPartial.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Home\CreateNewAsset.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>CreateNewAsset.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Home\Remove.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Remove.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Errors\ValidationErrors.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>ValidationErrors.resx</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\AssetReservation.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>AssetReservation.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+</Project>

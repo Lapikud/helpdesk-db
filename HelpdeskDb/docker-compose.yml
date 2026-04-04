@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: "lapikudhelpdesk-db"
+    ports:
+      # first port is the host port, second port is the container port
+      - "5433:5432"
+    volumes:
+      - db-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: on-failure
+    logging:
+      options:
+        max-size: 10m
+        max-file: 5
+  
+  app:
+    build: ./
+    container_name: lapikudhelpdesk-db-app
+    ports:
+      - 80:80
+    restart: on-failure
+    logging:
+      options:
+        max-size: 10m
+        max-file: 3
+    environment:
+      ConnectionStrings__DefaultConnection: ${DOCKER_DB_CONNECTION}
+      JWTSecurity__Key: ${JWTSecurity__Key}
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:80"
+    depends_on:
+      - db
+
+volumes:
+  db-volume:

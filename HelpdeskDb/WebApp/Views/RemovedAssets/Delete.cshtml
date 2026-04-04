@@ -1,0 +1,35 @@
+@model App.BLL.DTO.RemovedAssets
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>@Base.Resources.Common.DeleteTitle</h1>
+
+<h3>@Base.Resources.Common.DeleteConfirmQuestion</h3>
+<div>
+    <h4>@App.Resources.Domain.RemovedAssets.RemovedAssetsSingular</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Asset)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Asset!.AssetName)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Comment)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Comment)
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" value="Delete" class="btn btn-danger">
+            @Base.Resources.Common.DeleteButton
+        </button> |
+        <a asp-action="Index">@Base.Resources.Common.BackToListLink</a>
+    </form>
+</div>

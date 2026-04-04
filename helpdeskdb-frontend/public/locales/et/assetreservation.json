@@ -1,0 +1,15 @@
+{
+  "AssetReservations": "Vara broneerimised",
+  "AssetReservationSingular": "Vara broneerimine",
+  "AssetId": "Vara",
+  "UserId": "Kasutaja",
+  "ReservationFrom": "Broneeringu algus",
+  "ReservationTo": "Broneeringu lõpp",
+  "AssetIdPrompt": "Vali Vara",
+  "UserIdPrompt": "Vali kasutaja",
+  "Expired": "Aegunud",
+  "Removed": "Eemaldatud",
+  "IsReturned": "Tagastatud",
+  "Yes": "Jah",
+  "No": "Ei"
+}

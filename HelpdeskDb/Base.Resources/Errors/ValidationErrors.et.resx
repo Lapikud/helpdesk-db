@@ -1,0 +1,53 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="ValueBetween" xml:space="preserve">
+        <value>'{0}' peab olema vahemikus {1} kuni {2}.</value>
+    </data>
+    <data name="Required" xml:space="preserve">
+        <value>Väli '{0}' on kohustuslik.</value>
+    </data>
+    <data name="StringLengthBetween" xml:space="preserve">
+        <value>'{0}' peab olema vähemalt {2} ja maksimaalselt {1} tähemärki pikk.</value>
+    </data>
+    <data name="UsernameRegex" xml:space="preserve">
+        <value>Vale kasutajanime vorming. Kasutajanimed peavad vastama järgmistele kriteeriumidele:
+
+                 &lt;ul&gt;
+                     &lt;li&gt;Peab algama tähe või numbriga.&lt;/li&gt;
+                     &lt;li&gt;Võib sisaldada tähti, numbreid, punkte (.) või alljooni (_).&lt;/li&gt;
+                     &lt;li&gt;Ei tohi sisaldada kahte järjestikust punkti (.) ega alljoont (_).&lt;/li&gt;
+                     &lt;li&gt;Peab lõppema tähe või numbriga.&lt;/li&gt;
+                 &lt;/ul&gt;</value>
+    </data>
+    <data name="InvalidEmail" xml:space="preserve">
+        <value>Väli '{0}' ei ole kehtiv e-posti aadress.</value>
+    </data>
+    <data name="ConfirmationPasswordMatch" xml:space="preserve">
+        <value>Paroolid ei ühti.</value>
+    </data>
+    <data name="MaxLengthValidationError" xml:space="preserve">
+        <value>Välja '{0}' maksimum pikkus ei tohi olla suurem kui {1} tähemärki.</value>
+    </data>
+    <data name="MinLenghtValidationError" xml:space="preserve">
+        <value>Välja '{0}' minimum pikkus ei tohi olla vähem kui {1} tähemärki. </value>
+    </data>
+    <data name="FirstnameRegex" xml:space="preserve">
+        <value>Vale kasutajanime vorming. Kasutajanimi peab vastama järgmistele nõudmistele:
+&lt;ul&gt; &lt;li&gt;Alustada suure tähega (ka eesti tähed: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Koosneda ainult väikestest tähtedest pärast esimest (ä, ö, ü, õ, š, ž ja ladina tähed a–z).&lt;/li&gt; &lt;li&gt;Võib sisaldada sidekriipsu (`-`) või tühikut (` `), kuid mitte mõlemat korraga.&lt;/li&gt; &lt;li&gt;Iga osa nimest pärast eraldajat peab algama suure tähega.&lt;/li&gt; &lt;li&gt;Ei lubata numbreid, spetsiaalmärke ega järjestikuseid tühikuid/sidekriipse.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+    <data name="LastnameRegex" xml:space="preserve">
+        <value>Vale perenime vorming. Perenimi peab vastama järgmistele nõudmistele:
+&lt;ul&gt; &lt;li&gt;Alustada suure tähega (ka eesti tähed: Ä, Ö, Ü, Õ, Š, Ž).&lt;/li&gt; &lt;li&gt;Koosneda ainult väikestest tähtedest pärast esimest (ä, ö, ü, õ, š, ž ja ladina tähed a–z).&lt;/li&gt; &lt;li&gt;Ei lubata sidekriipse, tühikuid, numbreid ega erimärke.&lt;/li&gt; &lt;/ul&gt;</value>
+    </data>
+</root>
