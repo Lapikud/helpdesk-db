@@ -266,6 +266,24 @@ export default function AssetList({
 								<div className="flex flex-wrap justify-center gap-2 p-2">
 									{isReserved ? (
 										<>
+										{isExpiredNotReturned(asset, isReserved) ? (
+											<>
+												<button
+													onClick={() =>
+														onReturnAsset(asset.id)
+													}
+													disabled={loading[asset.id]}
+													className={`bg-orange-500 hover:bg-orange-600 text-white font-medium py-1 px-3 rounded ${
+														loading[asset.id]
+															? "opacity-50 cursor-not-allowed"
+															: ""
+													}`}
+												>
+													{tAssetlistpartial("Returned")}
+												</button>
+											</>
+										) : (
+										<>
 											<button
 												onClick={() =>
 													onChangeReservationTime(
@@ -313,6 +331,8 @@ export default function AssetList({
 											>
 												{tAssetlistpartial("RemoveReservation")}
 											</button>
+										</>
+									)}
 										</>
 									) : asset.reserved ? (
 										<span className="text-sm text-red-500 font-medium py-1 px-3">
