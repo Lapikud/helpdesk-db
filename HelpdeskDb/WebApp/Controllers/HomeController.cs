@@ -50,8 +50,6 @@ public class HomeController : Controller
                 a.AssetName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 a.CategoryName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 a.OwnerName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                a.RoomName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                a.CupboardName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 (a.SerialNumber != null && a.SerialNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                 (a.Barcode != null && a.Barcode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
             ).ToList();
