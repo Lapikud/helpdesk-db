@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useContext, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { AccountService } from "@/services/AccountService";
 
 export default function Header() {
 	const { t: tLayout } = useTranslation("_layout");
@@ -332,7 +333,12 @@ export default function Header() {
 							<a
 								className="text-gray-700 hover:text-blue-500"
 								href="#"
-								onClick={() => {
+								onClick={async () => {
+									const refreshToken = accountInfo?.refreshToken;
+									if (refreshToken) {
+										const accountService = new AccountService();
+										await accountService.logoutAsync(refreshToken);
+									}
 									setAccountInfo!({});
 									router.push("/login");
 								}}

@@ -5,6 +5,14 @@ import { ILoginDto } from "@/types/ILoginDto"
 
 export class AccountService extends BaseService {
 
+	async logoutAsync(refreshToken: string): Promise<void> {
+		try {
+			await this.axiosInstance.post('account/logout', { refreshToken });
+		} catch (error) {
+			console.log('logout error:', (error as Error).message);
+		}
+	}
+
 	async loginAsync(username: string, password: string): Promise<IResultObject<ILoginDto>> {
 		const url = 'account/login'
 		try {
