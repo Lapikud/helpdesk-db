@@ -5,7 +5,7 @@ import { useContext, useEffect, useState } from "react";
 import { AssetReservationService } from "@/services/AssetReservationService";
 import { AssetService } from "@/services/AssetService";
 import { UserService } from "@/services/UserService";
-import { IAssetReservationAdd, IAsset, IUser } from "@/types/domain/DomainTypes";
+import { IAsset, IUser } from "@/types/domain/DomainTypes";
 import { useRouter } from "next/navigation";
 import { AccountContext } from "@/context/AccountContext";
 import { useTranslation } from "react-i18next";
@@ -52,10 +52,6 @@ export default function AssetReservationCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-			return;
-		}
 		if (!isAdmin) {
 			router.push("/assetReservations");
             return;
@@ -77,7 +73,7 @@ export default function AssetReservationCreate() {
 		};
 
 		fetchDependencies();
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin, accountInfo?.id]);
 
 
 	const handleSubmit = async (e: React.FormEvent) => {

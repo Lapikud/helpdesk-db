@@ -187,14 +187,11 @@ export default function Overview() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 		// Only show spinner on first load or if data is empty
 		const shouldShowSpinner =
 			availableAssets.length === 0 && assetsReservedByUser.length === 0;
 		fetchData(shouldShowSpinner);
-	}, [hydrated, accountInfo, searchTerm, router, fetchData]);
+	}, [hydrated, accountInfo, searchTerm, fetchData, availableAssets.length, assetsReservedByUser.length]);
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -468,6 +465,9 @@ export default function Overview() {
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
 	const isMember = accountInfo?.roles?.includes("members");
+	const isPixel = accountInfo?.roles?.includes("pixels");
+
+	console.log("isPixel - " + isPixel);
 
 	return (
 		<div className="max-w-6xl mx-auto p-4">
@@ -475,11 +475,11 @@ export default function Overview() {
 				{tAssetViewModel("AssetsOverview")}
 			</h2>
 
-			<div className="flex justify-between items-center mb-4">
+			<div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center mb-4">
 				{/* Search bar */}
 				<form
 					onSubmit={handleSearch}
-					className="flex gap-2 w-full max-w-md"
+					className="flex gap-2 w-full sm:max-w-md"
 				>
 					<input
 						type="text"
@@ -529,7 +529,7 @@ export default function Overview() {
 				</div>
 
 				{/* Create New Asset Button */}
-				{(isAdmin || isMember) && (
+				{(isAdmin || isMember || isPixel) && (
 					<button
 						onClick={async () => {
 							await getDataCreateMenu();

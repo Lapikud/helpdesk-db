@@ -20,6 +20,8 @@ export default function Header() {
 	const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
 	const adminDropdownRef = useRef<HTMLDivElement>(null);
 
+	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
 	useEffect(() => {
@@ -43,10 +45,24 @@ export default function Header() {
 		};
 	}, [userDropdownRef, adminDropdownRef]);
 
+	const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+	const handleLogout = async () => {
+		const refreshToken = accountInfo?.refreshToken;
+		if (refreshToken) {
+			const accountService = new AccountService();
+			await accountService.logoutAsync(refreshToken);
+		}
+		setAccountInfo!({});
+		router.push("/login");
+		closeMobileMenu();
+	};
+
 	return (
 		<nav className="bg-white border-b shadow mb-3">
+			{/* Desktop + tablet bar */}
 			<div className="container mx-auto px-4 py-3 flex items-center justify-between">
-				{/* Left side: Brand + Main nav */}
+				{/* Left side: Brand + Main nav (hidden on mobile) */}
 				<div className="flex items-center space-x-6">
 					<Link
 						href="/"
@@ -57,14 +73,14 @@ export default function Header() {
 
 					<Link
 						href="/"
-						className="text-gray-700 hover:text-blue-500"
+						className="hidden md:inline text-gray-700 hover:text-blue-500"
 					>
 						{tCommon("Home")}
 					</Link>
 
-					{/* User Dropdown */}
+					{/* User Dropdown — desktop only */}
 					{accountInfo?.jwt && (
-						<div className="relative" ref={userDropdownRef}>
+						<div className="relative hidden md:block" ref={userDropdownRef}>
 							<button
 								onClick={() =>
 									setIsUserDropdownOpen(!isUserDropdownOpen)
@@ -128,9 +144,9 @@ export default function Header() {
 							)}
 						</div>
 					)}
-					{/* Admin Dropdown */}
+					{/* Admin Dropdown — desktop only */}
 					{accountInfo?.jwt && isAdmin && (
-						<div className="relative" ref={adminDropdownRef}>
+						<div className="relative hidden md:block" ref={adminDropdownRef}>
 							<button
 								onClick={() =>
 									setIsAdminDropdownOpen(!isAdminDropdownOpen)
@@ -323,7 +339,9 @@ export default function Header() {
 						</div>
 					)}
 				</div>
-				<div className="flex items-center space-x-6">
+
+				{/* Right side — desktop */}
+				<div className="hidden md:flex items-center space-x-6">
 					<LanguageSwitcher />
 					{accountInfo?.jwt && (
 						<div className="flex items-center space-x-4">
@@ -333,15 +351,7 @@ export default function Header() {
 							<a
 								className="text-gray-700 hover:text-blue-500"
 								href="#"
-								onClick={async () => {
-									const refreshToken = accountInfo?.refreshToken;
-									if (refreshToken) {
-										const accountService = new AccountService();
-										await accountService.logoutAsync(refreshToken);
-									}
-									setAccountInfo!({});
-									router.push("/login");
-								}}
+								onClick={handleLogout}
 							>
 								{tCommon("Logout")}
 							</a>
@@ -356,42 +366,133 @@ export default function Header() {
 						</Link>
 					)}
 				</div>
+
+				{/* Hamburger button — mobile only */}
+				<button
+					className="md:hidden p-2 rounded text-gray-700 hover:bg-gray-100"
+					onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+					aria-label="Toggle menu"
+				>
+					{isMobileMenuOpen ? (
+						<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					) : (
+						<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+						</svg>
+					)}
+				</button>
 			</div>
 
-			{/* Original commented-out Bootstrap markup preserved below */}
-			{/*
-			<li className="nav-item dropdown">
-				<a className="nav-link text-dark dropdown-toggle" href="javascript:{}" id="adminDropdown"
-					role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
-				<div className="dropdown-menu" aria-labelledby="adminDropdown">
+			{/* Mobile menu drawer */}
+			{isMobileMenuOpen && (
+				<div className="md:hidden border-t bg-white px-4 py-3 flex flex-col gap-1">
+					<Link href="/" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100" onClick={closeMobileMenu}>
+						{tCommon("Home")}
+					</Link>
 
-					<a className="dropdown-item text-dark" href="/admin/Assets">Assets</a>
-					<a className="dropdown-item text-dark" href="/admin/Categories">Categories</a>
-					<a className="dropdown-item text-dark" href="/admin/CategoryAssets">Category assets</a>
-					<a className="dropdown-item text-dark" href="/admin/Cupboards">Cupboards</a>
-					<a className="dropdown-item text-dark" href="/admin/CupboardsInRooms">Cupboards in rooms</a>
-					<a className="dropdown-item text-dark" href="/admin/Locations">Locations</a>
-					<a className="dropdown-item text-dark" href="/admin/LocationAssets">Location assets</a>
-					<a className="dropdown-item text-dark" href="/admin/LocationsInCupboards">Location in cupboards</a>
-					<a className="dropdown-item text-dark" href="/admin/Owners">Owners</a>
-					<a className="dropdown-item text-dark" href="/admin/OwnerAssets">Owner assets</a>
-					<a className="dropdown-item text-dark" href="/admin/Rooms">Rooms</a>
-					<a className="dropdown-item text-dark" href="/admin/RemovedAssets">Removed assets</a>
-					<a className="dropdown-item text-dark" href="/admin/UserAssets">User assets</a>
+					{accountInfo?.jwt && (
+						<>
+							<div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">
+								{tLayout("User")}
+							</div>
+							<Link href="/assetReservations" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("AssetReservations")}
+							</Link>
+							<Link href="/categories" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Categories")}
+							</Link>
+							<Link href="/owners" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Owners")}
+							</Link>
+							<Link href="/removedAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("RemovedAssets")}
+							</Link>
+						</>
+					)}
 
-					<hr className="dropdown-divider">
+					{accountInfo?.jwt && isAdmin && (
+						<>
+							<div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">
+								{tLayout("Admin")}
+							</div>
+							<Link href="/dbassets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Assets")}
+							</Link>
+							<Link href="/assetReservations" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("AssetReservations")}
+							</Link>
+							<Link href="/categories" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Categories")}
+							</Link>
+							<Link href="/categoryAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("CategoryAssets")}
+							</Link>
+							<Link href="/cupboards" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Cupboards")}
+							</Link>
+							<Link href="/cupboardsInRooms" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("CupboardsInRooms")}
+							</Link>
+							<Link href="/locations" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Locations")}
+							</Link>
+							<Link href="/locationAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("LocationAssets")}
+							</Link>
+							<Link href="/locationsInCupboards" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("LocationInCupboards")}
+							</Link>
+							<Link href="/owners" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>	{tLayout("Owners")}
+							</Link>
+							<Link href="/rooms" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Rooms")}
+							</Link>
+							<Link href="/removedAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("RemovedAssets")}
+							</Link>
+							<Link href="/userAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("UserAssets")}
+							</Link>
+							<hr className="my-1 border-gray-200" />
+							<Link href="/users" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Users")}
+							</Link>
+							<Link href="/roles" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Roles")}
+							</Link>
+							<Link href="/userRoles" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("UserRoles")}
+							</Link>
+							<Link href="/refreshTokens" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("RefreshTokens")}
+							</Link>
+							<hr className="my-1 border-gray-200" />
+							<Link href="/userManagement" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("UserManagement")}
+							</Link>
+						</>
+					)}
 
-					<a className="dropdown-item text-dark" href="/admin/Users">Users</a>
-					<a className="dropdown-item text-dark" href="/admin/Roles">Roles</a>
-					<a className="dropdown-item text-dark" href="/admin/UserRoles">User roles</a>
-					<a className="dropdown-item text-dark" href="/admin/RefreshTokens">Refresh tokens</a>
-
-					<hr className="dropdown-divider">
-
-					<a className="dropdown-item text-dark" href="/admin/UserManagement">User management</a>
+					<hr className="my-2 border-gray-200" />
+					<div className="flex items-center justify-between px-3 py-2">
+						<LanguageSwitcher />
+						{accountInfo?.jwt ? (
+							<div className="flex items-center gap-3">
+								<span className="text-sm text-gray-600">{accountInfo.name}</span>
+								<a className="text-sm text-gray-700 hover:text-blue-500" href="#" onClick={handleLogout}>
+									{tCommon("Logout")}
+								</a>
+							</div>
+						) : (
+							<Link href="/login" className="text-gray-700 hover:text-blue-500" onClick={closeMobileMenu}>
+								{tCommon("LoginLink")}
+							</Link>
+						)}
+					</div>
 				</div>
-			</li>
-			*/}
+			)}
 		</nav>
 	);
 }

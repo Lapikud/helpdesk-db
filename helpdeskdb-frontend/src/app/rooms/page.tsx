@@ -35,10 +35,6 @@ export default function Rooms() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -58,7 +54,7 @@ export default function Rooms() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, roomService]);
+	}, [hydrated, router, roomService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

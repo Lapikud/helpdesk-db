@@ -45,9 +45,7 @@ export default function CategoryAssetsDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 		if (!isAdmin) {
 			router.push("/");
 		}
 		const fetchData = async () => {
@@ -83,7 +81,7 @@ export default function CategoryAssetsDelete({
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, categoryAssetsService]);
+	}, [hydrated, router, id, isAdmin, categoryAssetsService, assetService, categoryService]);
 
 	const deleteConfirmed = async () => {
 		try {

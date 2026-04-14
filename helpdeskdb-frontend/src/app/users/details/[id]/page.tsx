@@ -40,9 +40,7 @@ export default function UserDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+		if (!isAdmin) {
 			router.push("/");
 			return;
 		} else {
@@ -53,7 +51,6 @@ export default function UserDetails({
 		}
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		userService,

@@ -45,9 +45,7 @@ export default function CupboardsInRoomsDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		}
 		const fetchData = async () => {
@@ -83,7 +81,7 @@ export default function CupboardsInRoomsDelete({
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, cupboardsInRoomsService]);
+	}, [hydrated, router, id, isAdmin, cupboardsInRoomsService, cupboardService, roomService]);
 
 	const deleteConfirmed = async () => {
 		try {

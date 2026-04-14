@@ -35,10 +35,6 @@ export default function Cupboards() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -58,7 +54,7 @@ export default function Cupboards() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, cupboardService]);
+	}, [hydrated, router, cupboardService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

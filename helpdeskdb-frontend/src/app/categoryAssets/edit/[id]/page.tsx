@@ -83,7 +83,6 @@ export default function CategoryAssetsEdit({
 		handleSubmit,
 		formState: { errors },
 		reset,
-		setValue,
 	} = useForm<ICategoryAsset>();
 
 	useEffect(() => {
@@ -92,10 +91,6 @@ export default function CategoryAssetsEdit({
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		if (!isAdmin) {
 			router.push("/");
@@ -157,13 +152,13 @@ export default function CategoryAssetsEdit({
 		fetchData();
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		reset,
 		isAdmin,
 		assetService,
 		categoryService,
+		categoryAssetsService
 	]);
 
 	const onSubmit: SubmitHandler<ICategoryAsset> = async (

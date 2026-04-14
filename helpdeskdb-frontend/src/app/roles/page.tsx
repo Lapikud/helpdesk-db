@@ -11,7 +11,6 @@ import { IRole } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
 
 export default function Roles() {
-	const { t: tRole } = useTranslation("approle");
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
@@ -31,10 +30,6 @@ export default function Roles() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		if (!isAdmin) {
 			router.push("/");

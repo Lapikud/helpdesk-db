@@ -2,7 +2,6 @@
 
 import { AccountContext } from "@/context/AccountContext";
 import { OwnerService } from "@/services/OwnerService";
-import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -19,12 +18,10 @@ export default function Owners() {
 	if (setAccountInfo) {
 		ownerService.injectSetAccountInfo(setAccountInfo);
 	}
-	const router = useRouter();
 	const [data, setData] = useState<IOwner[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
 
 	useEffect(() => {
 		setHydrated(true);
@@ -32,10 +29,6 @@ export default function Owners() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		const fetchData = async () => {
 			try {
@@ -51,7 +44,7 @@ export default function Owners() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, ownerService]);
+	}, [hydrated, ownerService]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

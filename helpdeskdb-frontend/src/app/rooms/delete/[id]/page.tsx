@@ -37,9 +37,7 @@ export default function RoomDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function RoomDelete({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, roomService, isAdmin]);
+	}, [hydrated, router, id, roomService, isAdmin]);
 
 	const deleteConfirmed = async () => {
 		try {

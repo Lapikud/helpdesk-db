@@ -43,10 +43,6 @@ export default function RemovedAssetDetailsClient({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/removedAssets");
 			return;

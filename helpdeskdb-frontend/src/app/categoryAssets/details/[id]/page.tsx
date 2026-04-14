@@ -45,9 +45,7 @@ export default function CategoryAssetsDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 		if (!isAdmin) {
 			router.push("/");
 			return;
 		} else {
@@ -89,7 +87,7 @@ export default function CategoryAssetsDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, categoryAssetsService, assetService, categoryService, isAdmin]);
+	}, [hydrated, router, id, categoryAssetsService, assetService, categoryService, isAdmin]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

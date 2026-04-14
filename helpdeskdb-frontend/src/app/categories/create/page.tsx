@@ -28,14 +28,10 @@ export default function CategoryCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-		console.log("!isAdmin || !isMember: ", !isAdmin || !isMember);
 		if (!isAdmin) {
 			router.push("/categories");
 		}
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

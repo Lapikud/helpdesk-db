@@ -38,6 +38,7 @@ export default function AssetList({
 
 	const isAdmin = accountInfo?.roles?.includes("admins") ?? false;
 	const isMember = accountInfo?.roles?.includes("members") ?? false;
+	const isPixel = accountInfo?.roles?.includes("pixels") ?? false; 
 
 	function getInitialSections() {
 		if (typeof window !== "undefined") {
@@ -141,7 +142,7 @@ export default function AssetList({
 						>
 							<div className="p-4">
 								<AssetCardDetails asset={asset} />
-								{(isAdmin || isMember) && (
+								{(isAdmin || isMember || isPixel) && (
 									<div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-3 justify-center">
 										{isReserved ? (
 											<>
@@ -245,14 +246,16 @@ export default function AssetList({
 		} else {
 			// "lines" mode
 			return (
+				<div className="overflow-x-auto w-full">
+				<div className="min-w-[700px]">
 				<div className="rounded border overflow-hidden">
-					{renderTableHeader(isAdmin || isMember)}
+					{renderTableHeader(isAdmin || isMember || isPixel)}
 					<div className="overflow-y-auto max-h-64">
 					{assets.map((asset) => (
 						<div
 							key={asset.id}
 							className={`${
-								isAdmin || isMember
+								isAdmin || isMember || isPixel
 									? "grid-cols-11"
 									: "grid-cols-10"
 							} grid text-sm text-center border-b last:rounded-b text-black ${
@@ -262,7 +265,7 @@ export default function AssetList({
 							}`}
 						>
 							<AssetLineDetails asset={asset} />
-							{(isAdmin || isMember) && (
+							{(isAdmin || isMember || isPixel) && (
 								<div className="flex flex-wrap justify-center gap-2 p-2">
 									{isReserved ? (
 										<>
@@ -380,6 +383,8 @@ export default function AssetList({
 						</div>
 					))}
 					</div>
+				</div>
+				</div>
 				</div>
 			);
 		}

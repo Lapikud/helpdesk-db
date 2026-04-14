@@ -29,7 +29,6 @@ export default function OwnerDelete({
 	}
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
 
 	useEffect(() => {
 		setHydrated(true);
@@ -38,9 +37,7 @@ export default function OwnerDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 		if (!isAdmin) {
 			router.push("/owners");
 		} else {
 			const fetchData = async () => {
@@ -48,7 +45,7 @@ export default function OwnerDelete({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, isAdmin, ownerService]);
+	}, [hydrated, router, id, isAdmin, ownerService]);
 
 	const deleteConfirmed = async () => {
 		try {

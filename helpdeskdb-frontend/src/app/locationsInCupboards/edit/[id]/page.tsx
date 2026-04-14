@@ -63,10 +63,6 @@ export default function CupboardLocationsEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -132,6 +128,7 @@ export default function CupboardLocationsEdit({
 		isAdmin,
 		locationService,
 		cupboardService,
+		cupboardLocationsService
 	]);
 
 	const onSubmit: SubmitHandler<ILocationInCupboard> = async (

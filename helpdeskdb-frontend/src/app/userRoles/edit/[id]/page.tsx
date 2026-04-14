@@ -49,7 +49,6 @@ export default function UserRoleEdit({
 		handleSubmit,
 		formState: { errors },
 		reset,
-		setValue,
 	} = useForm<IUserRole>();
 
 	useEffect(() => {
@@ -59,9 +58,6 @@ export default function UserRoleEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 		const fetchData = async () => {
 			try {
 				setIsLoading(true);
@@ -143,6 +139,7 @@ export default function UserRoleEdit({
 		isAdmin,
 		userService,
 		roleService,
+		userRoleService
 	]);
 
 	const onSubmit: SubmitHandler<IUserRole> = async (data: IUserRole) => {
@@ -217,7 +214,7 @@ export default function UserRoleEdit({
 							</option>
 							{usersData.map((user) => (
 								<option key={user.id} value={user.id}>
-									{user.userName}
+									{user.username}
 								</option>
 							))}
 						</select>

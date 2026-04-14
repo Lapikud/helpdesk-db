@@ -47,11 +47,6 @@ export default function AssetReservationDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-			return;
-		}
-
 		if (!isAdmin && !isMember) {
 			router.push("/assetReservations");
 			return;
@@ -83,7 +78,7 @@ export default function AssetReservationDelete({
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, isMember]);
+	}, [hydrated, router, id, isAdmin, isMember]);
 
 	const deleteConfirmed = async () => {
 		try {

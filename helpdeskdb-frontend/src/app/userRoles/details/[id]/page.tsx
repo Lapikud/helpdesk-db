@@ -45,9 +45,7 @@ export default function UserRoleDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 		if (!isAdmin) {
 			router.push("/");
 			return;
 		} else {
@@ -68,7 +66,7 @@ export default function UserRoleDetails({
 						console.log(userResult.errors);
 						return;
 					} else {
-						username = userResult.data?.userName!;
+						username = userResult.data?.username!;
 					}
 
 					const roleResult = await roleService.getAsync(
@@ -89,7 +87,7 @@ export default function UserRoleDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, userRoleService, isAdmin]);
+	}, [hydrated, accountInfo, router, id, userRoleService, isAdmin, roleService, userService]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

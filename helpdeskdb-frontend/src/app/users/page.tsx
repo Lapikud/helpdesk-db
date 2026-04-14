@@ -32,10 +32,6 @@ export default function Users() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -55,7 +51,7 @@ export default function Users() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, userService, isAdmin]);
+	}, [hydrated, router, userService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

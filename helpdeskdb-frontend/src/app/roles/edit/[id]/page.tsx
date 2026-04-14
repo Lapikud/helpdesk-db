@@ -38,14 +38,10 @@ export default function RoleEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin || !isMember) {
 			router.push("/roles");
 		}
-	}, [hydrated, accountInfo, router, isAdmin, isMember]);
+	}, [hydrated, router, isAdmin, isMember]);
 
 	type Inputs = {
 		name: string;

@@ -45,9 +45,7 @@ export default function LocationCupboardsDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		}
 		const fetchData = async () => {
@@ -83,7 +81,7 @@ export default function LocationCupboardsDelete({
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, locationInCupboardService]);
+	}, [hydrated, router, id, isAdmin, locationInCupboardService, cupboardService, locationService]);
 
 	const deleteConfirmed = async () => {
 		try {

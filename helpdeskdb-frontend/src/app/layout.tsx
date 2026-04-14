@@ -6,6 +6,7 @@ import { AccountContext, IAccountInfo } from "@/context/AccountContext";
 import { useEffect, useState } from "react";
 import { getRolesFromToken, getUserIdFromToken, getUsernameFromToken } from "@/helpers/JwtHelper";
 import Spinner from "@/components/LoadingSpinner";
+import AuthGuard from "@/components/AuthGuard";
 import "../../i18n";
 
 // export const metadata: Metadata = {
@@ -38,7 +39,7 @@ export default function RootLayout({
 		}
 
 		setHydrated(true); // Mark hydrated
-	}, [hydrated]);
+	}, []);
 
 	const updateAccountInfo = (value: IAccountInfo) => {
 		setAccountInfo(value);
@@ -62,9 +63,9 @@ export default function RootLayout({
 						}}
 					>
 						<Header />
-						<div className="px-4 mx-auto max-w-7xl">
+						<div className="px-3 sm:px-4 mx-auto max-w-7xl">
 							<main role="main" className="w-full text-center">
-								{children}
+								<AuthGuard>{children}</AuthGuard>
 							</main>
 						</div>
 						<Footer />

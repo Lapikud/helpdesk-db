@@ -46,9 +46,7 @@ export default function RefreshTokenDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 			return;
 		}
@@ -65,7 +63,7 @@ export default function RefreshTokenDetails({
 					console.log(userResult.errors);
 					return;
 				}
-				const username = userResult.data?.userName!;
+				const username = userResult.data?.username!;
 				const refreshTokenWithUsername: IRefreshTokenWithUsername = {...result.data!, username }
 
 				setData(refreshTokenWithUsername);
@@ -76,7 +74,6 @@ export default function RefreshTokenDetails({
 		fetchData();
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		userService,
@@ -121,7 +118,9 @@ export default function RefreshTokenDetails({
 							Expiration
 						</dt>
 						<dd className="w-2/3 text-gray-900">
-							{data.expiration.slice(0, 10)} {data.expiration.slice(11, 19)}
+							{new Date(
+								data.expiration,
+							).toLocaleString()}
 						</dd>
 					</div>
 					<div className="flex">
@@ -137,7 +136,9 @@ export default function RefreshTokenDetails({
 							Previous expiration
 						</dt>
 						<dd className="w-2/3 text-gray-900">
-							{data.previousExpiration.slice(0, 10)} {data.previousExpiration.slice(11, 19)}
+							{new Date(
+								data.previousExpiration,
+							).toLocaleString()}
 						</dd>
 					</div>
 				</dl>

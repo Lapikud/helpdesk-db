@@ -27,13 +27,10 @@ export default function OwnerCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 		if (!isAdmin) {
 			router.push("/owners");
 		}
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

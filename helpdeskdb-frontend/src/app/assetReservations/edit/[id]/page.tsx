@@ -58,10 +58,6 @@ export default function AssetReservationEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-			return;
-		}
 		if (!isAdmin && !isMember) {
 			router.push("/assetReservations");
 			return;
@@ -110,7 +106,7 @@ export default function AssetReservationEdit({
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, isAdmin, isMember, id]);
+	}, [hydrated, router, isAdmin, isMember, id]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

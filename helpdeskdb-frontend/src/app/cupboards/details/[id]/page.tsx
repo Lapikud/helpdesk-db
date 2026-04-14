@@ -37,9 +37,7 @@ export default function CupboardDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function CupboardDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, cupboardService, isAdmin]);
+	}, [hydrated, router, id, cupboardService, isAdmin]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

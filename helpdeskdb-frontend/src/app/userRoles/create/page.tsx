@@ -30,10 +30,6 @@ export default function UserRoleCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		const fetchData = async () => {
 			try {
 				const userService: UserService = new UserService();
@@ -61,7 +57,7 @@ export default function UserRoleCreate() {
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, isAdmin, setAccountInfo]);
+	}, [hydrated, setAccountInfo]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 
@@ -147,7 +143,7 @@ export default function UserRoleCreate() {
 							</option>
 							{usersData.map((user) => (
 								<option key={user.id} value={user.id}>
-									{user.userName}
+									{user.username}
 								</option>
 							))}
 						</select>

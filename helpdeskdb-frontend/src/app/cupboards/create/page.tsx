@@ -28,13 +28,10 @@ export default function CupboardCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 		if (!isAdmin) {
 			router.push("/");
 		}
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

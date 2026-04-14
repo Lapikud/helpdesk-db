@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { ICategoryAsset, ICategoryAssetWithNames } from "@/types/domain/DomainTypes";
+import { ICategoryAssetWithNames } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
 import { AssetService } from "@/services/AssetService";
 
@@ -47,10 +47,6 @@ export default function CategoryAssets() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -79,7 +75,7 @@ export default function CategoryAssets() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, categoryAssetsService]);
+	}, [hydrated, router, categoryAssetsService, categoryService, assetService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

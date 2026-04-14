@@ -3,7 +3,6 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { CategoryService } from "@/services/CategoryService";
-import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -22,12 +21,10 @@ export default function Categories() {
 	if (setAccountInfo) {
 		categoryService.injectSetAccountInfo(setAccountInfo);
 	}
-	const router = useRouter();
 	const [data, setData] = useState<ICategory[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
 
 	useEffect(() => {
 		setHydrated(true);
@@ -35,10 +32,6 @@ export default function Categories() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		const fetchData = async () => {
 			try {
@@ -54,7 +47,7 @@ export default function Categories() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, categoryService]);
+	}, [hydrated, categoryService]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

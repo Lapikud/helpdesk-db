@@ -3,7 +3,6 @@
 import { AccountContext } from "@/context/AccountContext";
 import { RemovedAssetsService } from "@/services/RemovedAssetsService";
 import { AssetService } from "@/services/AssetService";
-import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -15,7 +14,6 @@ export default function RemovedAssets() {
 	const { t: tRemovedAssets } = useTranslation("removedassets");
 	const { t: tCommon } = useTranslation("common");
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const router = useRouter();
 	const [data, setData] = useState<IRemovedAssetWithAssetName[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 	const removedAssetsService: RemovedAssetsService =
@@ -34,10 +32,6 @@ export default function RemovedAssets() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		const fetchData = async () => {
 			try {
@@ -63,7 +57,7 @@ export default function RemovedAssets() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, assetService, removedAssetsService]);
+	}, [hydrated, assetService, removedAssetsService]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

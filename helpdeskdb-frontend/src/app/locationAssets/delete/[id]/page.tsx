@@ -45,9 +45,7 @@ export default function LocationAssetsDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		}
 		const fetchData = async () => {
@@ -83,7 +81,7 @@ export default function LocationAssetsDelete({
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, locationAssetsService]);
+	}, [hydrated, router, id, isAdmin, locationAssetsService, assetService, locationService]);
 
 	const deleteConfirmed = async () => {
 		try {

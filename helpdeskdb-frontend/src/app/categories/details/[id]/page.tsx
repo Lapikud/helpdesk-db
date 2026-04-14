@@ -32,7 +32,6 @@ export default function CategoryDetails({
 	}
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
 
 	useEffect(() => {
 		setHydrated(true);
@@ -41,9 +40,7 @@ export default function CategoryDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 	 	if (!isAdmin) {
 			router.push("/categories");
 		} else {
 			const fetchData = async () => {
@@ -53,7 +50,6 @@ export default function CategoryDetails({
 		}
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		categoryService,

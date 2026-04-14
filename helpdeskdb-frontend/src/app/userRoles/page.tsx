@@ -38,10 +38,6 @@ export default function UserRoles() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -58,7 +54,7 @@ export default function UserRoles() {
                     result.data!.map(async (userRole) => {
                         const user = await userService.getAsync(userRole.userId);
                         const role = await roleService.getAsync(userRole.roleId);
-                        const username = user.data?.userName ?? userRole.userId;
+                        const username = user.data?.username ?? userRole.userId;
                         const rolename = role.data?.name ?? userRole.roleId;
                         return { ...userRole, username, rolename };
                     })

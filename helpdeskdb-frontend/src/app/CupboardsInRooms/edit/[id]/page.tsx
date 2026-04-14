@@ -93,10 +93,6 @@ export default function CupboardsInRoomsEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -157,13 +153,13 @@ export default function CupboardsInRoomsEdit({
 		fetchData();
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		reset,
 		isAdmin,
 		cupboardService,
 		roomService,
+		cupboardsInRoomsService
 	]);
 
 	const onSubmit: SubmitHandler<ICupboardInRoom> = async (

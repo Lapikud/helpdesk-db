@@ -37,9 +37,7 @@ export default function LocationDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function LocationDelete({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, locationService, isAdmin]);
+	}, [hydrated, router, id, locationService, isAdmin]);
 
 	const deleteConfirmed = async () => {
 		try {

@@ -45,10 +45,6 @@ export default function CategoryAssetsCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -89,7 +85,7 @@ export default function CategoryAssetsCreate() {
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, isAdmin, setAccountInfo]);
+	}, [hydrated, router, isAdmin, categoryAssetsService, assetService, categoryService]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

@@ -45,10 +45,6 @@ export default function LocationAssetsCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -89,7 +85,7 @@ export default function LocationAssetsCreate() {
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, isAdmin, setAccountInfo]);
+	}, [hydrated, router, isAdmin, locationAssetsService, assetService, locationService]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

@@ -45,9 +45,7 @@ export default function CupboardsInRoomsDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 			return;
 		} else {
@@ -89,7 +87,7 @@ export default function CupboardsInRoomsDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, cupboardsInRoomsService, roomService, cupboardService, isAdmin]);
+	}, [hydrated, router, id, cupboardsInRoomsService, roomService, cupboardService, isAdmin]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

@@ -37,9 +37,7 @@ export default function RoomDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function RoomDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, roomService, isAdmin]);
+	}, [hydrated, router, id, roomService, isAdmin]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

@@ -61,7 +61,8 @@ body {
 }
 
 .search-bar {
-	width: 25rem;
+	width: 100%;
+	max-width: 25rem;
 }
 
 .assets-container .header-row {
@@ -117,6 +118,12 @@ body {
 }
 
 
+
+/* Responsive table padding on small screens */
+@media (max-width: 639px) {
+	table th { padding: 0.5rem 0.75rem; }
+	table td { padding: 0.5rem 0.75rem; }
+}
 
 @layer base {
   :root {

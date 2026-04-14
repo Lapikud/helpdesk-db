@@ -29,7 +29,6 @@ export default function OwnerDetailsClient({
 	}
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
 
 	useEffect(() => {
 		setHydrated(true);
@@ -38,9 +37,7 @@ export default function OwnerDetailsClient({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+ 		if (!isAdmin) {
 			router.push("/owners");
 		} else {
 			const fetchData = async () => {
@@ -48,7 +45,7 @@ export default function OwnerDetailsClient({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, isAdmin, ownerService]);
+	}, [hydrated, router, id, isAdmin, ownerService]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

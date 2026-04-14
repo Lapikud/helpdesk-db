@@ -53,7 +53,6 @@ export default function LocationAssetsEdit({
 		handleSubmit,
 		formState: { errors },
 		reset,
-		setValue,
 	} = useForm<ILocationAsset>();
 
 	useEffect(() => {
@@ -62,10 +61,6 @@ export default function LocationAssetsEdit({
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
 
 		if (!isAdmin) {
 			router.push("/");
@@ -125,13 +120,13 @@ export default function LocationAssetsEdit({
 		fetchData();
 	}, [
 		hydrated,
-		accountInfo,
 		router,
 		id,
 		reset,
 		isAdmin,
 		assetService,
 		locationService,
+		locationAssetsService
 	]);
 
 	const onSubmit: SubmitHandler<ILocationAsset> = async (

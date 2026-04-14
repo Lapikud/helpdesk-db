@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { ICupboardInRoom, ICupboardInRoomWithNames } from "@/types/domain/DomainTypes";
+import { ICupboardInRoomWithNames } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
 import { RoomService } from "@/services/RoomService";
 
@@ -47,10 +47,6 @@ export default function CupboardsInRooms() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -79,7 +75,7 @@ export default function CupboardsInRooms() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, cupboardsInRoomsService]);
+	}, [hydrated, router, cupboardsInRoomsService, cupboardService, roomService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

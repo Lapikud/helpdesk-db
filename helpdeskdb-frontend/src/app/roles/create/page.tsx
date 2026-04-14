@@ -26,10 +26,7 @@ export default function RoleCreate() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated]);
 
 	const [errorMessage, setErrorMessage] = useState("");
 

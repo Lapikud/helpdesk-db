@@ -45,9 +45,7 @@ export default function UserRoleDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/userRoles");
 		}
 		const fetchData = async () => {
@@ -65,7 +63,7 @@ export default function UserRoleDelete({
 					console.log(userResult.errors);
 					return;
 				} else {
-					username = userResult.data?.userName!;
+					username = userResult.data?.username!;
 				}
 
 				const roleResult = (await roleService.getAsync(userRole.roleId));
@@ -83,7 +81,7 @@ export default function UserRoleDelete({
 			}
 		};
 		fetchData();
-	}, [hydrated, accountInfo, router, id, isAdmin, userRoleService]);
+	}, [hydrated, accountInfo, router, id, isAdmin, userRoleService, roleService, userService]);
 
 	const deleteConfirmed = async () => {
 		try {

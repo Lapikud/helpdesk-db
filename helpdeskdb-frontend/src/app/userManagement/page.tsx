@@ -73,10 +73,6 @@ export default function UserManagement() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -86,11 +82,11 @@ export default function UserManagement() {
 	}, [
 		hydrated,
 		loading,
-		accountInfo,
 		router,
 		userService,
 		roleService,
 		userRoleService,
+		isAdmin
 	]);
 
 	// Add role to user
@@ -133,7 +129,7 @@ export default function UserManagement() {
 					{users.map((user) => (
 						<tr key={user.id}>
 							<td className="border px-2 py-1">
-								{user.userName}
+								{user.username}
 							</td>
 							<td className="border px-2 py-1">
 								<ul>

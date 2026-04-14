@@ -6,7 +6,6 @@ import { AssetReservationService } from "@/services/AssetReservationService";
 import { AssetService } from "@/services/AssetService";
 import { UserService } from "@/services/UserService";
 import { RemovedAssetsService } from "@/services/RemovedAssetsService";
-import { useRouter } from "next/navigation";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -36,12 +35,12 @@ export default function AssetReservations() {
 		removedAssetsService.injectSetAccountInfo(setAccountInfo);
 	}
 
-	const router = useRouter();
 	const [data, setData] = useState<IAssetReservationWithNames[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
+	const isAdmin = accountInfo?.roles?.includes("admins") ?? false;
+	const isMember = accountInfo?.roles?.includes("members") ?? false;
+	const isPixel = accountInfo?.roles?.includes("pixels") ?? false;
 
 	useEffect(() => {
 		setHydrated(true);
@@ -49,11 +48,6 @@ export default function AssetReservations() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-			return;
-		}
 
 		const fetchData = async () => {
 			try {
@@ -117,8 +111,6 @@ export default function AssetReservations() {
 		fetchData();
 	}, [
 		hydrated,
-		accountInfo,
-		router,
 		assetReservationService,
 		assetService,
 		userService,
@@ -164,7 +156,7 @@ export default function AssetReservations() {
 							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
 								{tAssetReservation("IsReturned")}
 							</th>
-							{(isAdmin || isMember) && (
+							{(isAdmin || isMember || isPixel) && (
 								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
 									{tCommon("Actions")}
 								</th>
@@ -195,7 +187,7 @@ export default function AssetReservations() {
 										? tAssetReservation("Yes")
 										: tAssetReservation("No")}
 								</td>
-								{(isAdmin || isMember) && (
+								{(isAdmin || isMember || isPixel) && (
 									<td className="px-6 py-4 border-b space-x-2">
 										{item.isRemoved ? (
 											<span className="text-red-600">

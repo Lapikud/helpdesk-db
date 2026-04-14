@@ -38,14 +38,10 @@ export default function RoomEdit({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 		}
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin]);
 
 	type Inputs = {
 		roomName: string;

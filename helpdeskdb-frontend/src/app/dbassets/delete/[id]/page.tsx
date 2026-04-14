@@ -37,9 +37,7 @@ export default function AssetDelete({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function AssetDelete({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, assetService, isAdmin]);
+	}, [hydrated, router, id, assetService, isAdmin]);
 
 	const deleteConfirmed = async () => {
 		try {

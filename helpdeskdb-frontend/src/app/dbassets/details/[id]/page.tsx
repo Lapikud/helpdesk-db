@@ -37,9 +37,7 @@ export default function AssetDetails({
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		} else if (!isAdmin) {
+  		if (!isAdmin) {
 			router.push("/");
 		} else {
 			const fetchData = async () => {
@@ -47,7 +45,7 @@ export default function AssetDetails({
 			};
 			fetchData();
 		}
-	}, [hydrated, accountInfo, router, id, assetService, isAdmin]);
+	}, [hydrated, router, id, assetService, isAdmin]);
 
 	if (!hydrated || !data) {
 		return <Spinner className="h-64" />;

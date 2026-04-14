@@ -47,10 +47,6 @@ export default function LocationAssets() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -83,7 +79,7 @@ export default function LocationAssets() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, isAdmin]);
+	}, [hydrated, router, isAdmin, locationAssetsService, assetService, locationService]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;

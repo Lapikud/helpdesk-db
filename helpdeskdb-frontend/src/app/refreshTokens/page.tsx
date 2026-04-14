@@ -34,10 +34,6 @@ export default function RefreshTokens() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		if (!accountInfo?.jwt) {
-			router.push("/login");
-		}
-
 		if (!isAdmin) {
 			router.push("/");
 			return;
@@ -70,7 +66,7 @@ export default function RefreshTokens() {
 		};
 
 		fetchData();
-	}, [hydrated, accountInfo, router, refreshTokenService, userService, isAdmin]);
+	}, [hydrated, router, refreshTokenService, userService, isAdmin]);
 
 	if (!hydrated) {
 		return <Spinner className="h-64" />;
@@ -119,7 +115,6 @@ export default function RefreshTokens() {
 									{new Date(
 										item.expiration,
 									).toLocaleString()}
-									
 								</td>
 								<td className="px-6 py-4 border-b">
 									{item.previousRefreshToken}
@@ -128,7 +123,6 @@ export default function RefreshTokens() {
 									{new Date(
 										item.previousExpiration,
 									).toLocaleString()}
-									
 								</td>
 								<td className="px-6 py-4 border-b text-blue-600 space-x-2">
 									<Link
