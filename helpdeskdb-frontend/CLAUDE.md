@@ -76,13 +76,25 @@ Pages follow the Next.js App Router convention under `src/app/`:
 
 - `/overview` — the primary user-facing page; asset list with inline dialogs for create/edit/remove/reserve
 - `/login` — FreeIPA login form
-- `/{entity}/` — list page
-- `/{entity}/create` — create form
-- `/{entity}/details/[id]` — detail view
-- `/{entity}/edit/[id]` — edit form
-- `/{entity}/delete/[id]` — delete confirmation
+- `/{entity}/` — list page (use `ListPageWrapper` + `DataTable` + `TableActions`)
+- `/{entity}/create` — create form (being migrated to inline dialogs)
+- `/{entity}/edit/[id]` — edit form (being migrated to inline dialogs)
+- `/{entity}/delete/[id]` — delete confirmation (being migrated to inline dialogs)
+- `/{entity}/details/[id]` — **being removed** (redundant, do not add new details pages)
 
 Implemented entity pages: `categories`, `categoryAssets`, `owners`, `ownerAssets`, `rooms`, `cupboards`, `cupboardsInRooms`, `locations`, `locationsInCupboards`, `locationAssets`, `assetReservations`, `removedAssets`, `users`, `userAssets`, `userManagement`, `userRoles`, `roles`, `refreshTokens`.
+
+### Layout pattern for list pages
+
+All entity list pages use a shared three-component stack:
+
+1. **`ListPageWrapper`** (`src/components/ListPageWrapper.tsx`) — full-bleed gray `#efefef` background, title, and optional `createButton` ReactNode slot. The slot accepts a `<Link>` today and will accept a `<button onClick>` when create actions move to inline dialogs.
+2. **`DataTable`** (`src/components/DataTable.tsx`) — white outer card → gray inner area → dark `#424242` pill header row → scrollable white row cards. Pass `columns: string[]` and `rows: { id, cells: ReactNode[] }[]`. Use the `minWidth` prop to control mobile horizontal-scroll breakpoint.
+3. **`TableActions`** (`src/components/TableActions.tsx`) — exports `ActionCell` (flex wrapper), `EditButton`, and `DeleteButton`. Both buttons support `href` (renders `<Link>`) and `onClick` (renders `<button>`) so they are ready for the dialog migration. For complex action states (Expired, Removed, conditional), put custom JSX directly inside `<ActionCell>`.
+
+Pages currently using this stack: `categories`, `owners`, `removedAssets`, `assetReservations`.
+
+**Planned migration:** create/edit/delete actions will move from separate routes (`/categories/create`, etc.) to inline dialogs (same pattern as the `/overview` page). Details pages (`/{entity}/details/[id]`) are being removed as redundant — do not add Details links to new pages.
 
 ### Components
 

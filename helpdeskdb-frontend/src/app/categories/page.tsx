@@ -3,27 +3,28 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { CategoryService } from "@/services/CategoryService";
-
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { ICategory } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
 
 export default function Categories() {
 	const { t: tCategory } = useTranslation("category");
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const categoryService: CategoryService = useMemo(
-		() => new CategoryService(),
-		[]
-	);
-	if (setAccountInfo) {
-		categoryService.injectSetAccountInfo(setAccountInfo);
-	}
+	const categoryService = useMemo(() => new CategoryService(), []);
+	if (setAccountInfo) categoryService.injectSetAccountInfo(setAccountInfo);
+
 	const [data, setData] = useState<ICategory[]>([]);
 	const [hydrated, setHydrated] = useState(false);
-
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
 	useEffect(() => {
@@ -32,98 +33,54 @@ export default function Categories() {
 
 	useEffect(() => {
 		if (!hydrated) return;
-
-		const fetchData = async () => {
-			try {
-				const result = await categoryService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
-		fetchData();
+		categoryService.getAllAsync().then((result) => {
+			if (!result.errors) setData(result.data!);
+		});
 	}, [hydrated, categoryService]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = isAdmin
+		? [tCategory("CategoryName"), tCommon("Comment"), tCommon("Actions")]
+		: [tCategory("CategoryName"), tCommon("Comment")];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [
+			item.categoryName,
+			item.comment || "-",
+			...(isAdmin
+				? [
+						<ActionCell key="actions">
+							<EditButton
+								href={`/categories/edit/${item.id}`}
+								label={tCommon("EditLink")}
+							/>
+							<DeleteButton
+								href={`/categories/delete/${item.id}`}
+								label={tCommon("DeleteLink")}
+							/>
+						</ActionCell>,
+					]
+				: []),
+		],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">
-				{tCategory("Categories")}
-			</h1>
-			{(isAdmin) && (
-				<p className="mb-4">
+		<ListPageWrapper
+			title={tCategory("Categories")}
+			createButton={
+				isAdmin && (
 					<Link
 						href="/categories/create"
-						className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
 					</Link>
-				</p>
-			)}
-
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tCategory("CategoryName")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tCommon("Comment")}
-							</th>
-							{(isAdmin) && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.categoryName}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.comment}
-								</td>
-								{(isAdmin) && (
-									<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-										<Link
-											href={`/categories/edit/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("EditLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/categories/details/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DetailsLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/categories/delete/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DeleteLink")}
-										</Link>
-									</td>
-								)}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+				)
+			}
+		>
+			<DataTable columns={columns} rows={rows} />
+		</ListPageWrapper>
 	);
 }
