@@ -63,7 +63,7 @@ export default function RootLayout({
 						}}
 					>
 						<Header />
-						<div className="px-3 sm:px-4 mx-auto max-w-7xl">
+						<div className="px-3 sm:px-4">
 							<main role="main" className="w-full text-center">
 								<AuthGuard>{children}</AuthGuard>
 							</main>

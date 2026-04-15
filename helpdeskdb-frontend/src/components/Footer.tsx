@@ -4,7 +4,7 @@ export default function Footer() {
 	const { t } = useTranslation("_layout");
 	return (
 		<footer className="fixed bottom-0 left-0 w-full border-t text-gray-500 text-sm bg-white">
-			<div className="container mx-auto px-4 py-4 text-center sm:text-left">
+			<div className="px-6 sm:px-14 py-3 flex items-center justify-between">
 				&copy; 2025 - {t("AppName")}
 			</div>
 		</footer>

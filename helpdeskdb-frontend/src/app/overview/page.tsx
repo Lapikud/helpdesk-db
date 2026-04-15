@@ -1,6 +1,5 @@
 "use client";
 
-import { Radio } from "@material-tailwind/react";
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { OverviewService } from "@/services/OverviewService";
@@ -191,7 +190,14 @@ export default function Overview() {
 		const shouldShowSpinner =
 			availableAssets.length === 0 && assetsReservedByUser.length === 0;
 		fetchData(shouldShowSpinner);
-	}, [hydrated, accountInfo, searchTerm, fetchData, availableAssets.length, assetsReservedByUser.length]);
+	}, [
+		hydrated,
+		accountInfo,
+		searchTerm,
+		fetchData,
+		availableAssets.length,
+		assetsReservedByUser.length,
+	]);
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -459,91 +465,16 @@ export default function Overview() {
 
 	const hasData =
 		availableAssets.length > 0 || assetsReservedByUser.length > 0;
+
 	if (!hydrated || (isLoading && !hasData)) {
 		return <Spinner className="h-64" />;
 	}
 
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isMember = accountInfo?.roles?.includes("members");
-	const isPixel = accountInfo?.roles?.includes("pixels");
-
-	console.log("isPixel - " + isPixel);
-
 	return (
-		<div className="max-w-6xl mx-auto p-4">
-			<h2 className="text-center text-2xl font-semibold mb-4">
+		<div className="min-h-screen bg-[#efefef] -mx-3 sm:-mx-4 px-6 sm:px-14 py-8 text-left">
+			<h1 className="text-3xl font-bold text-[#424242] mb-6">
 				{tAssetViewModel("AssetsOverview")}
-			</h2>
-
-			<div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center mb-4">
-				{/* Search bar */}
-				<form
-					onSubmit={handleSearch}
-					className="flex gap-2 w-full sm:max-w-md"
-				>
-					<input
-						type="text"
-						className="form-input w-full border rounded px-3 py-2"
-						placeholder={tCommon("Search")}
-						value={searchInput}
-						onChange={(e) => setSearchInput(e.target.value)}
-					/>
-					<button
-						type="submit"
-						className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#ffa80d] hover:bg-[#f0941d] text-white font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-[#ffa80d] transition-all duration-200"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
-							/>
-						</svg>
-						{tCommon("Search")}
-					</button>
-				</form>
-
-				{/* Radio buttons to change between cards and whatever other style is */}
-				<div className="flex w-max">
-					<Radio
-						name="color"
-						color="amber"
-						checked={selectedMode === "lines"}
-						onChange={() => setSelectedMode("lines")}
-						label="Show Lines"
-					/>
-					<Radio
-						name="color"
-						color="amber"
-						checked={selectedMode === "cards"}
-						onChange={() => setSelectedMode("cards")}
-						label="Show Cards"
-					/>
-				</div>
-
-				{/* Create New Asset Button */}
-				{(isAdmin || isMember || isPixel) && (
-					<button
-						onClick={async () => {
-							await getDataCreateMenu();
-							setShowCreateModal(true);
-						}}
-						disabled={createLoading}
-						className={`w-full sm:w-auto text-center bg-[#f0941d] hover:bg-[#ffa80d] text-white font-medium py-2 px-4 rounded transition-colors duration-200 whitespace-nowrap ${
-							createLoading ? "opacity-50 cursor-not-allowed" : ""
-						}`}
-					>
-						{tAssetViewModel("CreateNewAsset")}
-					</button>
-				)}
-			</div>
+			</h1>
 			<AssetList
 				availableAssets={availableAssets}
 				assetsReservedByUser={assetsReservedByUser}
@@ -576,6 +507,15 @@ export default function Overview() {
 				}}
 				loading={loading}
 				mode={selectedMode}
+				onModeChange={(m) => setSelectedMode(m)}
+				searchInput={searchInput}
+				onSearchChange={(v) => setSearchInput(v)}
+				onSearchSubmit={handleSearch}
+				createLoading={createLoading}
+				onCreateAsset={async () => {
+					await getDataCreateMenu();
+					setShowCreateModal(true);
+				}}
 				onChangeReservationTime={async (reservationId: string) => {
 					setLoading((prev) => ({ ...prev, [reservationId]: true }));
 					updateQueryParam(
