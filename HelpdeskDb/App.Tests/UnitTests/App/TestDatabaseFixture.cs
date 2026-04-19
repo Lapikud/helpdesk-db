@@ -1,4 +1,4 @@
-﻿using App.DAL.EF;
+using App.DAL.EF;
 using App.Domain;
 using App.Domain.Identity;
 using Base.Contracts;
@@ -11,13 +11,8 @@ namespace App.Tests.UnitTests.App;
 
 public class TestDatabaseFixture
 {
-    internal const string WebRootPath = "";
-    internal const string Email = "test.user@gmail.com";
     internal const string Username = "TestUser";
-    internal const string FirstName = "Firstame";
-    internal const string LastName = "Lastname";
-    internal const string Password = "Asdasd1!";
-    internal const string LapikudRole = "lapikud";
+    internal const string MembersRole = "members";
     internal static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0001-000000000000");
     internal static readonly Guid RoleId = Guid.Parse("00000000-0000-0001-0000-000000000000");
     internal static readonly Guid AppUserRoleId = Guid.Parse("00000000-1000-0000-0000-000000000000");
@@ -49,7 +44,7 @@ public class TestDatabaseFixture
         var role = new AppRole()
         {
             Id = RoleId,
-            Name = LapikudRole,
+            Name = MembersRole,
         };
         
         context.Roles.Add(role);

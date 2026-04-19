@@ -1,4 +1,4 @@
-﻿using App.BLL.Mappers.Identity;
+using App.BLL.Mappers.Identity;
 using App.BLL.Services.Identity;
 using App.DAL.EF;
 

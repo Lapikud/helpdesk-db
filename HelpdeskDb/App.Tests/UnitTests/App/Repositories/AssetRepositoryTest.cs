@@ -1,4 +1,4 @@
-﻿using App.DAL.EF;
+using App.DAL.EF;
 using App.DAL.EF.Repositories;
 using Microsoft.EntityFrameworkCore;
 
