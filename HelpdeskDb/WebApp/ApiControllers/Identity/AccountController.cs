@@ -1,19 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 using App.DAL.EF;
-using App.Domain.Identity;
 using App.DTO.v1;
 using App.DTO.v1.Identity;
 using Asp.Versioning;
 using Base.Helpers;
-using FreeIPA.DotNet;
 using FreeIPA.DotNet.Models;
 using FreeIPA.DotNet.Models.Login;
 using FreeIPA.DotNet.Models.RPC;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -37,6 +32,7 @@ public class AccountController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<AccountController> _logger;
     private readonly AppDbContext _context;
+    private readonly IIpaAuthClient _ipaClient;
 
     private readonly Random _random = new Random();
 
@@ -54,11 +50,12 @@ public class AccountController : ControllerBase
     /// <summary>
     /// Constructor
     /// </summary>
-    public AccountController(IConfiguration configuration, ILogger<AccountController> logger, AppDbContext context)
+    public AccountController(IConfiguration configuration, ILogger<AccountController> logger, AppDbContext context, IIpaAuthClient ipaClient)
     {
         _configuration = configuration;
         _logger = logger;
         _context = context;
+        _ipaClient = ipaClient;
     }
 
 
@@ -80,9 +77,8 @@ public class AccountController : ControllerBase
     {
         try
         {
-            var ipaClient = new IpaClient("https://ipa.lapikud.ee");
             IpaResultModel<IpaLoginResponseModel> loginResult =
-                await ipaClient.LoginWithPassword(new IpaLoginRequestModel()
+                await _ipaClient.LoginWithPassword(new IpaLoginRequestModel()
                 {
                     Username = loginRequest.Username,
                     Password = loginRequest.Password
@@ -111,7 +107,7 @@ public class AccountController : ControllerBase
                     Version = "2.251"
                 };
 
-                var rpcResult = await ipaClient.SendRpcRequest(rpcRequest);
+                var rpcResult = await _ipaClient.SendRpcRequest(rpcRequest);
 
                 if (rpcResult.Success)
                 {
@@ -166,7 +162,7 @@ public class AccountController : ControllerBase
                 {
                     var role = _context.Roles.First(r => r.Id == userRole.RoleId);
 
-                    if (!groups.Contains(role.Name))
+                    if (!groups.Contains(role.Name!))
                     {
                         _context.UserRoles.Remove(userRole);
                     }

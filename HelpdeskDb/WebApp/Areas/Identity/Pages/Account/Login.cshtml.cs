@@ -9,7 +9,6 @@ using System.Text.Json;
 using App.DAL.EF;
 using App.Domain;
 using App.Domain.Identity;
-using FreeIPA.DotNet;
 using FreeIPA.DotNet.Models;
 using FreeIPA.DotNet.Models.Login;
 using FreeIPA.DotNet.Models.RPC;
@@ -17,6 +16,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using WebApp.ApiControllers.Identity;
 
 namespace WebApp.Areas.Identity.Pages.Account
 {
@@ -24,12 +24,14 @@ namespace WebApp.Areas.Identity.Pages.Account
     {
         private readonly ILogger<LoginModel> _logger;
         private readonly AppDbContext _context;
+        private readonly IIpaAuthClient _ipaClient;
 
         public LoginModel(ILogger<LoginModel> logger,
-            AppDbContext context)
+            AppDbContext context, IIpaAuthClient ipaClient)
         {
             _logger = logger;
             _context = context;
+            _ipaClient = ipaClient;
         }
 
         /// <summary>
@@ -102,8 +104,7 @@ namespace WebApp.Areas.Identity.Pages.Account
                 IpaResultModel<IpaLoginResponseModel> loginResult = null;
                 try
                 {
-                    var ipaClient = new IpaClient("https://ipa.lapikud.ee");
-                    loginResult = await ipaClient.LoginWithPassword(new IpaLoginRequestModel()
+                    loginResult =  await _ipaClient.LoginWithPassword(new IpaLoginRequestModel()
                     {
                         Username = Input.Username,
                         Password = Input.Password
@@ -132,7 +133,7 @@ namespace WebApp.Areas.Identity.Pages.Account
                             Version = "2.251"
                         };
 
-                        var rpcResult = await ipaClient.SendRpcRequest(rpcRequest);
+                        var rpcResult = await _ipaClient.SendRpcRequest(rpcRequest);
 
                         if (rpcResult.Success)
                         {

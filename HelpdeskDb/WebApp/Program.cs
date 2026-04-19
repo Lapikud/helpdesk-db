@@ -62,6 +62,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddScoped<IAppUOW, AppUOW>();
 builder.Services.AddScoped<IAppBLL, AppBLL>();
+builder.Services.AddScoped<WebApp.ApiControllers.Identity.IIpaAuthClient, WebApp.ApiControllers.Identity.IpaAuthClient>();
 
 builder.Services.AddRazorPages();
 
@@ -166,9 +167,12 @@ builder.Services.AddSingleton<IConfigureOptions<MvcOptions>, ConfigureModelBindi
 var app = builder.Build();
 // ===================================================
 
-await app.SeedRoles();
-// await app.SeedAdminUser();
-await app.SeedSampleData();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    await app.SeedRoles();
+    // await app.SeedAdminUser();
+    await app.SeedSampleData();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

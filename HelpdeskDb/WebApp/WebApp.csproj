@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>aspnet-WebApp-33a2fbbc-c09f-4572-927a-5f174ccebc89</UserSecretsId>
         <NoWarn>CS1591</NoWarn>
+        <NuGetAuditMode>direct</NuGetAuditMode>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -245,10 +246,6 @@
       <AdditionalFiles Include="Areas\Admin\Views\Rooms\Details.cshtml" />
       <AdditionalFiles Include="Areas\Admin\Views\Rooms\Edit.cshtml" />
       <AdditionalFiles Include="Areas\Admin\Views\Rooms\Index.cshtml" />
-      <AdditionalFiles Include="Areas\Admin\Views\Users\Create.cshtml" />
-      <AdditionalFiles Include="Areas\Admin\Views\Users\Delete.cshtml" />
-      <AdditionalFiles Include="Areas\Admin\Views\Users\Details.cshtml" />
-      <AdditionalFiles Include="Areas\Admin\Views\Users\Edit.cshtml" />
       <AdditionalFiles Include="Areas\Admin\Views\Users\Index.cshtml" />
     </ItemGroup>
 
