@@ -12,7 +12,7 @@ public class AppRoleMapper : IIdentityMapper<App.DTO.v1.Identity.AppRole, App.Do
         var res = new AppRole()
         {
             Id = entity.Id,
-            Name = entity!.Name
+            Name = entity.Name!
         };
         return res;
     }

@@ -1,29 +1,34 @@
-﻿using App.DAL.EF;
+using App.DAL.EF;
 using App.Domain;
 using App.Domain.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using WebApp.ApiControllers.Identity;
 
 namespace App.Tests.IntegrationTests;
 
 public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup>
     where TStartup : class
 {
-    private const string RoleLapikud = "lapikud";
-    private const string RoleGuestUser = "guest";
-    private const string Username = "testUserLapikud";
-    private const string Password = "Test123!";
+    private const string RoleMember = "members";
+    private const string RoleAdmins = "admins";
+    private const string RolePixels = "pixels";
+    private const string RoleHelpdeskDbAdmins = "helpdesk_db_admins";
+
+    private const string Username = "testuser";
     private static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0000-000000001000");
 
     public string GetUsername => Username;
-    public string GetPassword => Password;
+    public string GetPassword => "not-a-real-password";
     public Guid GetUserId => UserId;
+
+    private SqliteConnection? _connection;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -32,30 +37,42 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
         builder.ConfigureAppConfiguration((context, config) =>
         {
             config.AddJsonFile("appsettings.json")
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:DefaultConnection"] = "DataSource=:memory:",
+                    ["JWTSecurity:Key"] = "test-only-signing-key-please-do-not-use-in-production-1234567890",
+                    ["JWTSecurity:Issuer"] = "LapikudHelpdesk",
+                    ["JWTSecurity:Audience"] = "LapikudHelpdesk",
+                    ["JWTSecurity:ExpiresInSeconds"] = "120",
+                })
                 .AddEnvironmentVariables();
         });
 
         builder.ConfigureServices((context, services) =>
         {
-            // Remove the existing DbContextOptions
-            services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
-            var dbName = $"TEST_{Guid.NewGuid()}";
-            var connectionString = $"Host=localhost;Port=5432;Database={dbName};Username=postgres;Password=postgres";
+            var toRemove = services.Where(d =>
+                d.ServiceType == typeof(DbContextOptions<AppDbContext>) ||
+                d.ServiceType == typeof(DbContextOptions) ||
+                d.ServiceType == typeof(AppDbContext) ||
+                (d.ServiceType.FullName?.StartsWith("Microsoft.EntityFrameworkCore") ?? false) ||
+                (d.ServiceType.FullName?.Contains("Npgsql") ?? false)
+            ).ToList();
+            foreach (var d in toRemove) services.Remove(d);
+
+            _connection = new SqliteConnection("DataSource=:memory:");
+            _connection.Open();
+
             services.AddDbContext<AppDbContext>(options =>
                 options
-                    .UseNpgsql(
-                        connectionString,
-                        o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
-                    )
-                    .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))
+                    .UseSqlite(_connection)
                     .EnableDetailedErrors()
                     .EnableSensitiveDataLogging()
-                    // disable tracking, allow id based shared entity creation
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution)
             );
 
+            services.RemoveAll<IIpaAuthClient>();
+            services.AddSingleton<IIpaAuthClient, FakeIpaAuthClient>();
 
-            // create db and seed data
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var scopedServices = scope.ServiceProvider;
@@ -65,16 +82,12 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
             var logger = scopedServices
                 .GetRequiredService<ILogger<CustomWebApplicationFactory<TStartup>>>();
 
-            db.Database.EnsureDeleted();
-            db.Database.Migrate();
+            db.Database.EnsureCreated();
 
             try
             {
                 Task.Run(async () => { await SeedData(db); }).GetAwaiter().GetResult();
-                logger.LogWarning("⚠️ Creating fresh test database at {Time}", DateTime.Now);
-
-                // Optional: add a unique GUID or test name if you want to trace multiple runs
-                logger.LogWarning("🔁 DB Reset ID: {Id}", Guid.NewGuid());
+                logger.LogWarning("SQLite in-memory test database ready at {Time}", DateTime.Now);
             }
             catch (Exception ex)
             {
@@ -84,9 +97,19 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
         });
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+        {
+            _connection?.Dispose();
+            _connection = null;
+        }
+    }
+
     private static async Task SeedData(AppDbContext context)
     {
-        var roles = new[] { RoleLapikud, RoleGuestUser };
+        var roles = new[] { RoleMember, RoleAdmins, RolePixels, RoleHelpdeskDbAdmins };
         var rolesToAdd = new List<AppRole>();
         foreach (var roleName in roles)
         {
@@ -100,27 +123,6 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
             }
         }
         await context.Roles.AddRangeAsync(rolesToAdd);
-
-        var user = new AppUser
-        {
-            Id = UserId,
-            Username = Username,
-        };
-
-        await context.Users.AddAsync(user);
-
-
-        var lapRole = context.Roles.First(r => r.Name!.Equals(RoleLapikud));
-        
-
-        var lapikudUserRole = new AppUserRole
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            RoleId = lapRole.Id
-        };
-
-        await context.UserRoles.AddAsync(lapikudUserRole);
 
         await context.Categories.AddRangeAsync(
             new Category
