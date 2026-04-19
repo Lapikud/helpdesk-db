@@ -81,6 +81,8 @@ Authentication is via **FreeIPA** (`ipa.lapikud.ee`), not ASP.NET Identity. On l
 
 Both cookie auth (MVC) and JWT Bearer (API) are registered. API controllers use `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`.
 
+IPA calls go through the `IIpaAuthClient` abstraction (`WebApp/ApiControllers/Identity/IIpaAuthClient.cs`), registered scoped in `Program.cs`. The real implementation `IpaAuthClient` wraps `FreeIPA.DotNet.IpaClient`. `AccountController` depends on `IIpaAuthClient` (not the concrete client), which lets tests substitute `FakeIpaAuthClient` instead of hitting the real IPA server. Both the API login and the MVC `Areas/Identity/Pages/Account/Login.cshtml.cs` resolve `IIpaAuthClient` from DI.
+
 ### Domain model overview
 
 Assets are the core entity. Each asset can have:
@@ -129,15 +131,23 @@ Each new entity touches all layers. Follow this checklist in order:
 
 ### Testing
 
-Integration tests (`App.Tests/IntegrationTests/`) use `CustomWebApplicationFactory<Program>`, which spins up a real PostgreSQL database (`Host=localhost;Port=5432`) with a fresh DB per test run. Tests are **not** in-memory — a local PostgreSQL instance must be running.
+All tests are self-contained — **no external PostgreSQL or FreeIPA server is required** to run `dotnet test`.
 
-Unit tests (`App.Tests/UnitTests/`) use EF InMemory and Moq.
+Integration tests (`App.Tests/IntegrationTests/`) use `CustomWebApplicationFactory<Program>`, which:
+- Swaps the Npgsql `DbContextOptions<AppDbContext>` registration for a **SQLite in-memory** connection (`DataSource=:memory:`), kept open for the lifetime of the factory so the schema survives between calls.
+- Replaces `IIpaAuthClient` with `FakeIpaAuthClient` (`App.Tests/IntegrationTests/FakeIpaAuthClient.cs`) so login succeeds without real IPA credentials. The fake returns a successful login and a canned `memberof_group` payload listing all four roles (`admins`, `members`, `pixels`, `helpdesk_db_admins`) — tweak `FakeIpaAuthClient.Groups` to simulate different role sets.
+- Injects a test JWT signing key + issuer/audience via `AddInMemoryCollection`, so the test host does not depend on `.env`.
+- Seeds deterministic rows (roles + categories, rooms, cupboards, locations, owners with fixed Guid IDs) in `SeedData` before tests run.
+
+Unit tests (`App.Tests/UnitTests/`) use `TestDatabaseFixture.CreateContext()` — EF Core's **InMemory provider** with a fresh uniquely-named database per test (`AppTests_{Guid.NewGuid()}`). The fixture seeds the same entity shape as the integration factory and mocks `IUserNameResolver`. Repository and service layers both have coverage; unit tests exercise repositories directly against the in-memory context (not via Moq mocks of EF).
 
 The `Program` class is declared `public partial` specifically to enable `WebApplicationFactory<Program>` in tests.
 
 ### Configuration
 
-`appsettings.json` ships with **empty secrets** (connection strings and JWT key are blank). Real values must come from `HelpdeskDb/.env` (gitignored). First-time setup:
+`appsettings.json` ships with **empty secrets** (connection strings and JWT key are blank). Real values must come from `HelpdeskDb/.env` (gitignored) for `dotnet run` and docker-compose. Tests do not read `.env` — they inject their own in-memory configuration.
+
+First-time setup:
 
 ```bash
 cp .env.example .env   # then edit .env with your values
@@ -150,7 +160,6 @@ Key variables in `.env`:
 | Variable | Used by |
 |---|---|
 | `ConnectionStrings__DefaultConnection` | `dotnet run` local dev |
-| `ConnectionStrings__TestDbConnection` | integration tests |
 | `JWTSecurity__Key` | JWT signing (both local and Docker) |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | docker-compose db container |
 | `DOCKER_DB_CONNECTION` | docker-compose webapp container (host = `lapikudhelpdesk-db`) |

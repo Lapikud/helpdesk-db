@@ -55,6 +55,8 @@ BaseService         — axios instance, JWT injection into headers, auto token-r
 - `AccountContext` (`src/context/AccountContext.ts`) is the single source of truth for auth state (`jwt`, `refreshToken`, `roles`, `name`, `id`).
 - Roles checked in the UI: `admins`, `members` (from the backend's FreeIPA sync).
 - JWT claims use full Microsoft/XMLSOAP URIs — `JwtHelper.ts` handles extracting roles, username, and user ID.
+- **`AuthGuard`** (`src/components/AuthGuard.tsx`) is mounted once inside `layout.tsx` and wraps every route. It reads `AccountContext`, redirects unauthenticated users to `/login`, and shows a spinner while `accountInfo` is still hydrating. Individual pages must no longer check auth themselves — do not add per-page redirects.
+- **Logout** (`Header.tsx` → `AccountService.logoutAsync`) calls `POST /api/v1/account/logout` so the backend deletes the refresh token from the DB, then clears `localStorage` and `AccountContext`. Do not clear tokens locally without calling the API.
 
 ### Internationalization
 
@@ -82,7 +84,7 @@ Pages follow the Next.js App Router convention under `src/app/`:
 - `/{entity}/delete/[id]` — delete confirmation (being migrated to inline dialogs)
 - `/{entity}/details/[id]` — **being removed** (redundant, do not add new details pages)
 
-Implemented entity pages: `categories`, `categoryAssets`, `owners`, `ownerAssets`, `rooms`, `cupboards`, `cupboardsInRooms`, `locations`, `locationsInCupboards`, `locationAssets`, `assetReservations`, `removedAssets`, `users`, `userAssets`, `userManagement`, `userRoles`, `roles`, `refreshTokens`.
+Implemented entity pages: `categories`, `categoryAssets`, `owners`, `ownerAssets`, `rooms`, `cupboards`, `cupboardsInRooms`, `locations`, `locationsInCupboards`, `locationAssets`, `assetReservations`, `removedAssets`, `users`, `userManagement`, `userRoles`, `roles`, `refreshTokens`. (The old `userAssets` pages and `UserAssetsService` were removed — do not re-add them.)
 
 ### Layout pattern for list pages
 

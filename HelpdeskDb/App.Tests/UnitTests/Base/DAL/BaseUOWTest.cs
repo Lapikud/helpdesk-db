@@ -254,6 +254,49 @@ public class BaseUOWTest
         Assert.True(exists);
     }
 
+    [Fact]
+    public void Find_ShouldReturnNull_WhenMissing()
+    {
+        var found = _testUOW.TestEntityRepository.Find(Guid.NewGuid());
+        Assert.Null(found);
+    }
+
+    [Fact]
+    public async Task FindAsync_ShouldReturnNull_WhenMissing()
+    {
+        var found = await _testUOW.TestEntityRepository.FindAsync(Guid.NewGuid());
+        Assert.Null(found);
+    }
+
+    [Fact]
+    public void Exists_ShouldReturnFalse_WhenMissing()
+    {
+        Assert.False(_testUOW.TestEntityRepository.Exists(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task ExistsAsync_ShouldReturnFalse_WhenMissing()
+    {
+        Assert.False(await _testUOW.TestEntityRepository.ExistsAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_ShouldPersistMultipleEntities()
+    {
+        var e1 = CreateRandomEntity();
+        var e2 = CreateRandomEntity();
+        var e3 = CreateRandomEntity();
+
+        await _testUOW.TestEntityRepository.AddAsync(e1);
+        await _testUOW.TestEntityRepository.AddAsync(e2);
+        await _testUOW.TestEntityRepository.AddAsync(e3);
+
+        var changes = await _testUOW.SaveChangesAsync();
+
+        Assert.Equal(3, changes);
+        Assert.Equal(3, _ctx.TestEntities.Count());
+    }
+
     private async Task<TestEntity> AddRandomEntity()
     {
         var entity = CreateRandomEntity();
