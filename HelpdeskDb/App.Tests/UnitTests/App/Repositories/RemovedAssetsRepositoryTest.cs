@@ -113,7 +113,7 @@ public class RemovedAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         var newRemovedAsset = await _repository.CreateNewRemovedAsset(asset2.Id, "CreateRemovedAssetTest");
         Assert.NotNull(newRemovedAsset);
         
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewRemovedAsset = _context.RemovedAssetsCollection
             .Include(ra => ra.Asset)
@@ -144,7 +144,6 @@ public class RemovedAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
     {
         var context = _fixture.CreateContext();
         var repository = new RemovedAssetsRepository(context);
-        context.Database.BeginTransaction();
 
         return (context, repository);
     }

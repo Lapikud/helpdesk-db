@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Xunit.Abstractions;
 
 namespace App.Tests.UnitTests.Base.DAL;
 

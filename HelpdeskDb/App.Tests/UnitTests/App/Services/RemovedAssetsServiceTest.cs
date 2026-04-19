@@ -53,7 +53,7 @@ public class RemovedAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         var newRemovedAsset = await _service.CreateNewRemovedAsset(asset2.Id, "CreateRemovedAssetTest");
         Assert.NotNull(newRemovedAsset);
         
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewRemovedAsset = _context.RemovedAssetsCollection
             .Include(ra => ra.Asset)
@@ -85,7 +85,6 @@ public class RemovedAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         var context = _fixture.CreateContext();
         var uow = new AppUOW(context);
         var service = new RemovedAssetsService(uow, new RemovedAssetsBLLMapper());
-        context.Database.BeginTransaction();
 
         return (context, service);
     }

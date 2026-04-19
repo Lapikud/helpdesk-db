@@ -131,7 +131,7 @@ public class LocationAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         
         // Act
         await _repository.UpdateLocationOfAsset(locationAsset2.Id, location1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Equal(location1.Id, locationAsset2.LocationId);
@@ -150,7 +150,7 @@ public class LocationAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         await _repository.UpdateLocationOfAsset(Guid.Empty, location1.Id);
         await _repository.UpdateLocationOfAsset(Guid.NewGuid(), location1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Empty(location1.LocationsAssetsCollection!);
@@ -167,7 +167,7 @@ public class LocationAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         var newLocationAsset = await _repository.CreateNewLocationAsset(asset2.Id, location1.Id);
         Assert.NotNull(newLocationAsset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewLocationAsset = _context.LocationAssetsCollection
             .Include(la => la.Location)
@@ -203,7 +203,6 @@ public class LocationAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
     {
         var context = _fixture.CreateContext();
         var repository = new LocationAssetsRepository(context);
-        context.Database.BeginTransaction();
 
         return (context, repository);
     }

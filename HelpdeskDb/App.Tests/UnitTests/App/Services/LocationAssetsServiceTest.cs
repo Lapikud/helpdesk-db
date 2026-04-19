@@ -54,7 +54,7 @@ public class LocationAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         
         // Act
         await _service.UpdateLocationOfAsset(locationAsset2.Id, location1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Equal(location1.Id, locationAsset2.LocationId);
@@ -73,7 +73,7 @@ public class LocationAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         // Act
         await _service.UpdateLocationOfAsset(Guid.Empty, location1.Id);
         await _service.UpdateLocationOfAsset(Guid.NewGuid(), location1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Empty(location1.LocationsAssetsCollection!);
@@ -90,7 +90,7 @@ public class LocationAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         // Act
         var newLocationAsset = await _service.CreateNewLocationAsset(asset2.Id, location1.Id);
         Assert.NotNull(newLocationAsset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewLocationAsset = _context.LocationAssetsCollection
             .Include(la => la.Location)
@@ -127,7 +127,6 @@ public class LocationAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         var context = _fixture.CreateContext();
         var uow = new AppUOW(context);
         var service = new LocationAssetsService(uow, new LocationAssetsBLLMapper());
-        context.Database.BeginTransaction();
 
         return (context, service);
     }

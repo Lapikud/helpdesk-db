@@ -56,7 +56,7 @@ public class CategoryAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         
         // Act
         await _service.UpdateCategoryOfAsset(categoryAsset2.Id, category1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Equal(category1.Id, categoryAsset2.CategoryId);
@@ -76,7 +76,7 @@ public class CategoryAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         // Act
         await _service.UpdateCategoryOfAsset(Guid.Empty, category1.Id);
         await _service.UpdateCategoryOfAsset(Guid.NewGuid(), category1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Empty(category1.CategoryAssetsCollection!);
@@ -93,7 +93,7 @@ public class CategoryAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         // Act
         var newCategoryAsset = await _service.CreateNewCategoryAsset(asset2.Id, category1.Id);
         Assert.NotNull(newCategoryAsset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewCategoryAsset = _context.CategoryAssetsCollection
             .Include(ca => ca.Category)
@@ -129,7 +129,6 @@ public class CategoryAssetsServiceTest : IClassFixture<TestDatabaseFixture>
         var context = _fixture.CreateContext();
         var uow = new AppUOW(context);
         var service = new CategoryAssetsService(uow, new CategoryAssetsBLLMapper());
-        context.Database.BeginTransaction();
 
         return (context, service);
     }

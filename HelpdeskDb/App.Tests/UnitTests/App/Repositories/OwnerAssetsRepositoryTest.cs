@@ -132,7 +132,7 @@ public class OwnerAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         
         // Act
         await _repository.UpdateOwnerOfAsset(ownerAsset2.Id, owner1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Equal(owner1.Id, ownerAsset2.OwnerId);
@@ -151,7 +151,7 @@ public class OwnerAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         await _repository.UpdateOwnerOfAsset(Guid.Empty, owner1.Id);
         await _repository.UpdateOwnerOfAsset(Guid.NewGuid(), owner1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Empty(owner1.OwnerAssets!);
@@ -168,7 +168,7 @@ public class OwnerAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         var newOwnerAsset = await _repository.CreateNewOwnerAsset(asset2.Id, owner1.Id);
         Assert.NotNull(newOwnerAsset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewOwnerAsset = _context.OwnerAssets
             .Include(oa => oa.Owner)
@@ -203,7 +203,6 @@ public class OwnerAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
     {
         var context = _fixture.CreateContext();
         var repository = new OwnerAssetsRepository(context);
-        context.Database.BeginTransaction();
 
         return (context, repository);
     }

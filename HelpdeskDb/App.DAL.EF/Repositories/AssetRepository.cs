@@ -30,6 +30,7 @@ public class AssetRepository : BaseRepository<App.DAL.DTO.Asset, App.Domain.Asse
     public async Task<App.DAL.DTO.ViewModels.AssetViewModel?> GetAssetVmByAssetId(Guid assetId)
     {
         var query = base.GetQuery();
+        var now = DateTime.UtcNow;
         var assetVm = await query
             .Include(a => a.OwnerAssets)! // Load OwnerAssets
             .ThenInclude(oa => oa.Owner) // Load Owner
@@ -41,7 +42,8 @@ public class AssetRepository : BaseRepository<App.DAL.DTO.Asset, App.Domain.Asse
             .ThenInclude(cr => cr.Room) // Load Room
             .Include(a => a.CategoryAssetsCollection)! // Load CategoryAssets
             .ThenInclude(ca => ca.Category) // Load Category
-            .Include(a => a.AssetReservations) // Load AssetReservations
+            .Include(a => a.AssetReservations)! // Load AssetReservations
+            .ThenInclude(ar => ar.User)
             .Where(a => a.Id == assetId)
             .Select(a => new AssetViewModel
             {
@@ -64,9 +66,14 @@ public class AssetRepository : BaseRepository<App.DAL.DTO.Asset, App.Domain.Asse
                     .First(),
                 ShelfNum = a.LocationsAssetsCollection!.Select(la => la.Location!.ShelfNum).FirstOrDefault(),
                 Column = a.LocationsAssetsCollection!.Select(la => la.Location!.Column).FirstOrDefault(),
-                // LastTakenBy = a.LastTakenBy,
-                ClosestReservationBy = "",
-                AddedAt = a.LocationsAssetsCollection!.Select(la => la.CreatedAt).FirstOrDefault()
+                ClosestReservationBy = a.AssetReservations!.Where(ar => !ar.IsReturned && ar.ReservationTo >= now).Select(ar => ar.User!.Username).FirstOrDefault() ?? "-",
+                AddedAt = a.LocationsAssetsCollection!.Select(la => la.CreatedAt).FirstOrDefault(),
+                Reserved = a.AssetReservations!.Any(ar => !ar.IsReturned && ar.ReservationTo >= now),
+                ReservationTo = a.AssetReservations!
+                    .Where(ar => !ar.IsReturned)
+                    .OrderByDescending(ar => ar.ReservationFrom)
+                    .Select(ar => (DateTime?)ar.ReservationTo)
+                    .FirstOrDefault()
             }).FirstOrDefaultAsync();
 
         return assetVm;
@@ -113,7 +120,7 @@ public class AssetRepository : BaseRepository<App.DAL.DTO.Asset, App.Domain.Asse
                 Column = a.LocationsAssetsCollection!.Select(la => la.Location!.Column).FirstOrDefault(),
                 ClosestReservationBy = a.AssetReservations!.Where(ar => !ar.IsReturned && ar.ReservationTo >= now).Select(ar => ar.User!.Username).FirstOrDefault() ?? "-",
                 AddedAt = a.LocationsAssetsCollection!.Select(la => la.CreatedAt).FirstOrDefault(),
-                Reserved = a.AssetReservations!.Any(ar => !ar.IsReturned && ar.ReservationTo <= now)
+                Reserved = a.AssetReservations!.Any(ar => !ar.IsReturned && ar.ReservationTo >= now)
             })
             .ToListAsync();
     }

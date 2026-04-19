@@ -3,7 +3,7 @@ using App.Domain;
 using App.Domain.Identity;
 using Base.Contracts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -21,16 +21,12 @@ public class TestDatabaseFixture
     internal static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0001-000000000000");
     internal static readonly Guid RoleId = Guid.Parse("00000000-0000-0001-0000-000000000000");
     internal static readonly Guid AppUserRoleId = Guid.Parse("00000000-1000-0000-0000-000000000000");
-    
-    private static readonly object Lock = new();
-    private static bool _databaseInitialized;
-    
+
     private readonly IUserNameResolver _userNameResolver;
     private readonly ILogger<AppDbContext> _logger;
-    
+
     public TestDatabaseFixture()
     {
-        // Set up mocks
         var userNameResolverMock = new Mock<IUserNameResolver>();
         userNameResolverMock.Setup(x => x.CurrentUserName).Returns(Username);
 
@@ -38,22 +34,6 @@ public class TestDatabaseFixture
 
         _userNameResolver = userNameResolverMock.Object;
         _logger = loggerMock.Object;
-        lock (Lock)
-        {
-            if (_databaseInitialized) return;
-
-            using (var context = CreateContext())
-            {
-                context.Database.EnsureDeleted();
-                context.Database.EnsureCreated();
-
-                SeedData(context);
-
-                context.SaveChanges();
-            }
-
-            _databaseInitialized = true;
-        }
     }
     
     private static void SeedData(AppDbContext context)
@@ -198,17 +178,15 @@ public class TestDatabaseFixture
     
     public AppDbContext CreateContext()
     {
-        var configurationBuilder = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .AddEnvironmentVariables();
-        var configuration = configurationBuilder.Build();
-        
-        var connectionString = configuration.GetConnectionString("TestDbConnection");
-        
-        return new AppDbContext(
+        var databaseName = $"AppTests_{Guid.NewGuid()}";
+        var context = new AppDbContext(
             new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql(connectionString,
-                    o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+                .UseInMemoryDatabase(databaseName)
+                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 .Options, _userNameResolver, _logger);
+
+        context.Database.EnsureCreated();
+        SeedData(context);
+        return context;
     }
 }

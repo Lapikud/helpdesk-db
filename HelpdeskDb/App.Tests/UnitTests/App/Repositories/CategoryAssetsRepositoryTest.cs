@@ -130,7 +130,7 @@ public class CategoryAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         
         // Act
         await _repository.UpdateCategoryOfAsset(categoryAsset2.Id, category1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Equal(category1.Id, categoryAsset2.CategoryId);
@@ -150,7 +150,7 @@ public class CategoryAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         await _repository.UpdateCategoryOfAsset(Guid.Empty, category1.Id);
         await _repository.UpdateCategoryOfAsset(Guid.NewGuid(), category1.Id);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         // Assert
         Assert.Empty(category1.CategoryAssetsCollection!);
@@ -167,7 +167,7 @@ public class CategoryAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
         // Act
         var newCategoryAsset = await _repository.CreateNewCategoryAsset(asset2.Id, category1.Id);
         Assert.NotNull(newCategoryAsset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         
         var dbNewCategoryAsset = _context.CategoryAssetsCollection
             .Include(ca => ca.Category)
@@ -202,7 +202,6 @@ public class CategoryAssetsRepositoryTest : IClassFixture<TestDatabaseFixture>
     {
         var context = _fixture.CreateContext();
         var repository = new CategoryAssetsRepository(context);
-        context.Database.BeginTransaction();
 
         return (context, repository);
     }
