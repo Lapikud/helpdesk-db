@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using App.Tests.UnitTests.App;
+using Microsoft.EntityFrameworkCore;
 
 namespace App.Tests.UnitTests.Base.DAL;
 
-public class BaseUOWTest
+[Collection("NonParallel")]
+public class BaseUOWTest : IClassFixture<TestDatabaseFixture>
 {
     private readonly TestDbContext _ctx;
     private readonly TestUOW _testUOW;

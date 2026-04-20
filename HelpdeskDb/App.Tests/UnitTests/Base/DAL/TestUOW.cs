@@ -11,7 +11,11 @@ public class TestUOW: BaseUOW<TestDbContext>, ITestUOW
     }
 
     private ITestEntityRepository? _testEntityRepository;
+    private ITestUserEntityRepository? _userEntityRepository;
 
     public ITestEntityRepository TestEntityRepository =>
         _testEntityRepository ??= new TestEntityRepository(UOWDbContext);
+
+    public ITestUserEntityRepository UserEntityRepository =>
+        _userEntityRepository ??= new TestUserEntityRepository(UOWDbContext);
 }

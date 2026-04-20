@@ -1,11 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using App.Tests.UnitTests.Base;
+using Microsoft.EntityFrameworkCore;
 
 namespace App.Tests.UnitTests.Base.DAL;
 
 public class TestDbContext : DbContext
 {
     public DbSet<TestEntity> TestEntities { get; set; } = default!;
-    
+    public DbSet<TestUserEntity> TestUserEntities { get; set; } = default!;
+
     public TestDbContext(DbContextOptions options): base(options)
     {
     }
