@@ -22,11 +22,9 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
     private const string RoleHelpdeskDbAdmins = "helpdesk_db_admins";
 
     private const string Username = "testuser";
-    private static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0000-000000001000");
 
     public string GetUsername => Username;
     public string GetPassword => "not-a-real-password";
-    public Guid GetUserId => UserId;
 
     private SqliteConnection? _connection;
 
@@ -216,15 +214,6 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
                 Id = Guid.Parse("00000000-0000-0000-0000-000000000501"),
                 LocationId = location2.Id,
                 CupboardId = cupboard2.Id,
-            }
-        );
-
-        await context.Owners.AddRangeAsync(
-            new Owner()
-            {
-                Id = Guid.Parse("00000000-0000-0000-0000-000000000600"),
-                OwnerName = "Owner 1",
-                Comment = "Owner 1 test"
             }
         );
 

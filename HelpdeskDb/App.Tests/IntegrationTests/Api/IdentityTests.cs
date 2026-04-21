@@ -14,7 +14,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
     private const string? CategoriesUri = "/api/v1/categories";
     private const string? RenewRefreshTokenUri = "/api/v1/account/RenewRefreshToken";
     private const string BearerScheme = "Bearer";
-    private const string? LoginCustomJWTExpirationUri = "/api/v1/account/login?jwtExpiresInSeconds=1";
+    private const string? LoginCustomJWTExpirationUri = "/api/v1/account/login?jwtExpiresInSeconds=5";
 
     private readonly HttpClient _client;
     private readonly CustomWebApplicationFactory<Program> _factory;
@@ -107,7 +107,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/account/login?jwtExpiresInSeconds=1", loginData, cancellationToken: ct);
+        var response = await _client.PostAsJsonAsync(LoginCustomJWTExpirationUri, loginData, cancellationToken: ct);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -124,7 +124,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
 
 
         // Wait for JWT to expire
-        await Task.Delay(1500, ct);
+        await Task.Delay(5500, ct);
         var getResponseAuthExpired = await _client.GetAsync(CategoriesUri, ct);
 
         Assert.Equal(HttpStatusCode.Unauthorized, getResponseAuthExpired.StatusCode);
@@ -161,7 +161,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
 
 
         // Wait for JWT to expire
-        await Task.Delay(1500, ct);
+        await Task.Delay(5500, ct);
 
         var getResponseAuthExpired = await _client.GetAsync(CategoriesUri, ct);
 

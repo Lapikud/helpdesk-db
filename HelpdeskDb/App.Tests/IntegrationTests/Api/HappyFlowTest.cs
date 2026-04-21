@@ -36,7 +36,6 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
     private static readonly Guid Category2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
     private static readonly Guid Location1 = Guid.Parse("00000000-0000-0000-0000-000000000400");
     private static readonly Guid Location2 = Guid.Parse("00000000-0000-0000-0000-000000000401");
-    private static readonly Guid Owner1 = Guid.Parse("00000000-0000-0000-0000-000000000600");
 
     private readonly HttpClient _client;
     private readonly CustomWebApplicationFactory<Program> _factory;
@@ -44,6 +43,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
     private readonly AppDbContext _dbContext;
     private readonly LoginResponse _loginData;
     private readonly Guid _userId;
+    private readonly Guid _ownerId;
 
     public HappyFlowTest(CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
     {
@@ -63,6 +63,8 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
             .Where(u => u.Username == _factory.GetUsername)
             .Select(u => u.Id)
             .First();
+
+        _ownerId = _dbContext.Owners.Where(o => o.OwnerName.Equals(_factory.GetUsername)).Select(o => o.Id).First();
 
         _output.WriteLine("Test instance created: " + Guid.NewGuid());
         var env = _factory.Services.GetRequiredService<IWebHostEnvironment>();
@@ -105,7 +107,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
                 Barcode = "BC-TEST-001",
                 SelectedCategoryId = Category1,
                 SelectedLocationId = Location2,
-                SelectedOwnerId = Owner1
+                SelectedOwnerId = _ownerId
             }, ct);
 
         response.EnsureSuccessStatusCode();
@@ -117,7 +119,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         Assert.Equal("SN-TEST-001", responseData.SerialNumber);
         Assert.Equal("BC-TEST-001", responseData.Barcode);
         Assert.Equal("Category 1", responseData.CategoryName);
-        Assert.Equal("Owner 1", responseData.OwnerName);
+        Assert.Equal(_factory.GetUsername, responseData.OwnerName);
         Assert.Equal("Room 2", responseData.RoomName);
         Assert.Equal("Cupboard 2", responseData.CupboardName);
         Assert.Equal(2, responseData.ShelfNum);
@@ -146,7 +148,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         Assert.Equal("SN-TEST-001", assetInDb.SerialNumber);
         Assert.Equal("BC-TEST-001", assetInDb.Barcode);
         Assert.Equal("Category 1", assetInDb.CategoryAssetsCollection.First().Category!.CategoryName);
-        Assert.Equal("Owner 1", assetInDb.OwnerAssets.First().Owner!.OwnerName);
+        Assert.Equal(_factory.GetUsername, assetInDb.OwnerAssets.First().Owner!.OwnerName);
         Assert.Equal("Room 2", assetInDb.LocationsAssetsCollection!.First()
             .Location!.LocationsInCupboards!.First()
             .Cupboard!.CupboardsInRooms!.First().Room!.RoomName);
@@ -196,7 +198,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
                 SelectedCategoryId = Category1,
 
                 OwnerAssetsId = assetInDb.OwnerAssets!.First().Id,
-                SelectedOwnerId = Owner1,
+                SelectedOwnerId = _ownerId,
 
                 LocationAssetsId = assetInDb.LocationsAssetsCollection!.First().Id,
                 SelectedLocationId = Location2,
@@ -212,7 +214,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         Assert.Equal("SN-EDIT-001", assetInDb.SerialNumber);
         Assert.Equal("BC-EDIT-001", assetInDb.Barcode);
         Assert.Equal("Category 1", assetInDb.CategoryAssetsCollection!.First().Category!.CategoryName);
-        Assert.Equal("Owner 1", assetInDb.OwnerAssets!.First().Owner!.OwnerName);
+        Assert.Equal(_factory.GetUsername, assetInDb.OwnerAssets!.First().Owner!.OwnerName);
         Assert.Equal("Room 2", assetInDb.LocationsAssetsCollection!.First()
             .Location!.LocationsInCupboards!.First().Cupboard!.CupboardsInRooms!.First().Room!.RoomName);
         Assert.Equal("Cupboard 2", assetInDb.LocationsAssetsCollection!.First()
@@ -434,7 +436,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         var ownerAsset = new Domain.OwnerAssets
         {
             AssetId = asset.Id,
-            OwnerId = Owner1,
+            OwnerId = _ownerId,
         };
 
         _dbContext.Assets.Add(asset);
@@ -494,7 +496,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         var loginData = JsonSerializer.Deserialize<LoginResponse>(contentStr, JsonHelper.CamelCase);
 
         loginData.Should().NotBeNull();
-        loginData!.JWT.Should().NotBeNullOrEmpty();
+        loginData.JWT.Should().NotBeNullOrEmpty();
 
         return loginData;
     }
