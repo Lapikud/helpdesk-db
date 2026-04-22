@@ -162,7 +162,7 @@ Key variables in `.env`:
 | `ConnectionStrings__DefaultConnection` | `dotnet run` local dev |
 | `JWTSecurity__Key` | JWT signing (both local and Docker) |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | docker-compose db container |
-| `DOCKER_DB_CONNECTION` | docker-compose webapp container (host = `lapikudhelpdesk-db`) |
+| `DOCKER_DB_CONNECTION` | docker-compose webapp container (host = `lapikudhelpdesk-db-postgres`, matching the db service's `container_name`) |
 
 JWT settings are under `JWTSecurity:` (Key, Issuer, Audience, ExpiresInSeconds, RefreshTokenExpiresInSeconds). Supported cultures and default culture are also in `appsettings.json`.
 

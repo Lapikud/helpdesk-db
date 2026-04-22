@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:latest
-    container_name: "lapikudhelpdesk-db"
+    container_name: "lapikudhelpdesk-db-postgres"
     ports:
       # first port is the host port, second port is the container port
       - "5433:5432"
@@ -19,7 +19,7 @@ services:
   
   app:
     build: ./
-    container_name: lapikudhelpdesk-db-app
+    container_name: lapikudhelpdesk-db-backend
     ports:
       - 80:80
     restart: on-failure
@@ -30,7 +30,7 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: ${DOCKER_DB_CONNECTION}
       JWTSecurity__Key: ${JWTSecurity__Key}
-      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_ENVIRONMENT: "Production"
       ASPNETCORE_URLS: "http://+:80"
     depends_on:
       - db

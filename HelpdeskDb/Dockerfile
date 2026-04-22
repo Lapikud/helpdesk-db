@@ -1,5 +1,5 @@
 # aluskiht
-FROM mcr.microsoft.com/dotnet/sdk:latest AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 # tee kataloog /app vmis ja vaheta aktiivne kataloog sinna
 WORKDIR /app
 # kopeeri solution hetke hosti kataloogist konteineri aktiivsesse kataloogi
@@ -59,7 +59,7 @@ COPY App.Tests/. ./App.Tests/
 COPY WebApp/. ./WebApp/
 
 # jooksuta testid, peatub vea korral
-# RUN dotnet test App.Tests
+RUN dotnet test App.Tests
 
 
 RUN dotnet publish -c Release -o out
@@ -68,7 +68,7 @@ RUN dotnet publish -c Release -o out
 
 # tekita uus image
 # intel cpu image - aspnet:9.0-bookworm-slim-amd64 AS runtime
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim-amd64 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 EXPOSE 8080
 COPY --from=build /app/out ./
