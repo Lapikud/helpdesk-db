@@ -35,7 +35,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_Existing_User()
+    public async Task Login()
     {
         var ct = TestContext.Current.CancellationToken;
 
@@ -58,7 +58,7 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_Existing_User_Check_Rights()
+    public async Task Login_Check_Rights()
     {
         var ct = TestContext.Current.CancellationToken;
 
