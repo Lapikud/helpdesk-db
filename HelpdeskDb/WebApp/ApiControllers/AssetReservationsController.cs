@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Base.Helpers;
+using App.DTO.v1;
 
 namespace WebApp.ApiControllers
 {
@@ -94,10 +96,17 @@ namespace WebApp.ApiControllers
                     reservationTo,
                     id
                 );
-                    
+
+                var existing = await _bll.AssetReservationService.FindAsync(assetReservation.Id);
+                if (existing == null || !existing.UserId.Equals(User.GetUserId()))
+                {
+                    return NotFound();
+                }
+                        
                 if (!isAvailable)
                 {
-                    return BadRequest(new { Message = "Asset is already reserved for the selected time period." });
+                    return BadRequest(new Message(
+                    $"Reservation for asset: {existing.Asset!.AssetName} for {reservationFrom:u} – {reservationTo:u} is not available"));
                 }
 
                 assetReservation.ReservationFrom = reservationFrom;

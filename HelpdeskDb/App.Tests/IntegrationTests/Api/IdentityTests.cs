@@ -1,9 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using App.DTO.v1.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using WebApp.ApiControllers.Identity;
 
 namespace App.Tests.IntegrationTests.Api;
 
@@ -184,5 +186,56 @@ public class IdentityTests: IClassFixture<CustomWebApplicationFactory<Program>>
         getResponse2.EnsureSuccessStatusCode();
     }
 
+    [Fact]
+    public async Task Login_With_Invalid_Password_Returns_NotFound()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var fakeIpa = (FakeIpaAuthClient)_factory.Services.GetRequiredService<IIpaAuthClient>();
+        fakeIpa.LoginShouldSucceed = false;
+        try
+        {
+            var response = await _client.PostAsJsonAsync(LoginUri, new LoginRequest
+            {
+                Username = _factory.GetUsername,
+                Password = "wrong-password"
+            }, cancellationToken: ct);
 
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        finally
+        {
+            fakeIpa.LoginShouldSucceed = true;
+        }
+    }
+
+    [Fact]
+    public async Task Non_Admin_User_Cannot_Access_Admin_Endpoint_Returns_Forbidden()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var fakeIpa = (FakeIpaAuthClient)_factory.Services.GetRequiredService<IIpaAuthClient>();
+        var originalGroups = fakeIpa.Groups;
+        fakeIpa.Groups = new[] { "members" };
+        try
+        {
+            var loginResp = await _client.PostAsJsonAsync(LoginUri, new LoginRequest
+            {
+                Username = _factory.GetUsername,
+                Password = _factory.GetPassword
+            }, cancellationToken: ct);
+            loginResp.EnsureSuccessStatusCode();
+            var login = await loginResp.Content.ReadFromJsonAsync<LoginResponse>(ct);
+
+            _client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue(BearerScheme, login!.JWT);
+
+            var getResp = await _client.GetAsync($"/api/v1/roles", ct);
+
+            Assert.Equal(HttpStatusCode.Forbidden, getResp.StatusCode);
+        }
+        finally
+        {
+            fakeIpa.Groups = originalGroups;
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+    }
 }

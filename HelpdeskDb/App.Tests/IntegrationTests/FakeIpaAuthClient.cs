@@ -7,15 +7,16 @@ namespace App.Tests.IntegrationTests;
 
 public class FakeIpaAuthClient : IIpaAuthClient
 {
+    public bool LoginShouldSucceed { get; set; } = true;
     public string[] Groups { get; set; } = { "admins", "members", "pixels", "helpdesk_db_admins" };
 
     public Task<IpaResultModel<IpaLoginResponseModel>> LoginWithPassword(IpaLoginRequestModel request)
     {
         var result = new IpaResultModel<IpaLoginResponseModel>
         {
-            Success = true,
-            Data = new IpaLoginResponseModel(),
-            Message = "OK"
+            Success = LoginShouldSucceed,
+            Data = LoginShouldSucceed ? new IpaLoginResponseModel() : null!,
+            Message = LoginShouldSucceed ? "OK" : "Invalid credentials"
         };
         return Task.FromResult(result);
     }
