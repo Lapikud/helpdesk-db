@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using App.DAL.EF;
@@ -30,7 +29,6 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
     private const string RemoveReservationUri = "/api/v1/home/overview/remove-reservation/";
     private const string ChangeReservationTimeUri = "/api/v1/home/overview/changeReservationTime/";
     private const string RemoveAssetUri = "/api/v1/home/overview/remove/";
-    private const string BearerScheme = "Bearer";
 
     private static readonly Guid Category1 = Guid.Parse("00000000-0000-0000-0000-000000000001");
     private static readonly Guid Category2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
@@ -41,7 +39,6 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
     private readonly CustomWebApplicationFactory<Program> _factory;
     private readonly ITestOutputHelper _output;
     private readonly AppDbContext _dbContext;
-    private readonly LoginResponse _loginData;
     private readonly Guid _userId;
     private readonly Guid _ownerId;
 
@@ -50,14 +47,15 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         _factory = factory;
         _client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
-            AllowAutoRedirect = false
+            AllowAutoRedirect = false,
+            HandleCookies = true
         });
         _output = output;
 
         _dbContext = _factory.Services.GetRequiredService<AppDbContext>();
 
-        _loginData = Login().Result;
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(BearerScheme, _loginData.JWT);
+        // Login populates the auth cookies on the shared client; subsequent requests are authenticated via cookies.
+        Login().Wait();
 
         _userId = _dbContext.Users
             .Where(u => u.Username == _factory.GetUsername)
@@ -73,7 +71,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
 
     public void Dispose()
     {
-        Logout(_loginData.RefreshToken).Wait();
+        Logout().Wait();
         GC.SuppressFinalize(this);
     }
 
@@ -479,7 +477,7 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
             }).First();
     }
 
-    private async Task<LoginResponse> Login()
+    private async Task<IdentityResponse> Login()
     {
         var response = await _client.PostAsJsonAsync(
             LoginUri,
@@ -493,23 +491,17 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
         response.EnsureSuccessStatusCode();
         var contentStr = await response.Content.ReadAsStringAsync();
 
-        var loginData = JsonSerializer.Deserialize<LoginResponse>(contentStr, JsonHelper.CamelCase);
+        var identity = JsonSerializer.Deserialize<IdentityResponse>(contentStr, JsonHelper.CamelCase);
 
-        loginData.Should().NotBeNull();
-        loginData.JWT.Should().NotBeNullOrEmpty();
+        identity.Should().NotBeNull();
+        identity!.Username.Should().Be(_factory.GetUsername);
 
-        return loginData;
+        return identity;
     }
 
-    private async Task<LogoutResponse> Logout(string refreshToken)
+    private async Task<LogoutResponse> Logout()
     {
-        var response = await _client.PostAsJsonAsync(
-            LogoutUri,
-            new LogoutRequest
-            {
-                RefreshToken = refreshToken
-            }
-        );
+        var response = await _client.PostAsync(LogoutUri, content: null);
         response.EnsureSuccessStatusCode();
         var contentStr = await response.Content.ReadAsStringAsync();
 
