@@ -91,6 +91,22 @@ builder.Services
                 ),
                 ClockSkew = TimeSpan.Zero
             };
+            options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    if (string.IsNullOrEmpty(context.Token))
+                    {
+                        var cookieJwt = context.Request.Cookies[
+                            WebApp.ApiControllers.Identity.AccountController.JwtCookieName];
+                        if (!string.IsNullOrEmpty(cookieJwt))
+                        {
+                            context.Token = cookieJwt;
+                        }
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         }
     );
 
