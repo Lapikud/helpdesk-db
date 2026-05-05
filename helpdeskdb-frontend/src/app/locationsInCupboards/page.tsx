@@ -47,7 +47,7 @@ export default function LocationsInCupboards() {
 	}, []);
 
 	useEffect(() => {
-		if (!hydrated || !accountInfo?.jwt) return;
+		if (!hydrated || !accountInfo?.id) return;
 
 		if (!isAdmin) {
 			router.push("/");
@@ -92,7 +92,7 @@ export default function LocationsInCupboards() {
 		};
 
 		fetchData();
-	}, [hydrated, router, isAdmin, accountInfo?.jwt, cupboardService, locationService, locationsInCupboardsService]);
+	}, [hydrated, router, isAdmin, accountInfo?.id, cupboardService, locationService, locationsInCupboardsService]);
 
 	if (!hydrated || isLoading) {
 		return <Spinner className="h-64" />;

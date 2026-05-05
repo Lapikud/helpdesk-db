@@ -5,7 +5,6 @@ import { AccountService } from "@/services/AccountService";
 import { useRouter } from "next/navigation";
 import { useContext, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { getRolesFromToken, getUserIdFromToken, getUsernameFromToken } from "@/helpers/JwtHelper";
 import { useTranslation } from "react-i18next";
 
 export default function Login() {
@@ -41,27 +40,15 @@ export default function Login() {
 				data.usernameOrEmail,
 				data.password
 			);
-			if (result.errors) {
-				setErrorMessage(result.statusCode + " - " + result.errors[0]);
+			if (result.errors || !result.data) {
+				setErrorMessage(result.statusCode + " - " + (result.errors?.[0] ?? "Login failed"));
 				return;
 			}
 
-			const jwt = result.data!.jwt;
-			const refreshToken = result.data!.refreshToken;
-
-			localStorage.setItem("_jwt", jwt);
-			localStorage.setItem("_refreshToken", refreshToken);
-
-			const roles = getRolesFromToken(jwt);
-			const name = getUsernameFromToken(jwt);
-			const userId = getUserIdFromToken(jwt);
-
 			setAccountInfo!({
-				jwt: jwt,
-				refreshToken: refreshToken,
-				roles: roles,
-				name: name,
-				id: userId
+				id: result.data.id,
+				name: result.data.username,
+				roles: result.data.roles,
 			});
 			router.push("/");
 		} catch (error) {

@@ -101,7 +101,7 @@ export default function LocationEdit({
 		return <Spinner className="h-64" />;
 	}
 
-	if (!accountInfo?.jwt || !isAdmin) {
+	if (!accountInfo?.id || !isAdmin) {
 		return <Spinner className="h-64" />;
 	}
 

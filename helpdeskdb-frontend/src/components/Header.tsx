@@ -48,11 +48,8 @@ export default function Header() {
 	const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
 	const handleLogout = async () => {
-		const refreshToken = accountInfo?.refreshToken;
-		if (refreshToken) {
-			const accountService = new AccountService();
-			await accountService.logoutAsync(refreshToken);
-		}
+		const accountService = new AccountService();
+		await accountService.logoutAsync();
 		setAccountInfo!({});
 		router.push("/login");
 		closeMobileMenu();
@@ -79,7 +76,7 @@ export default function Header() {
 					</Link>
 
 					{/* User Dropdown — desktop only */}
-					{accountInfo?.jwt && (
+					{accountInfo?.id && (
 						<div className="relative hidden md:block" ref={userDropdownRef}>
 							<button
 								onClick={() =>
@@ -145,7 +142,7 @@ export default function Header() {
 						</div>
 					)}
 					{/* Admin Dropdown — desktop only */}
-					{accountInfo?.jwt && isAdmin && (
+					{accountInfo?.id && isAdmin && (
 						<div className="relative hidden md:block" ref={adminDropdownRef}>
 							<button
 								onClick={() =>
@@ -343,7 +340,7 @@ export default function Header() {
 				{/* Right side — desktop */}
 				<div className="hidden md:flex items-center space-x-6">
 					<LanguageSwitcher />
-					{accountInfo?.jwt && (
+					{accountInfo?.id && (
 						<div className="flex items-center space-x-4">
 							<span>
 								{tLoginPartial("Greeting")}, {accountInfo.name}
@@ -357,7 +354,7 @@ export default function Header() {
 							</a>
 						</div>
 					)}
-					{!accountInfo?.jwt && (
+					{!accountInfo?.id && (
 						<Link
 							href="/login"
 							className="text-gray-700 hover:text-blue-500"
@@ -392,7 +389,7 @@ export default function Header() {
 						{tCommon("Home")}
 					</Link>
 
-					{accountInfo?.jwt && (
+					{accountInfo?.id && (
 						<>
 							<div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">
 								{tLayout("User")}
@@ -412,7 +409,7 @@ export default function Header() {
 						</>
 					)}
 
-					{accountInfo?.jwt && isAdmin && (
+					{accountInfo?.id && isAdmin && (
 						<>
 							<div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">
 								{tLayout("Admin")}
@@ -478,7 +475,7 @@ export default function Header() {
 					<hr className="my-2 border-gray-200" />
 					<div className="flex items-center justify-between px-3 py-2">
 						<LanguageSwitcher />
-						{accountInfo?.jwt ? (
+						{accountInfo?.id ? (
 							<div className="flex items-center gap-3">
 								<span className="text-sm text-gray-600">{accountInfo.name}</span>
 								<a className="text-sm text-gray-700 hover:text-blue-500" href="#" onClick={handleLogout}>

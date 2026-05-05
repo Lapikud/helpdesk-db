@@ -124,7 +124,7 @@ export default function LocationInCupboardCreate() {
 		return <Spinner className="h-64" />;
 	}
 
-	if (!accountInfo?.jwt || !isAdmin) {
+	if (!accountInfo?.id || !isAdmin) {
 		return <Spinner className="h-64" />;
 	}
 

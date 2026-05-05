@@ -78,7 +78,7 @@ export default function CategoryCreate() {
 		return <Spinner className="h-64" />;
 	}
 
-	if (!accountInfo?.jwt || (!isAdmin && !isMember)) {
+	if (!accountInfo?.id || (!isAdmin && !isMember)) {
 		return <Spinner className="h-64" />;
 	}
 

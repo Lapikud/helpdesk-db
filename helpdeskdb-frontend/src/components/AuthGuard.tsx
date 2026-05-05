@@ -14,14 +14,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (isPublic) return;
 		if (accountInfo === undefined) return; // still hydrating
-		if (!accountInfo.jwt) {
+		if (!accountInfo.id) {
 			router.push("/login");
 		}
 	}, [accountInfo, router, isPublic]);
 
-	console.log(isPublic);
 	if (isPublic) return <>{children}</>;
-	if (accountInfo === undefined || !accountInfo.jwt) return <Spinner className="h-64" />;
+	if (accountInfo === undefined || !accountInfo.id) return <Spinner className="h-64" />;
 
 	return <>{children}</>;
 }
