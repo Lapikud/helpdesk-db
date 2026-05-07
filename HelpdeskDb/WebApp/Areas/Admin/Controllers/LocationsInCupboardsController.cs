@@ -189,8 +189,6 @@ namespace WebApp.Areas.Admin.Controllers
         private SelectList GetLocationSelectList(Guid? selectedValue = null)
         {
             var locs = _context.Locations.Include(l => l.LocationsInCupboards).ToList();
-            Console.WriteLine(selectedValue);
-        
         
             locs = locs.Where(l => !l.LocationsInCupboards!.Any() || l.Id == selectedValue).ToList();
         

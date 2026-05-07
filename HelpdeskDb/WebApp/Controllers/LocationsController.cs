@@ -45,17 +45,9 @@ public class LocationsController : Controller
     {
         if (ModelState.IsValid)
         {
-            // location.Id = Guid.NewGuid();
             await _bll.LocationService.AddAsync(location);
             await _bll.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-        foreach (var state in ModelState)
-        {
-            foreach (var error in state.Value.Errors)
-            {
-                Console.WriteLine($"[{state.Key}] {error.ErrorMessage}");
-            }
         }
         return View(location);
     }

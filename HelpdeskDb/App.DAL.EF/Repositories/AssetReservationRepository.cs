@@ -111,8 +111,6 @@ public class AssetReservationRepository : BaseRepository<App.DAL.DTO.AssetReserv
             (r.ReservationFrom < to && r.ReservationTo > from || r.ReservationTo <= now)
         );
 
-        Console.WriteLine("Has conflict: " + hasConflict);
-
         return !hasConflict;
     }
 
@@ -133,8 +131,6 @@ public class AssetReservationRepository : BaseRepository<App.DAL.DTO.AssetReserv
             !r.IsReturned &&
             (r.ReservationFrom < to && r.ReservationTo > from || r.ReservationTo <= now)
         );
-
-        Console.WriteLine("Has conflict: " + hasConflict);
 
         return !hasConflict;
     }

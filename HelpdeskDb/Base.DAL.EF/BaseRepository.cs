@@ -168,7 +168,6 @@ public class BaseRepository<TDalEntity, TDomainEntity, TKey> : IBaseRepository<T
         var query = GetQuery(userId);
         query = query.Where(e => e.Id.Equals(id));
         var dbEntity = await query.FirstOrDefaultAsync();
-        Console.WriteLine("dbentity: - " + dbEntity);
         if (dbEntity != null)
         {
             RepositoryDbSet.Remove(dbEntity);

@@ -176,9 +176,7 @@ namespace WebApp.Controllers
         private async Task<SelectList> GetAssetSelectListAsync(Guid? selectedValue = null)
         {
             var assets = await _bll.AssetService.AllAsync();
-            Console.WriteLine(selectedValue);
 
-            // assets = assets.Where(a => !a.UserAssetsCollection!.Any() || a.Id == selectedValue).ToList();
             return new SelectList(assets,
                 nameof(Asset.Id), nameof(Asset.AssetName), selectedValue);
         }

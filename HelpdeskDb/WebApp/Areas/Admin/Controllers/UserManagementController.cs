@@ -66,14 +66,7 @@ public class UserManagementController : Controller
         _context.UserRoles.Remove(userRoleToRemove);
         await _context.SaveChangesAsync();
         return RedirectToAction("Index");
-
-        // var result = await _userManager.RemoveFromRoleAsync(user, role);
-        // if (result.Succeeded)
-        // {
-        //     return RedirectToAction("Index");
-        // }
-
-        // return RedirectToAction("Index", new { error = result.Errors.Select(e => e.Description).First() });
+        
     }
 
     public async Task<IActionResult> RoleAdd(Guid userId, Guid roleId)
@@ -103,24 +96,6 @@ public class UserManagementController : Controller
         await _context.SaveChangesAsync();
 
         return RedirectToAction("Index");
-
-        // var result = await _userManager.AddToRoleAsync(user, role);
-        // if (result.Succeeded)
-        // {
-        //     var addedRole = await _context.Roles.FirstAsync(r => r.Name!.Equals(role));
-        //     var appUserRole =
-        //         await _context.UserRoles.FirstAsync(c => c.UserId.Equals(user.Id) && c.RoleId.Equals(addedRole.Id));
-        //     Console.WriteLine(
-        //         $"appUserRole userId: {appUserRole.UserId}, roleId: {appUserRole.RoleId}, id: {appUserRole.Id}");
-        //     appUserRole.Id = Guid.NewGuid();
-        //     Console.WriteLine(
-        //         $"appUserRole userId: {appUserRole.UserId}, roleId: {appUserRole.RoleId}, id: {appUserRole.Id}");
-        //     _context.Entry(appUserRole).Property(ur => ur.Id).IsModified = true;
-        //     await _context.SaveChangesAsync();
-        //     return RedirectToAction("Index");
-        // }
-        //
-        //
-        // return RedirectToAction("Index", new { error = result.Errors.Select(e => e.Description).First() });
+        
     }
 }

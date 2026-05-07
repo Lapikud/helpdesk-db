@@ -73,14 +73,7 @@ namespace WebApp.Areas.Admin.Controllers
                 await _bll.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            // if (ModelState.IsValid)
-            // {
-            //     Console.WriteLine($"user id: {appUserRole.UserId}, role id: {appUserRole.RoleId}");
-            //     appUserRole.Id = Guid.NewGuid();
-            //     _context.Add(appUserRole);
-            //     await _context.SaveChangesAsync();
-            //     return RedirectToAction(nameof(Index));
-            // }
+            
             ViewData["RoleId"] = new SelectList(_context.Roles, "Id", "Id", appUserRole.RoleId);
             ViewData["UserId"] = new SelectList(_context.Users, "Id", "Username", appUserRole.UserId);
             return View(appUserRole);
@@ -118,7 +111,6 @@ namespace WebApp.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                Console.WriteLine($"userRoleId: {appUserRole.Id}, userId: {appUserRole.UserId}, roleId: {appUserRole.RoleId}");
                 await _bll.AppUserRoleService.UpdateAsync(appUserRole);
                 await _bll.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));

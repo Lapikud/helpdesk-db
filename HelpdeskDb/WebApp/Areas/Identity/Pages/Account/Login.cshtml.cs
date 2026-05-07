@@ -153,8 +153,6 @@ namespace WebApp.Areas.Identity.Pages.Account
                                 {
                                     groups.Add(group);
                                 }
-
-                                Console.WriteLine($"RPC response groups: {group}");
                             }
                         }
                         else
@@ -162,8 +160,8 @@ namespace WebApp.Areas.Identity.Pages.Account
                             // RPC request failed, check the error message
                             var error = rpcResult.Data!.Error;
                             var errorMessage = rpcResult.Message;
-                            Console.WriteLine($"RPC request failed: {error}");
-                            Console.WriteLine($"RPC request failed message: {errorMessage}");
+                            _logger.LogWarning($"RPC request failed: {error}");
+                            _logger.LogWarning($"RPC request failed message: {errorMessage}");
                         }
 
 
@@ -237,7 +235,7 @@ namespace WebApp.Areas.Identity.Pages.Account
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message);
+                    _logger.LogWarning($"Exception: {e.Message}");
                 }
             }
 

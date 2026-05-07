@@ -184,7 +184,6 @@ namespace WebApp.Areas.Admin.Controllers
         private SelectList GetCupboardSelectList(Guid? selectedValue = null)
         {
             var cupboards = _context.Cupboards.Include(a => a.CupboardsInRooms).ToList();
-            Console.WriteLine(selectedValue);
         
             cupboards = cupboards.Where(c => !c.CupboardsInRooms!.Any() || c.Id == selectedValue).ToList();
             return new SelectList(cupboards,

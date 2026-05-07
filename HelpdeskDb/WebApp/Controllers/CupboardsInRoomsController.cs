@@ -147,7 +147,6 @@ public class CupboardsInRoomsController : Controller
     private async Task<SelectList> GetCupboardSelectListAsync(Guid? selectedValue = null)
     {
         var cupboards = await _bll.CupboardService.AllAsync();
-        Console.WriteLine(selectedValue);
         
         cupboards = cupboards.Where(c => !c.CupboardsInRooms!.Any() || c.Id == selectedValue).ToList();
         return new SelectList(cupboards,

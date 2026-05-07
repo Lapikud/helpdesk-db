@@ -157,7 +157,6 @@ public class AccountController : ControllerBase
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
             return NotFound(new Message(Base.Resources.Errors.IdentityErrors.InvalidLogin));
         }
     }

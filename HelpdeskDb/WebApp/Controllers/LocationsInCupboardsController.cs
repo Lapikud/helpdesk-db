@@ -29,10 +29,7 @@ public class LocationsInCupboardsController : Controller
     public async Task<IActionResult> Index()
     {
         var res = await _bll.LocationInCupboardService.AllAsync();
-        foreach (var lic in res)
-        {
-            Console.WriteLine($"lic id: {lic.LocationId}, {lic.Location!.LocationName}");
-        }
+        
         return View(res);
     }
     
@@ -157,8 +154,6 @@ public class LocationsInCupboardsController : Controller
     private async Task<SelectList> GetLocationSelectListAsync(Guid? selectedValue = null)
     {
         var locs = await _bll.LocationService.AllAsync();
-        Console.WriteLine(selectedValue);
-        
         
         locs = locs.Where(l => !l.LocationsInCupboards!.Any() || l.Id == selectedValue).ToList();
         

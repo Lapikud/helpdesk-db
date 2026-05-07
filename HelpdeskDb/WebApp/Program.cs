@@ -29,8 +29,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 // NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
-Console.WriteLine(builder.Environment.EnvironmentName);
-Console.WriteLine(builder.Configuration.GetConnectionString("DefaultConnection"));
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddDbContext<AppDbContext>(options =>

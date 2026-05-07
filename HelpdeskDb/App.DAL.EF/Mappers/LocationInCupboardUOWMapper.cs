@@ -45,7 +45,6 @@ public class LocationInCupboardUOWMapper : IMapper<App.DAL.DTO.LocationInCupboar
                         }).ToList()
                 },
         };
-        // Console.WriteLine($"res lics: {res.Location!.LocationsInCupboards}");
         return res;
     }
 

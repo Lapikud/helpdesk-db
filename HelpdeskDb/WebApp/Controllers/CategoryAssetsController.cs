@@ -146,7 +146,6 @@ public class CategoryAssetsController : Controller
     private async Task<SelectList> GetAssetSelectListAsync(Guid? selectedValue = null)
     {
         var assets = await _bll.AssetService.AllAsync();
-        Console.WriteLine(selectedValue);
         
         assets = assets.Where(a => !a.CategoryAssetsCollection!.Any() || a.Id == selectedValue).ToList();
         return new SelectList(assets,

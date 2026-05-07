@@ -38,69 +38,7 @@ public static class DataSeeder
         await context.Roles.AddRangeAsync(rolesToAdd);
         await context.SaveChangesAsync();
     }
-
-    // public static async Task SeedAdminUser(this IApplicationBuilder applicationBuilder)
-    // {
-    //     using IServiceScope serviceScope = applicationBuilder.ApplicationServices
-    //         .GetRequiredService<IServiceScopeFactory>()
-    //         .CreateScope();
-    //     await using var context = serviceScope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //     await context.Database.MigrateAsync();
-    //     using var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-    //     using var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
-    //     IdentityResult res;
-    //
-    //     if ((await userManager.GetUsersInRoleAsync(RoleAdmins)).Any()) return;
-    //
-    //     var user = new AppUser
-    //     {
-    //         FirstName = "Mark",
-    //         LastName = "Perman",
-    //         Email = "maperm@taltech.ee",
-    //         UserName = "admin",
-    //         SecurityStamp = Guid.NewGuid().ToString()
-    //     };
-    //
-    //     res = await userManager.CreateAsync(user, "AdminSuperSecretPasswordJeuzee");
-    //     if (!res.Succeeded)
-    //     {
-    //         Console.WriteLine(res.ToString());
-    //         throw new ApplicationException("User creation failed!");
-    //     }
-    //     res = userManager.AddClaimAsync(user, new Claim(ClaimTypes.GivenName, user.FirstName)).Result;
-    //     if (!res.Succeeded)
-    //     {
-    //         throw new ApplicationException("Claim adding failed!");
-    //     }
-    //     res = userManager.AddClaimAsync(user, new Claim(ClaimTypes.Surname, user.LastName)).Result;
-    //     if (!res.Succeeded)
-    //     {
-    //         throw new ApplicationException("Claim adding failed!");
-    //     }
-    //
-    //
-    //     var adminRole = await context.Roles.FirstAsync(r => r.Name!.Equals(RoleAdmins));
-    //     var lapRole = await context.Roles.FirstAsync(r => r.Name!.Equals(RoleMembers));
-    //     user = await userManager.FindByEmailAsync(AdminEmail);
-    //
-    //     var adminUserRole = new AppUserRole
-    //     {
-    //         Id = Guid.NewGuid(),
-    //         UserId = user!.Id,
-    //         RoleId = adminRole.Id
-    //     };
-    //
-    //     var lapikudUserRole = new AppUserRole
-    //     {
-    //         Id = Guid.NewGuid(),
-    //         UserId = user!.Id,
-    //         RoleId = lapRole.Id
-    //     };
-    //
-    //     await context.UserRoles.AddAsync(adminUserRole);
-    //     await context.UserRoles.AddAsync(lapikudUserRole);
-    //     await context.SaveChangesAsync();
-    // }
+    
 
     public static async Task SeedSampleData(this IApplicationBuilder applicationBuilder)
     {

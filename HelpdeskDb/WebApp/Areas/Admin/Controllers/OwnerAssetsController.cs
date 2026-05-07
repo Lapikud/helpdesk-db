@@ -179,7 +179,6 @@ namespace WebApp.Areas.Admin.Controllers
         private SelectList GetAssetSelectList(Guid? selectedValue = null)
         {
             var assets = _context.Assets.Include(a => a.OwnerAssets).ToList();
-            Console.WriteLine(selectedValue);
         
             assets = assets.Where(a => !a.OwnerAssets!.Any() || a.Id == selectedValue).ToList();
             return new SelectList(assets,
