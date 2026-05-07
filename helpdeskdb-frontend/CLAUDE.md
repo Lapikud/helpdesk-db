@@ -37,26 +37,27 @@ This is a **Next.js 15** frontend (App Router) for the HelpdeskDb asset manageme
 All API calls go through a class hierarchy:
 
 ```
-BaseService         — axios instance, JWT injection into headers, auto token-refresh interceptor
+BaseService         — axios instance with withCredentials: true, auto token-refresh interceptor
   └── EntityService<TEntity, TAddEntity>  — generic CRUD: getAllAsync, getAsync, addAsync, updateAsync, deleteAsync
         └── SpecificService (e.g., AssetService, CategoryService, ...)
 ```
 
 - `BaseService` uses the relative base URL `/api/v1/` — requests go to the Next.js dev server, which proxies `/api/*` to the backend via the `rewrites()` rule in `next.config.ts`. The proxy destination is `${NEXT_PUBLIC_BACKEND_URL}/api/*` (set in `.env.local`; default `http://localhost:5018`).
-- The axios response interceptor auto-refreshes the JWT on 401 responses via `POST /account/renewRefreshToken`.
-- Services are instantiated with `useMemo` in page components and **must have `injectSetAccountInfo(setAccountInfo)` called on them** before use — this wires the token-refresh callback back to React context so the UI reflects the new token.
+- The axios instance is created with `withCredentials: true` so the browser sends and receives the HttpOnly auth cookies (`hd_jwt`, `hd_rt`) on every request. The frontend never reads or writes those cookies directly.
+- The axios response interceptor catches 401s, calls `POST /account/renewRefreshToken` (which rotates the cookies on the backend and returns the refreshed identity), updates `AccountContext` with that identity, and replays the original request.
+- Services are instantiated with `useMemo` in page components and **must have `injectSetAccountInfo(setAccountInfo)` called on them** before use — this lets the 401 interceptor push the refreshed identity back into React context.
 - `OverviewService` fetches the aggregated `IAssetViewModel[]` used by the `/overview` page (wraps the backend's overview endpoint, not the generic CRUD base).
 - All service methods return `IResultObject<T>` (`{ data?, errors?, statusCode? }`). Check `errors` or `statusCode >= 400` for failures.
 
 ### Authentication
 
-- JWT and refresh token are stored in `localStorage` under keys `_jwt` and `_refreshToken`.
-- On app mount (`layout.tsx`), tokens are read from localStorage and decoded using `JwtHelper` to populate `AccountContext`.
-- `AccountContext` (`src/context/AccountContext.ts`) is the single source of truth for auth state (`jwt`, `refreshToken`, `roles`, `name`, `id`).
+- The JWT and refresh token live in **HttpOnly cookies** (`hd_jwt`, `hd_rt`) set by the backend. The frontend never sees the token strings — it only knows whether the cookies are valid by asking the server.
+- On app mount (`layout.tsx`), the frontend calls `GET /api/v1/account/me`, which validates the `hd_jwt` cookie server-side and returns the user identity (id, username, roles). That identity is used to hydrate `AccountContext`.
+- `AccountContext` (`src/context/AccountContext.ts`) is the single source of truth for auth state in the UI (`id`, `name`, `roles`). It no longer holds `jwt`/`refreshToken` strings.
 - Roles checked in the UI: `admins`, `members` (from the backend's FreeIPA sync).
-- JWT claims use full Microsoft/XMLSOAP URIs — `JwtHelper.ts` handles extracting roles, username, and user ID.
 - **`AuthGuard`** (`src/components/AuthGuard.tsx`) is mounted once inside `layout.tsx` and wraps every route. It reads `AccountContext`, redirects unauthenticated users to `/login`, and shows a spinner while `accountInfo` is still hydrating. Individual pages must no longer check auth themselves — do not add per-page redirects.
-- **Logout** (`Header.tsx` → `AccountService.logoutAsync`) calls `POST /api/v1/account/logout` so the backend deletes the refresh token from the DB, then clears `localStorage` and `AccountContext`. Do not clear tokens locally without calling the API.
+- **Logout** (`Header.tsx` → `AccountService.logoutAsync`) calls `POST /api/v1/account/logout` so the backend deletes the refresh token from the DB and clears both cookies, then clears `AccountContext`. Do not try to clear cookies from the client — they are HttpOnly.
+- `src/utils/JwtHelper.ts` is leftover from the old localStorage flow and is no longer imported anywhere; it can be deleted in a follow-up.
 
 ### Internationalization
 
@@ -68,7 +69,7 @@ BaseService         — axios instance, JWT injection into headers, auto token-r
 
 ### Page structure
 
-**Hydration guard** — every page initializes `const [hydrated, setHydrated] = useState(false)` set via `useEffect`. Auth checks and data fetches are gated on `hydrated`. Return `<Spinner>` until true — prevents SSR/localStorage access errors.
+**Hydration guard** — every page initializes `const [hydrated, setHydrated] = useState(false)` set via `useEffect`. Auth checks and data fetches are gated on `hydrated`. Return `<Spinner>` until true — this avoids running browser-only code (localStorage reads for i18n / UI state, cookie-dependent fetches) during SSR, and lets `layout.tsx`'s `/me` call settle before pages decide what to render.
 
 **Client-side enrichment** — pages needing related names (e.g. `IAssetReservationWithNames`) fetch all resources in parallel via `Promise.all` and join client-side. No server-side join endpoints exist for enriched types.
 

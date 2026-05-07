@@ -46,6 +46,9 @@ public class AccountController : ControllerBase
     private const string SettingsJWTAudience = SettingsJWTPrefix + ":Audience";
     private const string SettingsJWTExpiresInSeconds = SettingsJWTPrefix + ":ExpiresInSeconds";
 
+    private const string SettingsIpaServiceAccountUsername = "IpaServiceAccount:Username";
+    private const string SettingsIpaServiceAccountPassword = "IpaServiceAccount:Password";
+
     public const string JwtCookieName = "hd_jwt";
     public const string RefreshCookieName = "hd_rt";
     private const string JwtCookiePath = "/api";
@@ -317,6 +320,15 @@ public class AccountController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
+        try
+        {
+            await SyncRolesFromIpaAsync(appUser);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Role sync threw on RenewRefreshToken for {Username}; continuing with existing roles", appUser.Username);
+        }
+
         var (newJwt, _) = await CreateJwt(appUser, jwtExpiresInSeconds);
         SetAuthCookies(newJwt, refreshToken.RefreshToken, refreshToken.Expiration);
 
@@ -362,6 +374,26 @@ public class AccountController : ControllerBase
     // are left untouched on failure so an IPA outage doesn't strip a user mid-session).
     private async Task<bool> SyncRolesFromIpaAsync(AppUser user)
     {
+        var saUser = _configuration.GetValue<string>(SettingsIpaServiceAccountUsername);
+        var saPass = _configuration.GetValue<string>(SettingsIpaServiceAccountPassword);
+        if (string.IsNullOrEmpty(saUser) || string.IsNullOrEmpty(saPass))
+        {
+            _logger.LogWarning("IPA service account not configured; skipping role sync for {Username}", user.Username);
+            return false;
+        }
+
+        var saLogin = await _ipaClient.LoginWithPassword(new IpaLoginRequestModel
+        {
+            Username = saUser,
+            Password = saPass
+        });
+        if (!saLogin.Success)
+        {
+            _logger.LogWarning("IPA service account login failed; skipping role sync for {Username}: {Message}",
+                user.Username, saLogin.Message);
+            return false;
+        }
+
         var rpcRequest = new IpaRpcRequestModel
         {
             Id = 0,
@@ -477,6 +509,11 @@ public class AccountController : ControllerBase
     // The JWT cookie is given the same expiry as the refresh token (not the JWT's own exp claim)
     // so that an expired JWT can still be presented to RenewRefreshToken alongside the refresh
     // token. The server validates the JWT signature/claims independently of the cookie lifetime.
+    // SameSite=Strict only works while the frontend and backend are same-site
+    // (same registrable domain, e.g. both on localhost or both under example.com).
+    // If the SPA is deployed on a different registrable domain than the API, the
+    // browser will drop these cookies on cross-site requests — switch to
+    // SameSiteMode.None and force Secure=true (HTTPS-only) when that day comes.
     private void SetAuthCookies(string jwt, string refreshToken, DateTime refreshExpiresAt)
     {
         var secure = Request.IsHttps;

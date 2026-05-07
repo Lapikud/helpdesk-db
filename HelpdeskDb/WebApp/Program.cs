@@ -147,12 +147,15 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsAllowAll", policy =>
+    options.AddPolicy("FrontendOnly", policy =>
     {
-        policy.AllowAnyHeader();
-        policy.AllowAnyMethod();
-        policy.AllowAnyOrigin();
-        policy.SetIsOriginAllowed((host) => true);
+        var origins = builder.Configuration
+            .GetSection("AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>();
+        policy.WithOrigins(origins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -208,7 +211,7 @@ app.UseRequestLocalization(options: app.Services.GetService<IOptions<RequestLoca
 
 app.UseRouting();
 
-app.UseCors("CorsAllowAll");
+app.UseCors("FrontendOnly");
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

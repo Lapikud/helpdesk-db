@@ -77,11 +77,21 @@ Navigation properties are nulled out in mappers to avoid circular references —
 
 ### Authentication & authorization
 
-Authentication is via **FreeIPA** (`ipa.lapikud.ee`), not ASP.NET Identity. On login, the app calls the IPA JSON-RPC API and **bidirectionally** syncs roles: adds roles present in IPA and removes roles from DB that are no longer in IPA. Roles used: `admins`, `helpdesk_db_admins`, `members`, `pixels`.
+Authentication is via **FreeIPA** (`ipa.lapikud.ee`), not ASP.NET Identity. On login, the app calls the IPA JSON-RPC API and **bidirectionally** syncs roles: adds roles present in IPA and removes roles from DB that are no longer in IPA. Roles are also re-synced on every `/renewRefreshToken` call so changes to IPA group membership propagate without requiring the user to log out. Roles used: `admins`, `helpdesk_db_admins`, `members`, `pixels`.
+
+Because `IIpaAuthClient` is scoped (each request gets a fresh `FreeIPA.DotNet.IpaClient` with no session), `SyncRolesFromIpaAsync` first authenticates the client with a dedicated **IPA service account** before issuing the `user_show` RPC. Configure via `IpaServiceAccount__Username` / `IpaServiceAccount__Password` env vars (see `.env.example`); the account needs read access to `user_show` (`memberof_group`), which any authenticated IPA user typically has. If the service account is misconfigured or IPA is unreachable, sync logs a warning and leaves existing DB roles untouched — it never fails the request.
 
 Both cookie auth (MVC) and JWT Bearer (API) are registered. API controllers use `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`.
 
+The API delivers the JWT to the SPA as an **HttpOnly cookie** named `hd_jwt` (set by `AccountController.SetAuthCookies`). The companion refresh token rides in `hd_rt`. Both are `SameSite=Strict`, `HttpOnly`, and `Secure` over HTTPS. The `JwtBearerEvents.OnMessageReceived` handler in `Program.cs` (around line 94) pulls the JWT out of the `hd_jwt` cookie when the `Authorization` header is missing, so the SPA never needs to send a `Bearer` header. `GET /api/v1/account/me` lets the SPA hydrate its identity state from the server-validated cookie.
+
 IPA calls go through the `IIpaAuthClient` abstraction (`WebApp/ApiControllers/Identity/IIpaAuthClient.cs`), registered scoped in `Program.cs`. The real implementation `IpaAuthClient` wraps `FreeIPA.DotNet.IpaClient`. `AccountController` depends on `IIpaAuthClient` (not the concrete client), which lets tests substitute `FakeIpaAuthClient` instead of hitting the real IPA server. Both the API login and the MVC `Areas/Identity/Pages/Account/Login.cshtml.cs` resolve `IIpaAuthClient` from DI.
+
+### CORS
+
+The `FrontendOnly` policy (registered in `Program.cs`) reads its allowlist from the `AllowedOrigins` configuration array and calls `AllowCredentials()` so the auth cookies survive cross-origin requests. Because of `AllowCredentials()`, `AllowAnyOrigin()` cannot be used — the allowlist must be explicit. Dev defaults live in `appsettings.Development.json` (`http://localhost:3000`); production overrides come from environment variables: `AllowedOrigins__0=https://...`, `AllowedOrigins__1=...`, etc.
+
+If a deployed frontend and backend are on different registrable domains (e.g. `app.foo.com` and `api.bar.com`), `SameSite=Strict` will block the auth cookies on cross-site requests — switch the cookie options in `AccountController.SetAuthCookies` to `SameSiteMode.None` + `Secure=true` (HTTPS only) when that happens.
 
 ### Domain model overview
 
@@ -163,6 +173,7 @@ Key variables in `.env`:
 | `JWTSecurity__Key` | JWT signing (both local and Docker) |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | docker-compose db container |
 | `DOCKER_DB_CONNECTION` | docker-compose webapp container (host = `lapikudhelpdesk-db-postgres`, matching the db service's `container_name`) |
+| `AllowedOrigins__0`, `AllowedOrigins__1`, … | CORS allowlist for the `FrontendOnly` policy (one frontend origin per index, no trailing slash) |
 
 JWT settings are under `JWTSecurity:` (Key, Issuer, Audience, ExpiresInSeconds, RefreshTokenExpiresInSeconds). Supported cultures and default culture are also in `appsettings.json`.
 

@@ -42,6 +42,8 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
                     ["JWTSecurity:Issuer"] = "LapikudHelpdesk",
                     ["JWTSecurity:Audience"] = "LapikudHelpdesk",
                     ["JWTSecurity:ExpiresInSeconds"] = "120",
+                    ["IpaServiceAccount:Username"] = "test-service-account",
+                    ["IpaServiceAccount:Password"] = "test-service-account-password",
                 })
                 .AddEnvironmentVariables();
         });
