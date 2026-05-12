@@ -5,20 +5,26 @@ import { AccountContext } from "@/context/AccountContext";
 import { AssetService } from "@/services/AssetService";
 import { useRouter } from "next/navigation";
 
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { IAsset } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { IAsset, IAssetAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
+import { CreateDbAssetDialog } from "@/components/dialogs/dbAssetDialogs/CreateDbAssetDialog";
+import { EditDbAssetDialog } from "@/components/dialogs/dbAssetDialogs/EditDbAssetDialog";
+import { DeleteDbAssetDialog } from "@/components/dialogs/dbAssetDialogs/DeleteDbAssetDialog";
 
 export default function Assets() {
 	const { t: tAsset } = useTranslation("asset");
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const assetService: AssetService = useMemo(
-		() => new AssetService(),
-		[]
-	);
+	const assetService: AssetService = useMemo(() => new AssetService(), []);
 	if (setAccountInfo) {
 		assetService.injectSetAccountInfo(setAccountInfo);
 	}
@@ -28,9 +34,25 @@ export default function Assets() {
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [assetToEdit, setAssetToEdit] = useState<IAsset | null>(null);
+	const [assetToDelete, setAssetToDelete] = useState<IAsset | null>(null);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
+
+	const fetchData = useCallback(async () => {
+		const result = await assetService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [assetService]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -40,109 +62,157 @@ export default function Assets() {
 			return;
 		}
 
-		const fetchData = async () => {
-			try {
-				const result = await assetService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
 		fetchData();
-	}, [hydrated, router, assetService, isAdmin]);
+	}, [hydrated, router, isAdmin, fetchData]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	const handleCreate = async (dto: IAssetAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await assetService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to create asset",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
+
+	const handleEdit = async (dto: IAsset) => {
+		setEditLoading(true);
+		try {
+			const result = await assetService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to update asset",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setAssetToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await assetService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to delete asset",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setAssetToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = isAdmin
+		? [
+				tAsset("AssetName"),
+				tAsset("SerialNumber"),
+				tAsset("Barcode"),
+				tCommon("Comment"),
+				tCommon("Actions"),
+			]
+		: [
+				tAsset("AssetName"),
+				tAsset("SerialNumber"),
+				tAsset("Barcode"),
+				tCommon("Comment"),
+			];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [
+			item.assetName,
+			item.serialNumber || "-",
+			item.barcode || "-",
+			item.comment || "-",
+			...(isAdmin
+				? [
+						<ActionCell key="actions">
+							<EditButton
+								label={tCommon("EditLink")}
+								onClick={() => {
+									setAssetToEdit(item);
+									setShowEdit(true);
+								}}
+							/>
+							<DeleteButton
+								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setAssetToDelete(item);
+									setShowDelete(true);
+								}}
+							/>
+						</ActionCell>,
+					]
+				: []),
+		],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">
-				{tAsset("Assets")}
-			</h1>
-			{(isAdmin) && (
-				<p className="mb-4">
-					<Link
-						href="/dbassets/create"
-						className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+		<ListPageWrapper
+			title={tAsset("Assets")}
+			createButton={
+				isAdmin && (
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
+						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
-				</p>
-			)}
+					</button>
+				)
+			}
+		>
+			<DataTable columns={columns} rows={rows} />
 
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tAsset("AssetName")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tAsset("SerialNumber")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tAsset("Barcode")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tCommon("Comment")}
-							</th>
-							{(isAdmin) && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.assetName}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.serialNumber || "-"}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.barcode || "-"}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.comment}
-								</td>
-								{(isAdmin) && (
-									<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-										<Link
-											href={`/dbassets/edit/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("EditLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/dbassets/details/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DetailsLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/dbassets/delete/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DeleteLink")}
-										</Link>
-									</td>
-								)}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+			<CreateDbAssetDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
+
+			<EditDbAssetDialog
+				open={showEdit}
+				asset={assetToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setAssetToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
+
+			<DeleteDbAssetDialog
+				open={showDelete}
+				asset={assetToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setAssetToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
+		</ListPageWrapper>
 	);
 }
