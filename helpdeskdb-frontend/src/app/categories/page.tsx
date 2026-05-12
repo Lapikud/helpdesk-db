@@ -3,9 +3,8 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { CategoryService } from "@/services/CategoryService";
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { ICategory } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ICategory, ICategoryAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
@@ -14,6 +13,9 @@ import {
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
+import { CreateCategoryDialog } from "@/components/dialogs/categoryDialogs/CreateCategoryDialog";
+import { EditCategoryDialog } from "@/components/dialogs/categoryDialogs/EditCategoryDialog";
+import { DeleteCategoryDialog } from "@/components/dialogs/categoryDialogs/DeleteCategoryDialog";
 
 export default function Categories() {
 	const { t: tCategory } = useTranslation("category");
@@ -27,16 +29,88 @@ export default function Categories() {
 	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [categoryToEdit, setCategoryToEdit] = useState<ICategory | null>(null);
+	const [categoryToDelete, setCategoryToDelete] = useState<ICategory | null>(
+		null,
+	);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
 
+	const fetchData = useCallback(async () => {
+		const result = await categoryService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [categoryService]);
+
 	useEffect(() => {
 		if (!hydrated) return;
-		categoryService.getAllAsync().then((result) => {
-			if (!result.errors) setData(result.data!);
-		});
-	}, [hydrated, categoryService]);
+		fetchData();
+	}, [hydrated, fetchData]);
+
+	const handleCreate = async (dto: ICategoryAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await categoryService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to create category",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
+
+	const handleEdit = async (dto: ICategory) => {
+		setEditLoading(true);
+		try {
+			const result = await categoryService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to update category",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setCategoryToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await categoryService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to delete category",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setCategoryToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
 
 	if (!hydrated) return <Spinner className="h-64" />;
 
@@ -53,12 +127,18 @@ export default function Categories() {
 				? [
 						<ActionCell key="actions">
 							<EditButton
-								href={`/categories/edit/${item.id}`}
 								label={tCommon("EditLink")}
+								onClick={() => {
+									setCategoryToEdit(item);
+									setShowEdit(true);
+								}}
 							/>
 							<DeleteButton
-								href={`/categories/delete/${item.id}`}
 								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setCategoryToDelete(item);
+									setShowDelete(true);
+								}}
 							/>
 						</ActionCell>,
 					]
@@ -71,16 +151,46 @@ export default function Categories() {
 			title={tCategory("Categories")}
 			createButton={
 				isAdmin && (
-					<Link
-						href="/categories/create"
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
 						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
+					</button>
 				)
 			}
 		>
 			<DataTable columns={columns} rows={rows} />
+
+			<CreateCategoryDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
+
+			<EditCategoryDialog
+				open={showEdit}
+				category={categoryToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setCategoryToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
+
+			<DeleteCategoryDialog
+				open={showDelete}
+				category={categoryToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setCategoryToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
 		</ListPageWrapper>
 	);
 }
