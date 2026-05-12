@@ -50,7 +50,7 @@ export default function Assets() {
 	}, []);
 
 	const fetchData = useCallback(async () => {
-		const result = await assetService.getAllAsync();
+		const result = await assetService.getAllAsync(true);
 		if (!result.errors && result.data) setData(result.data);
 	}, [assetService]);
 
