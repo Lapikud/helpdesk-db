@@ -2,5 +2,6 @@
   "Asset": "Asset",
   "RemovedAssetsTitle": "Removed assets",
   "RemovedAssetsSingular": "Removed asset",
-  "RemovedBy": "Removed by"
+  "RemovedBy": "Removed by",
+  "User": "User"
 }

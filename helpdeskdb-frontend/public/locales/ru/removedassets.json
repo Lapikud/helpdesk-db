@@ -2,5 +2,6 @@
   "Asset": "Имущество",
   "RemovedAssetsTitle": "Удалённые имущества",
   "RemovedAssetsSingular": "Удалённое имущество",
-  "RemovedBy": "Удалил"
+  "RemovedBy": "Удалил",
+  "User": "Пользователь"
 }
