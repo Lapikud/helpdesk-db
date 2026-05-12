@@ -3,9 +3,8 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { OwnerService } from "@/services/OwnerService";
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { IOwner } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { IOwner, IOwnerAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
@@ -14,6 +13,9 @@ import {
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
+import { CreateOwnerDialog } from "@/components/dialogs/ownerDialogs/CreateOwnerDialog";
+import { EditOwnerDialog } from "@/components/dialogs/ownerDialogs/EditOwnerDialog";
+import { DeleteOwnerDialog } from "@/components/dialogs/ownerDialogs/DeleteOwnerDialog";
 
 export default function Owners() {
 	const { t: tOwner } = useTranslation("owner");
@@ -27,16 +29,86 @@ export default function Owners() {
 	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [ownerToEdit, setOwnerToEdit] = useState<IOwner | null>(null);
+	const [ownerToDelete, setOwnerToDelete] = useState<IOwner | null>(null);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
 
+	const fetchData = useCallback(async () => {
+		const result = await ownerService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [ownerService]);
+
 	useEffect(() => {
 		if (!hydrated) return;
-		ownerService.getAllAsync().then((result) => {
-			if (!result.errors) setData(result.data!);
-		});
-	}, [hydrated, ownerService]);
+		fetchData();
+	}, [hydrated, fetchData]);
+
+	const handleCreate = async (dto: IOwnerAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await ownerService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to create owner",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
+
+	const handleEdit = async (dto: IOwner) => {
+		setEditLoading(true);
+		try {
+			const result = await ownerService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to update owner",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setOwnerToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await ownerService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error: result.errors?.join(", ") || "Failed to delete owner",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setOwnerToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
 
 	if (!hydrated) return <Spinner className="h-64" />;
 
@@ -53,12 +125,18 @@ export default function Owners() {
 				? [
 						<ActionCell key="actions">
 							<EditButton
-								href={`/owners/edit/${item.id}`}
 								label={tCommon("EditLink")}
+								onClick={() => {
+									setOwnerToEdit(item);
+									setShowEdit(true);
+								}}
 							/>
 							<DeleteButton
-								href={`/owners/delete/${item.id}`}
 								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setOwnerToDelete(item);
+									setShowDelete(true);
+								}}
 							/>
 						</ActionCell>,
 					]
@@ -71,16 +149,46 @@ export default function Owners() {
 			title={tOwner("Owners")}
 			createButton={
 				isAdmin && (
-					<Link
-						href="/owners/create"
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
 						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
+					</button>
 				)
 			}
 		>
 			<DataTable columns={columns} rows={rows} />
+
+			<CreateOwnerDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
+
+			<EditOwnerDialog
+				open={showEdit}
+				owner={ownerToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setOwnerToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
+
+			<DeleteOwnerDialog
+				open={showDelete}
+				owner={ownerToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setOwnerToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
 		</ListPageWrapper>
 	);
 }
