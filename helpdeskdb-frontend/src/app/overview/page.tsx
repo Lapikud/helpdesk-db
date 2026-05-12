@@ -437,7 +437,7 @@ export default function Overview() {
 	const handleChangeReservationTime = async (
 		assetReservationId: string,
 		updateData: IAssetReservationUpdate,
-	) => {
+	): Promise<{ error?: string } | void> => {
 		setLoading((prev) => ({ ...prev, [updateData.assetId]: true }));
 		try {
 			const result = await overviewService.changeReservationTime(
@@ -445,21 +445,21 @@ export default function Overview() {
 				updateData,
 			);
 			if (result.statusCode! >= 400) {
-				alert(
-					result.errors?.join(", ") ||
+				return {
+					error:
+						result.errors?.join(", ") ||
 						"Failed to update reservation time",
-				);
-			} else {
-				await fetchData();
+				};
 			}
-		} catch (error) {
-			console.error("Error updating reservation time:", error);
-			alert("Failed to update reservation time");
-		} finally {
-			setLoading((prev) => ({ ...prev, [updateData.assetId]: false }));
+			await fetchData();
 			setShowChangeReservationModal(false);
 			setAssetToReserve(null);
 			setReservationIdToChange(null);
+		} catch (error) {
+			console.error("Error updating reservation time:", error);
+			return { error: (error as Error).message };
+		} finally {
+			setLoading((prev) => ({ ...prev, [updateData.assetId]: false }));
 		}
 	};
 

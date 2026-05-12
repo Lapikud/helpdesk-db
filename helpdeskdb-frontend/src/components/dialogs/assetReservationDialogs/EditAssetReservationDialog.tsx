@@ -27,6 +27,7 @@ export const EditAssetReservationDialog = ({
 	const { t: tAssetReservation } = useTranslation("assetreservation");
 	const { t: tCommon } = useTranslation("common");
 	const { t: tValidation } = useTranslation("validationerrors");
+	const { t: tChangeReservationTime } = useTranslation("changeReservationTime");
 
 	const [reservationFrom, setReservationFrom] = useState<Date | null>(null);
 	const [reservationTo, setReservationTo] = useState<Date | null>(null);
@@ -77,12 +78,12 @@ export const EditAssetReservationDialog = ({
 
 	return (
 		<Modal open={open} onClose={handleClose}>
-			<h2 className="text-xl font-bold mb-2 text-black">
-				{tCommon("EditTitle")}
-			</h2>
-			<h4 className="text-lg text-gray-700 mb-4">
-				{tAssetReservation("AssetReservationSingular")}
-			</h4>
+			<h3 className="font-bold text-xl mb-2 text-black">
+				{tChangeReservationTime("Title")}
+			</h3>
+			<h3 className="font-bold text-lg mb-2 text-black">
+				{reservation.assetName}
+			</h3>
 
 			{errorMsg && (
 				<div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
@@ -92,25 +93,7 @@ export const EditAssetReservationDialog = ({
 
 			<div className="mb-4">
 				<label className="block text-gray-700 mb-2">
-					{tAssetReservation("AssetId")}
-				</label>
-				<div className="w-full p-2 border border-gray-200 rounded bg-gray-50 text-gray-700">
-					{reservation.assetName}
-				</div>
-			</div>
-
-			<div className="mb-4">
-				<label className="block text-gray-700 mb-2">
-					{tAssetReservation("UserId")}
-				</label>
-				<div className="w-full p-2 border border-gray-200 rounded bg-gray-50 text-gray-700">
-					{reservation.userName}
-				</div>
-			</div>
-
-			<div className="mb-4">
-				<label className="block text-gray-700 mb-2">
-					{tAssetReservation("ReservationFrom")}
+					{tChangeReservationTime("NewReservationFrom")}
 				</label>
 				<DateTimePicker
 					value={reservationFrom}
@@ -120,9 +103,12 @@ export const EditAssetReservationDialog = ({
 
 			<div className="mb-4">
 				<label className="block text-gray-700 mb-2">
-					{tAssetReservation("ReservationTo")}
+					{tChangeReservationTime("NewReservationTo")}
 				</label>
-				<DateTimePicker value={reservationTo} onChange={setReservationTo} />
+				<DateTimePicker 
+					value={reservationTo} 
+					onChange={setReservationTo}
+				/>
 			</div>
 
 			<div className="flex justify-end gap-3 mt-6">
@@ -140,7 +126,7 @@ export const EditAssetReservationDialog = ({
 						isLoading ? "opacity-50 cursor-not-allowed" : ""
 					}`}
 				>
-					{isLoading ? tCommon("Processing") : tCommon("SaveButton")}
+					{isLoading ? tCommon("Processing") : tChangeReservationTime("UpdateTimeButton")}
 				</button>
 			</div>
 		</Modal>

@@ -17,7 +17,7 @@ interface ChangeReservationTimeDialogProps {
 	onConfirm: (
 		assetReservationId: string,
 		data: IAssetReservationUpdate,
-	) => Promise<void>;
+	) => Promise<{ error?: string } | void>;
 	isLoading: boolean;
 }
 
@@ -38,44 +38,46 @@ export const ChangeReservationTimeDialog = ({
 
 	const [reservationFrom, setReservationFrom] = useState<Date | null>(null);
 	const [reservationTo, setReservationTo] = useState<Date | null>(null);
+	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (open) {
 			setReservationFrom(initialFrom);
 			setReservationTo(initialTo);
+			setErrorMsg(null);
 		}
 	}, [open, initialFrom, initialTo]);
 
 	const handleClose = () => {
+		setErrorMsg(null);
 		onClose();
 	};
 
 	const handleSubmit = async () => {
+		setErrorMsg(null);
 		if (!asset || !assetReservationId) return;
 
 		if (!reservationFrom || !reservationTo) {
-			alert(tValidation("BothDatesRequired"));
+			setErrorMsg(tValidation("BothDatesRequired"));
 			return;
 		}
 
 		if (reservationTo <= reservationFrom) {
-			alert(tValidation("ReservationToMustBeAfterFrom"));
+			setErrorMsg(tValidation("ReservationToMustBeAfterFrom"));
 			return;
 		}
 
-		try {
-			await onConfirm(assetReservationId, {
-				assetReservationId,
-				assetId: asset.id,
-				userId: accountInfo?.id ?? "",
-				reservationFrom: reservationFrom,
-				reservationTo: reservationTo,
-			});
-			setReservationFrom(null);
-			setReservationTo(null);
-			handleClose();
-		} catch (error) {
-			console.error("Change reservation time failed:", error);
+		const result = await onConfirm(assetReservationId, {
+			assetReservationId,
+			assetId: asset.id,
+			userId: accountInfo?.id ?? "",
+			reservationFrom: reservationFrom,
+			reservationTo: reservationTo,
+		});
+
+		if (result && result.error) {
+			setErrorMsg(result.error);
+			return;
 		}
 	};
 
@@ -89,6 +91,13 @@ export const ChangeReservationTimeDialog = ({
 			<h3 className="font-bold text-lg mb-2 text-black">
 				{asset.assetName}
 			</h3>
+
+			{errorMsg && (
+				<div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+					{errorMsg}
+				</div>
+			)}
+
 			<div className="mb-4">
 				<label className="block text-gray-700 mb-2">
 					{tChangeReservationTime("NewReservationFrom")}
