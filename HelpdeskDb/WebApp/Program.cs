@@ -145,11 +145,12 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("FrontendOnly", policy =>
+    options.AddPolicy(name: "FrontendOnly", policy =>
     {
         var origins = builder.Configuration
             .GetSection("AllowedOrigins").Get<string[]>()
             ?? Array.Empty<string>();
+        Console.WriteLine("origins: " + string.Join(", ", origins));
         policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
