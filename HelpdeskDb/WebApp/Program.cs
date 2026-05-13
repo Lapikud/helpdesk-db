@@ -150,7 +150,6 @@ builder.Services.AddCors(options =>
         var origins = builder.Configuration
             .GetSection("AllowedOrigins").Get<string[]>()
             ?? Array.Empty<string>();
-        Console.WriteLine("origins: " + string.Join(", ", origins));
         policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
