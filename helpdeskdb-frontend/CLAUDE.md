@@ -57,7 +57,7 @@ BaseService         — axios instance with withCredentials: true, auto token-re
 - Roles checked in the UI: `admins`, `members` (from the backend's FreeIPA sync).
 - **`AuthGuard`** (`src/components/AuthGuard.tsx`) is mounted once inside `layout.tsx` and wraps every route. It reads `AccountContext`, redirects unauthenticated users to `/login`, and shows a spinner while `accountInfo` is still hydrating. Individual pages must no longer check auth themselves — do not add per-page redirects.
 - **Logout** (`Header.tsx` → `AccountService.logoutAsync`) calls `POST /api/v1/account/logout` so the backend deletes the refresh token from the DB and clears both cookies, then clears `AccountContext`. Do not try to clear cookies from the client — they are HttpOnly.
-- `src/utils/JwtHelper.ts` is leftover from the old localStorage flow and is no longer imported anywhere; it can be deleted in a follow-up.
+- The legacy `src/utils/JwtHelper.ts` from the old localStorage flow, can be deleted — auth state lives entirely in `AccountContext`, hydrated by `GET /api/v1/account/me`.
 
 ### Internationalization
 

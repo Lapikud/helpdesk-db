@@ -52,7 +52,7 @@ Roles used throughout both layers: `admins`, `helpdesk_db_admins`, `members`, `p
 ## CORS and deployment
 
 - In dev, Next.js `rewrites()` proxies `/api/*` to the backend, so all browser requests are same-origin and CORS never fires.
-- In production with the frontend calling the backend directly, the backend uses the `FrontendOnly` CORS policy (registered in `Program.cs`) which reads the allowed origins from the `AllowedOrigins` configuration array. Set this in `appsettings.Development.json` for dev and via `AllowedOrigins__0`, `AllowedOrigins__1`, … environment variables in production.
+- In production with the frontend calling the backend directly, the backend uses the `FrontendOnly` CORS policy (registered in `Program.cs`) which reads the allowed origins from the `AllowedOrigins` configuration array. Set this via the `AllowedOrigins__0`, `AllowedOrigins__1`, … keys — loaded from `HelpdeskDb/.env` in dev via `DotNetEnv`, or set directly on the process in production. `appsettings.json` ships an empty placeholder.
 - `AllowCredentials()` is required for the auth cookies to cross origins, which means `AllowAnyOrigin()` cannot be used — the allowlist must be explicit.
 - If the deployed frontend and backend live on **different registrable domains** (not just different subdomains of the same domain), the auth cookies must switch from `SameSite=Strict` to `SameSite=None` + `Secure=true` in `AccountController.SetAuthCookies` or the browser will drop them.
 

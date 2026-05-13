@@ -89,7 +89,7 @@ IPA calls go through the `IIpaAuthClient` abstraction (`WebApp/ApiControllers/Id
 
 ### CORS
 
-The `FrontendOnly` policy (registered in `Program.cs`) reads its allowlist from the `AllowedOrigins` configuration array and calls `AllowCredentials()` so the auth cookies survive cross-origin requests. Because of `AllowCredentials()`, `AllowAnyOrigin()` cannot be used — the allowlist must be explicit. Dev defaults live in `appsettings.Development.json` (`http://localhost:3000`); production overrides come from environment variables: `AllowedOrigins__0=https://...`, `AllowedOrigins__1=...`, etc.
+The `FrontendOnly` policy (registered in `Program.cs`) reads its allowlist from the `AllowedOrigins` configuration array and calls `AllowCredentials()` so the auth cookies survive cross-origin requests. Because of `AllowCredentials()`, `AllowAnyOrigin()` cannot be used — the allowlist must be explicit. `appsettings.json` ships an empty `AllowedOrigins: [""]` placeholder; real values come from `.env` (via `AllowedOrigins__0=http://localhost:3000`, `AllowedOrigins__1=https://...`, etc.) since `DotNetEnv` loads `.env` into the environment before the configuration builder runs.
 
 If a deployed frontend and backend are on different registrable domains (e.g. `app.foo.com` and `api.bar.com`), `SameSite=Strict` will block the auth cookies on cross-site requests — switch the cookie options in `AccountController.SetAuthCookies` to `SameSiteMode.None` + `Secure=true` (HTTPS only) when that happens.
 
