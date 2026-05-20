@@ -22,7 +22,10 @@ export default function Categories() {
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const categoryService = useMemo(() => new CategoryService(), []);
+	const categoryService: CategoryService = useMemo(
+		() => new CategoryService(),
+		[],
+	);
 	if (setAccountInfo) categoryService.injectSetAccountInfo(setAccountInfo);
 
 	const [data, setData] = useState<ICategory[]>([]);
@@ -33,7 +36,9 @@ export default function Categories() {
 	const [showEdit, setShowEdit] = useState(false);
 	const [showDelete, setShowDelete] = useState(false);
 
-	const [categoryToEdit, setCategoryToEdit] = useState<ICategory | null>(null);
+	const [categoryToEdit, setCategoryToEdit] = useState<ICategory | null>(
+		null,
+	);
 	const [categoryToDelete, setCategoryToDelete] = useState<ICategory | null>(
 		null,
 	);
@@ -62,7 +67,9 @@ export default function Categories() {
 			const result = await categoryService.addAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to create category",
+					error:
+						result.errors?.join(", ") ||
+						"Failed to create category",
 				};
 			}
 			await fetchData();
@@ -80,7 +87,9 @@ export default function Categories() {
 			const result = await categoryService.updateAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to update category",
+					error:
+						result.errors?.join(", ") ||
+						"Failed to update category",
 				};
 			}
 			await fetchData();
@@ -99,7 +108,9 @@ export default function Categories() {
 			const result = await categoryService.deleteAsync(id);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to delete category",
+					error:
+						result.errors?.join(", ") ||
+						"Failed to delete category",
 				};
 			}
 			await fetchData();

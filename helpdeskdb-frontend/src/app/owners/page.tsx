@@ -22,7 +22,7 @@ export default function Owners() {
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const ownerService = useMemo(() => new OwnerService(), []);
+	const ownerService: OwnerService = useMemo(() => new OwnerService(), []);
 	if (setAccountInfo) ownerService.injectSetAccountInfo(setAccountInfo);
 
 	const [data, setData] = useState<IOwner[]>([]);
@@ -60,7 +60,8 @@ export default function Owners() {
 			const result = await ownerService.addAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to create owner",
+					error:
+						result.errors?.join(", ") || "Failed to create owner",
 				};
 			}
 			await fetchData();
@@ -78,7 +79,8 @@ export default function Owners() {
 			const result = await ownerService.updateAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to update owner",
+					error:
+						result.errors?.join(", ") || "Failed to update owner",
 				};
 			}
 			await fetchData();
@@ -97,7 +99,8 @@ export default function Owners() {
 			const result = await ownerService.deleteAsync(id);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to delete owner",
+					error:
+						result.errors?.join(", ") || "Failed to delete owner",
 				};
 			}
 			await fetchData();

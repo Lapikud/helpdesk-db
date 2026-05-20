@@ -71,7 +71,8 @@ export default function Assets() {
 			const result = await assetService.addAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to create asset",
+					error:
+						result.errors?.join(", ") || "Failed to create asset",
 				};
 			}
 			await fetchData();
@@ -89,7 +90,8 @@ export default function Assets() {
 			const result = await assetService.updateAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to update asset",
+					error:
+						result.errors?.join(", ") || "Failed to update asset",
 				};
 			}
 			await fetchData();
@@ -108,7 +110,8 @@ export default function Assets() {
 			const result = await assetService.deleteAsync(id);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
-					error: result.errors?.join(", ") || "Failed to delete asset",
+					error:
+						result.errors?.join(", ") || "Failed to delete asset",
 				};
 			}
 			await fetchData();

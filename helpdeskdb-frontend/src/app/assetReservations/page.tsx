@@ -16,7 +16,11 @@ import {
 import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
-import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
 import { CreateAssetReservationDialog } from "@/components/dialogs/assetReservationDialogs/CreateAssetReservationDialog";
 import { EditAssetReservationDialog } from "@/components/dialogs/assetReservationDialogs/EditAssetReservationDialog";
 import { DeleteAssetReservationDialog } from "@/components/dialogs/assetReservationDialogs/DeleteAssetReservationDialog";
@@ -26,10 +30,16 @@ export default function AssetReservations() {
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const assetReservationService = useMemo(() => new AssetReservationService(), []);
-	const assetService = useMemo(() => new AssetService(), []);
-	const userService = useMemo(() => new UserService(), []);
-	const removedAssetsService = useMemo(() => new RemovedAssetsService(), []);
+	const assetReservationService: AssetReservationService = useMemo(
+		() => new AssetReservationService(),
+		[],
+	);
+	const assetService: AssetService = useMemo(() => new AssetService(), []);
+	const userService: UserService = useMemo(() => new UserService(), []);
+	const removedAssetsService: RemovedAssetsService = useMemo(
+		() => new RemovedAssetsService(),
+		[],
+	);
 
 	if (setAccountInfo) {
 		assetReservationService.injectSetAccountInfo(setAccountInfo);
@@ -61,33 +71,51 @@ export default function AssetReservations() {
 	const isPixel = accountInfo?.roles?.includes("pixels") ?? false;
 	const showActions = isAdmin || isMember || isPixel;
 
-	useEffect(() => { setHydrated(true); }, []);
+	useEffect(() => {
+		setHydrated(true);
+	}, []);
 
 	const fetchData = useCallback(async () => {
 		try {
 			const result = await assetReservationService.getAllAsync();
 			if (result.errors) return;
 			if (result.data) {
-				const [assetsResult, usersResult, removedResult] = await Promise.all([
-					assetService.getAllAsync(true),
-					userService.getAllAsync(),
-					removedAssetsService.getAllAsync(),
-				]);
-				const enrichedData: IAssetReservationWithNames[] = result.data.map((ar) => ({
-					...ar,
-					assetName: assetsResult.data?.find((a) => a.id === ar.assetId)?.assetName ?? "Unknown Asset",
-					userName: usersResult.data?.find((u) => u.id === ar.userId)?.username ?? "Unknown User",
-					isRemoved: removedResult.data?.some((ra) => ra.assetId === ar.assetId) ?? false,
-				}));
+				const [assetsResult, usersResult, removedResult] =
+					await Promise.all([
+						assetService.getAllAsync(true),
+						userService.getAllAsync(),
+						removedAssetsService.getAllAsync(),
+					]);
+				const enrichedData: IAssetReservationWithNames[] =
+					result.data.map((ar) => ({
+						...ar,
+						assetName:
+							assetsResult.data?.find((a) => a.id === ar.assetId)
+								?.assetName ?? "Unknown Asset",
+						userName:
+							usersResult.data?.find((u) => u.id === ar.userId)
+								?.username ?? "Unknown User",
+						isRemoved:
+							removedResult.data?.some(
+								(ra) => ra.assetId === ar.assetId,
+							) ?? false,
+					}));
 				enrichedData.sort(
-					(a, b) => new Date(b.reservationTo).getTime() - new Date(a.reservationTo).getTime(),
+					(a, b) =>
+						new Date(b.reservationTo).getTime() -
+						new Date(a.reservationTo).getTime(),
 				);
 				setData(enrichedData);
 			}
 		} catch (error) {
 			console.error("Error fetching data:", error);
 		}
-	}, [assetReservationService, assetService, userService, removedAssetsService]);
+	}, [
+		assetReservationService,
+		assetService,
+		userService,
+		removedAssetsService,
+	]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -105,7 +133,11 @@ export default function AssetReservations() {
 		try {
 			const result = await assetReservationService.addAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return { error: result.errors?.join(", ") || "Failed to create reservation" };
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to create reservation",
+				};
 			}
 			await fetchData();
 			setShowCreate(false);
@@ -122,7 +154,11 @@ export default function AssetReservations() {
 		try {
 			const result = await assetReservationService.updateAsync(dto);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return { error: result.errors?.join(", ") || "Failed to update reservation" };
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to update reservation",
+				};
 			}
 			await fetchData();
 			setShowEdit(false);
@@ -140,7 +176,11 @@ export default function AssetReservations() {
 		try {
 			const result = await assetReservationService.deleteAsync(id);
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return { error: result.errors?.join(", ") || "Failed to delete reservation" };
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to delete reservation",
+				};
 			}
 			await fetchData();
 			setShowDelete(false);
@@ -217,9 +257,15 @@ export default function AssetReservations() {
 			item.userName,
 			new Date(item.reservationFrom).toLocaleString(),
 			new Date(item.reservationTo).toLocaleString(),
-			item.isReturned ? tAssetReservation("Yes") : tAssetReservation("No"),
+			item.isReturned
+				? tAssetReservation("Yes")
+				: tAssetReservation("No"),
 			...(showActions
-				? [<ActionCell key="actions">{renderActionCell(item)}</ActionCell>]
+				? [
+						<ActionCell key="actions">
+							{renderActionCell(item)}
+						</ActionCell>,
+					]
 				: []),
 		],
 	}));

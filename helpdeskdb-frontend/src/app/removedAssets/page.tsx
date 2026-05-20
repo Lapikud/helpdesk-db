@@ -28,8 +28,11 @@ export default function RemovedAssets() {
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const removedAssetsService = useMemo(() => new RemovedAssetsService(), []);
-	const assetService = useMemo(() => new AssetService(), []);
+	const removedAssetsService: RemovedAssetsService = useMemo(
+		() => new RemovedAssetsService(),
+		[],
+	);
+	const assetService: AssetService = useMemo(() => new AssetService(), []);
 	if (setAccountInfo) {
 		removedAssetsService.injectSetAccountInfo(setAccountInfo);
 		assetService.injectSetAccountInfo(setAccountInfo);
@@ -64,7 +67,9 @@ export default function RemovedAssets() {
 			const assetsWithNames = await Promise.all(
 				result.data.map(async (asset) => ({
 					...asset,
-					assetName: await assetService.getAssetNameById(asset.assetId),
+					assetName: await assetService.getAssetNameById(
+						asset.assetId,
+					),
 				})),
 			);
 			setData(assetsWithNames);
@@ -91,7 +96,8 @@ export default function RemovedAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to create removed asset",
+						result.errors?.join(", ") ||
+						"Failed to create removed asset",
 				};
 			}
 			await fetchData();
@@ -110,7 +116,8 @@ export default function RemovedAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to update removed asset",
+						result.errors?.join(", ") ||
+						"Failed to update removed asset",
 				};
 			}
 			await fetchData();
@@ -130,7 +137,8 @@ export default function RemovedAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to delete removed asset",
+						result.errors?.join(", ") ||
+						"Failed to delete removed asset",
 				};
 			}
 			await fetchData();

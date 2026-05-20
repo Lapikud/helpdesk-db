@@ -94,14 +94,14 @@ export default function CategoryAssets() {
 			categoriesResult.data.map((c) => [c.id, c]),
 		);
 
-		const withNames: ICategoryAssetWithNames[] = categoryAssetsResult.data.map(
-			(ca) => ({
+		const withNames: ICategoryAssetWithNames[] =
+			categoryAssetsResult.data.map((ca) => ({
 				...ca,
 				assetName: assetById.get(ca.assetId)?.assetName ?? ca.assetId,
 				categoryName:
-					categoryById.get(ca.categoryId)?.categoryName ?? ca.categoryId,
-			}),
-		);
+					categoryById.get(ca.categoryId)?.categoryName ??
+					ca.categoryId,
+			}));
 
 		setData(withNames);
 		setAllAssets(assetsResult.data);
@@ -134,7 +134,8 @@ export default function CategoryAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to create category asset",
+						result.errors?.join(", ") ||
+						"Failed to create category asset",
 				};
 			}
 			await fetchData();
@@ -159,7 +160,8 @@ export default function CategoryAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to update category asset",
+						result.errors?.join(", ") ||
+						"Failed to update category asset",
 				};
 			}
 			await fetchData();
@@ -179,7 +181,8 @@ export default function CategoryAssets() {
 			if (result.errors || (result.statusCode ?? 0) >= 400) {
 				return {
 					error:
-						result.errors?.join(", ") || "Failed to delete category asset",
+						result.errors?.join(", ") ||
+						"Failed to delete category asset",
 				};
 			}
 			await fetchData();
