@@ -3,12 +3,19 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { CupboardService } from "@/services/CupboardService";
-import { useRouter } from "next/navigation";
-
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { ICupboard } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ICupboard, ICupboardAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
+import { CreateCupboardDialog } from "@/components/dialogs/cupboardDialogs/CreateCupboardDialog";
+import { EditCupboardDialog } from "@/components/dialogs/cupboardDialogs/EditCupboardDialog";
+import { DeleteCupboardDialog } from "@/components/dialogs/cupboardDialogs/DeleteCupboardDialog";
 
 export default function Cupboards() {
 	const { t: tCupboard } = useTranslation("cupboard");
@@ -17,120 +24,183 @@ export default function Cupboards() {
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const cupboardService: CupboardService = useMemo(
 		() => new CupboardService(),
-		[]
+		[],
 	);
-	if (setAccountInfo) {
-		cupboardService.injectSetAccountInfo(setAccountInfo);
-	}
-	const router = useRouter();
+	if (setAccountInfo) cupboardService.injectSetAccountInfo(setAccountInfo);
+
 	const [data, setData] = useState<ICupboard[]>([]);
 	const [hydrated, setHydrated] = useState(false);
-
 	const isAdmin = accountInfo?.roles?.includes("admins");
+
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [cupboardToEdit, setCupboardToEdit] = useState<ICupboard | null>(
+		null,
+	);
+	const [cupboardToDelete, setCupboardToDelete] = useState<ICupboard | null>(
+		null,
+	);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
 
+	const fetchData = useCallback(async () => {
+		const result = await cupboardService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [cupboardService]);
+
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		const fetchData = async () => {
-			try {
-				const result = await cupboardService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
 		fetchData();
-	}, [hydrated, router, cupboardService, isAdmin]);
+	}, [hydrated, fetchData]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	const handleCreate = async (dto: ICupboardAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await cupboardService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to create cupboard",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
 
-	if (!accountInfo?.id || !isAdmin) {
-		return <Spinner className="h-64" />;
-	}
+	const handleEdit = async (dto: ICupboard) => {
+		setEditLoading(true);
+		try {
+			const result = await cupboardService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to update cupboard",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setCupboardToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await cupboardService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") ||
+						"Failed to delete cupboard",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setCupboardToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = isAdmin
+		? [tCupboard("CodeName"), tCommon("Actions")]
+		: [tCupboard("CodeName")];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [
+			item.codeName,
+			...(isAdmin
+				? [
+						<ActionCell key="actions">
+							<EditButton
+								label={tCommon("EditLink")}
+								onClick={() => {
+									setCupboardToEdit(item);
+									setShowEdit(true);
+								}}
+							/>
+							<DeleteButton
+								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setCupboardToDelete(item);
+									setShowDelete(true);
+								}}
+							/>
+						</ActionCell>,
+					]
+				: []),
+		],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">
-				{tCupboard("Cupboards")}
-			</h1>
-			{isAdmin && (
-				<p className="mb-4">
-					<Link
-						href="/cupboards/create"
-						className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+		<ListPageWrapper
+			title={tCupboard("Cupboards")}
+			createButton={
+				isAdmin && (
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
+						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
-				</p>
-			)}
+					</button>
+				)
+			}
+		>
+			<DataTable columns={columns} rows={rows} />
 
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tCupboard("CodeName")}
-							</th>
+			<CreateCupboardDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
 
-							{isAdmin && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.codeName}
-								</td>
+			<EditCupboardDialog
+				open={showEdit}
+				cupboard={cupboardToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setCupboardToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
 
-								{isAdmin && (
-									<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-										<Link
-											href={`/cupboards/edit/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("EditLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/cupboards/details/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DetailsLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/cupboards/delete/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DeleteLink")}
-										</Link>
-									</td>
-								)}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+			<DeleteCupboardDialog
+				open={showDelete}
+				cupboard={cupboardToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setCupboardToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
+		</ListPageWrapper>
 	);
 }
