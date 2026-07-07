@@ -240,15 +240,6 @@ export default function Header() {
 										{tLayout("LocationAssets")}
 									</Link>
 									<Link
-										href="/locationsInCupboards"
-										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
-										onClick={() =>
-											setIsAdminDropdownOpen(false)
-										}
-									>
-										{tLayout("LocationInCupboards")}
-									</Link>
-									<Link
 										href="/owners"
 										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
 										onClick={() =>
@@ -256,6 +247,15 @@ export default function Header() {
 										}
 									>
 										{tLayout("Owners")}
+									</Link>
+									<Link
+										href="/ownerAssets"
+										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
+										onClick={() =>
+											setIsAdminDropdownOpen(false)
+										}
+									>
+										{tLayout("OwnerAssets")}
 									</Link>
 									<Link
 										href="/rooms"
@@ -274,15 +274,6 @@ export default function Header() {
 										}
 									>
 										{tLayout("RemovedAssets")}
-									</Link>
-									<Link
-										href="/userAssets"
-										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
-										onClick={() =>
-											setIsAdminDropdownOpen(false)
-										}
-									>
-										{tLayout("UserAssets")}
 									</Link>
 									<hr className="my-1 border-gray-200" />
 									<Link
@@ -304,15 +295,6 @@ export default function Header() {
 										{tLayout("Roles")}
 									</Link>
 									<Link
-										href="/userRoles"
-										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
-										onClick={() =>
-											setIsAdminDropdownOpen(false)
-										}
-									>
-										{tLayout("UserRoles")}
-									</Link>
-									<Link
 										href="/refreshTokens"
 										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
 										onClick={() =>
@@ -320,16 +302,6 @@ export default function Header() {
 										}
 									>
 										{tLayout("RefreshTokens")}
-									</Link>
-									<hr className="my-1 border-gray-200" />
-									<Link
-										href="/userManagement"
-										className="block px-4 py-2 text-sm hover:bg-gray-100 text-gray-700"
-										onClick={() =>
-											setIsAdminDropdownOpen(false)
-										}
-									>
-										{tLayout("UserManagement")}
 									</Link>
 								</div>
 							)}
@@ -438,19 +410,17 @@ export default function Header() {
 							<Link href="/locationAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
 								{tLayout("LocationAssets")}
 							</Link>
-							<Link href="/locationsInCupboards" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
-								{tLayout("LocationInCupboards")}
+							<Link href="/owners" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("Owners")}
 							</Link>
-							<Link href="/owners" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>	{tLayout("Owners")}
+							<Link href="/ownerAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
+								{tLayout("OwnerAssets")}
 							</Link>
 							<Link href="/rooms" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
 								{tLayout("Rooms")}
 							</Link>
 							<Link href="/removedAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
 								{tLayout("RemovedAssets")}
-							</Link>
-							<Link href="/userAssets" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
-								{tLayout("UserAssets")}
 							</Link>
 							<hr className="my-1 border-gray-200" />
 							<Link href="/users" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
@@ -459,15 +429,8 @@ export default function Header() {
 							<Link href="/roles" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
 								{tLayout("Roles")}
 							</Link>
-							<Link href="/userRoles" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
-								{tLayout("UserRoles")}
-							</Link>
 							<Link href="/refreshTokens" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
 								{tLayout("RefreshTokens")}
-							</Link>
-							<hr className="my-1 border-gray-200" />
-							<Link href="/userManagement" className="block px-3 py-2 rounded text-gray-700 hover:bg-gray-100 pl-5" onClick={closeMobileMenu}>
-								{tLayout("UserManagement")}
 							</Link>
 						</>
 					)}

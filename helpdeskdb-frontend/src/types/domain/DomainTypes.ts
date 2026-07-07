@@ -168,6 +168,11 @@ export interface IOwnerAsset extends IDomainId {
 	createdBy: string;
 }
 
+export interface IOwnerAssetWithNames extends IOwnerAsset {
+	assetName: string;
+	ownerName: string;
+}
+
 export interface IOwnerAssetAdd {
 	ownerId: string;
 	assetId: string;
@@ -222,6 +227,10 @@ export interface IUserAssetAdd {
 // User
 export interface IUser extends IDomainId {
 	username: string;
+}
+
+export interface IUserWithRoles extends IUser {
+	roles: string[];
 }
 
 // Role

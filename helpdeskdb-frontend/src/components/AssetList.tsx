@@ -318,7 +318,7 @@ export default function AssetList({
 									)}
 								</span>
 								<span className="text-sm text-[#424242]">
-									Show lines
+									{tAssetlistpartial("ShowLines")}
 								</span>
 							</button>
 							<button
@@ -338,7 +338,7 @@ export default function AssetList({
 									)}
 								</span>
 								<span className="text-sm text-[#424242]">
-									Show cards
+									{tAssetlistpartial("ShowCards")}
 								</span>
 							</button>
 						</div>
