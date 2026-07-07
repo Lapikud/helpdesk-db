@@ -5,6 +5,11 @@ namespace App.DTO.v1.Mappers.Identity;
 
 public class RefreshTokensMapper : IIdentityMapper<App.DTO.v1.Identity.AppRefreshToken, App.Domain.Identity.AppRefreshToken>
 {
+    // Placeholder emitted instead of the real token value. The admin listing only needs to know a
+    // token exists and when it expires; leaking the raw string would let anyone reading the response
+    // (or a logged payload) hijack that user's session.
+    private const string Redacted = "••••••••";
+
     public AppRefreshToken? Map(Domain.Identity.AppRefreshToken? entity)
     {
         if (entity == null) return null;
@@ -12,8 +17,8 @@ public class RefreshTokensMapper : IIdentityMapper<App.DTO.v1.Identity.AppRefres
         {
             Id = entity.Id,
             UserId = entity.UserId,
-            RefreshToken = entity.RefreshToken,
-            PreviousRefreshToken = entity.PreviousRefreshToken,
+            RefreshToken = Redacted,
+            PreviousRefreshToken = entity.PreviousRefreshToken == null ? null : Redacted,
             Expiration = entity.Expiration,
             PreviousExpiration = entity.PreviousExpiration
         };
