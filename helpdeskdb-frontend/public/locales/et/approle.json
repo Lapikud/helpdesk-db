@@ -1,4 +1,6 @@
 {
   "AppRoleName": "Roll",
-  "AppRoleNamePrompt": "Roll"
+  "AppRoleNamePrompt": "Sisestage rolli nimi.",
+  "AppRoles": "Rollid",
+  "AppRoleSingular": "Roll"
 }

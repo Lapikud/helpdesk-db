@@ -1,6 +1,7 @@
 {
   "AppUserName": "Username",
   "AppUserNamePrompt": "Enter a username.",
+  "AppUsers": "Users",
   "FirstName": "First name",
   "LastName": "Last name"
 }

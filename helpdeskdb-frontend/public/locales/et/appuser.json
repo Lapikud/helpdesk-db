@@ -1,6 +1,7 @@
 {
-  "AppUserName": "Имя пользователя",
+  "AppUserName": "Kasutajanimi",
   "AppUserNamePrompt": "Sisestage kasutajanimi.",
+  "AppUsers": "Kasutajad",
   "FirstName": "Eesnimi",
   "LastName": "Perenimi"
 }

@@ -6,5 +6,7 @@
   "ChangeReservationTime": "Muuda broneeringu aega",
   "RemoveReservation": "Eemalda broneering",
   "Returned": "Tagastatud",
-  "NotYetReturned": "Pole veel tagastatud"
+  "NotYetReturned": "Pole veel tagastatud",
+  "ShowLines": "Liinid",
+  "ShowCards" : "Kardid"
 }

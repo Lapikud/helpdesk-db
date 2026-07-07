@@ -2,5 +2,6 @@
   "CodeName": "Kood",
   "CodeNamePrompt": "Sisestage kapi koodinimi",
   "Cupboards": "Kapid",
-  "CupboardSingular": "Kapp"
+  "CupboardSingular": "Kapp",
+  "NewCupboard": "Uus kapp"
 }

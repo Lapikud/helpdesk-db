@@ -2,5 +2,6 @@
   "Location": "Location",
   "Cupboard": "Cupboard",
   "LocationInCupboardSingular": "Location in cupboard",
-  "LocationInCupboardTitle": "Locations in cupboard"
+  "LocationInCupboardTitle": "Locations in cupboard",
+  "NewLocation": "New location"
 }

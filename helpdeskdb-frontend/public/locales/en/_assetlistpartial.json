@@ -6,5 +6,7 @@
   "ChangeReservationTime": "Change Reservation Time",
   "RemoveReservation": "Remove Reservation",
   "Returned": "Returned",
-  "NotYetReturned": "Not yet returned"
+  "NotYetReturned": "Not yet returned",
+  "ShowLines": "Lines",
+  "ShowCards" : "Cards"
 }

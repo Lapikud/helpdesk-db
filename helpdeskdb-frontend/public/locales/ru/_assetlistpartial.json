@@ -6,5 +6,7 @@
   "ChangeReservationTime": "Изменить время резервирования",
   "RemoveReservation": "Удалить резервирование",
   "Returned": "Возвращён",
-  "NotYetReturned": "Ещё не возвращён"
+  "NotYetReturned": "Ещё не возвращён",
+  "ShowLines": "Линии",
+  "ShowCards" : "Карточки"
 }

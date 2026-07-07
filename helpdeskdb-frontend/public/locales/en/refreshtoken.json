@@ -1,0 +1,8 @@
+{
+  "RefreshTokensTitle": "Refresh tokens",
+  "User": "User",
+  "RefreshToken": "Refresh token",
+  "Expiration": "Expiration",
+  "PreviousRefreshToken": "Previous refresh token",
+  "PreviousExpiration": "Previous expiration"
+}

@@ -1,6 +1,7 @@
 {
   "AppUserName": "Имя пользователя",
   "AppUserNamePrompt": "Введите имя пользователя.",
+  "AppUsers": "Пользователи",
   "FirstName": "Имя",
   "LastName": "Фамилия"
 }

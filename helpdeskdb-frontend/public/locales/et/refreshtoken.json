@@ -1,0 +1,8 @@
+{
+  "RefreshTokensTitle": "Värskendustokenid",
+  "User": "Kasutaja",
+  "RefreshToken": "Värskendustoken",
+  "Expiration": "Aegumine",
+  "PreviousRefreshToken": "Eelmine värskendustoken",
+  "PreviousExpiration": "Eelmine aegumine"
+}

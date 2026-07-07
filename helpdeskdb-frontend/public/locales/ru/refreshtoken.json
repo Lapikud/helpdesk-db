@@ -1,0 +1,8 @@
+{
+  "RefreshTokensTitle": "Токены обновления",
+  "User": "Пользователь",
+  "RefreshToken": "Токен обновления",
+  "Expiration": "Срок действия",
+  "PreviousRefreshToken": "Предыдущий токен",
+  "PreviousExpiration": "Предыдущий срок действия"
+}

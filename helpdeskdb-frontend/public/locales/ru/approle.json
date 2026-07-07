@@ -1,4 +1,6 @@
 {
   "AppRoleName": "Роль",
-  "AppRoleNamePrompt": "Роль"
+  "AppRoleNamePrompt": "Введите название роли.",
+  "AppRoles": "Роли",
+  "AppRoleSingular": "Роль"
 }

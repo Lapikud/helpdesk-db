@@ -41,5 +41,6 @@
   "UsernameOrEmail": "Kasutajanimi või e-post",
   "Welcome": "Tere tulemast!",
   "Logout": "Logi välja",
-  "Loading": "Laadimine..."
+  "Loading": "Laadimine...",
+  "Processing": "Töötlemine..."
 }
