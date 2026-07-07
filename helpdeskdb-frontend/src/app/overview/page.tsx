@@ -45,7 +45,6 @@ import { ChangeReservationTimeDialog } from "@/components/dialogs/overviewDialog
 import { RemoveReservationDialog } from "@/components/dialogs/overviewDialogs/RemoveReservationDialog";
 
 export default function Overview() {
-	const { t: tCommon } = useTranslation("common");
 	const { t: tAssetViewModel } = useTranslation("assetviewmodel");
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const router = useRouter();
