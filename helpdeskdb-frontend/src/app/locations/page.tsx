@@ -1,14 +1,24 @@
+
 "use client";
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { LocationService } from "@/services/LocationService";
-import { useRouter } from "next/navigation";
-
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { ILocation } from "@/types/domain/DomainTypes";
+import {
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
+import { ILocation, ILocationAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
+import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
+import { CreateLocationDialog } from "@/components/dialogs/locationDialogs/CreateLocationDialog";
+import { EditLocationDialog } from "@/components/dialogs/locationDialogs/EditLocationDialog";
+import { DeleteLocationDialog } from "@/components/dialogs/locationDialogs/DeleteLocationDialog";
 
 export default function Locations() {
 	const { t: tLocation } = useTranslation("location");
@@ -17,132 +27,189 @@ export default function Locations() {
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const locationService: LocationService = useMemo(
 		() => new LocationService(),
-		[]
+		[],
 	);
-	if (setAccountInfo) {
-		locationService.injectSetAccountInfo(setAccountInfo);
-	}
-	const router = useRouter();
+	if (setAccountInfo) locationService.injectSetAccountInfo(setAccountInfo);
+
 	const [data, setData] = useState<ILocation[]>([]);
 	const [hydrated, setHydrated] = useState(false);
-
 	const isAdmin = accountInfo?.roles?.includes("admins");
+
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [locationToEdit, setLocationToEdit] = useState<ILocation | null>(null);
+	const [locationToDelete, setLocationToDelete] = useState<ILocation | null>(
+		null,
+	);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
 
+	const fetchData = useCallback(async () => {
+		const result = await locationService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [locationService]);
+
 	useEffect(() => {
 		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		const fetchData = async () => {
-			try {
-				const result = await locationService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
 		fetchData();
-	}, [hydrated, router, locationService, isAdmin]);
+	}, [hydrated, fetchData]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	const handleCreate = async (dto: ILocationAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await locationService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to create location",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
 
-	if (!accountInfo?.id || !isAdmin) {
-		return <Spinner className="h-64" />;
-	}
+	const handleEdit = async (dto: ILocation) => {
+		setEditLoading(true);
+		try {
+			const result = await locationService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to update location",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setLocationToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await locationService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to delete location",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setLocationToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = isAdmin
+		? [
+				tLocation("LocationName"),
+				tLocation("ShelfNum"),
+				tLocation("Column"),
+				tCommon("Actions"),
+			]
+		: [
+				tLocation("LocationName"),
+				tLocation("ShelfNum"),
+				tLocation("Column"),
+			];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [
+			item.locationName,
+			item.shelfNum,
+			item.column,
+			...(isAdmin
+				? [
+						<ActionCell key="actions">
+							<EditButton
+								label={tCommon("EditLink")}
+								onClick={() => {
+									setLocationToEdit(item);
+									setShowEdit(true);
+								}}
+							/>
+							<DeleteButton
+								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setLocationToDelete(item);
+									setShowDelete(true);
+								}}
+							/>
+						</ActionCell>,
+					]
+				: []),
+		],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">
-				{tLocation("Locations")}
-			</h1>
-			{isAdmin && (
-				<p className="mb-4">
-					<Link
-						href="/locations/create"
-						className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+		<ListPageWrapper
+			title={tLocation("Locations")}
+			createButton={
+				isAdmin && (
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
+						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
-				</p>
-			)}
+					</button>
+				)
+			}
+		>
+			<DataTable columns={columns} rows={rows} minWidth="min-w-[500px]" />
 
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tLocation("LocationName")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tLocation("ShelfNum")}
-							</th>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								{tLocation("Column")}
-							</th>
+			<CreateLocationDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
 
-							{isAdmin && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.locationName}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.shelfNum}
-								</td>
-								<td className="px-6 py-4 border-b">
-									{item.column}
-								</td>
+			<EditLocationDialog
+				open={showEdit}
+				location={locationToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setLocationToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
 
-								{isAdmin && (
-									<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-										<Link
-											href={`/locations/edit/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("EditLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/locations/details/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DetailsLink")}
-										</Link>
-										<span className="text-gray-400">|</span>
-										<Link
-											href={`/locations/delete/${item.id}`}
-											className="hover:underline"
-										>
-											{tCommon("DeleteLink")}
-										</Link>
-									</td>
-								)}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+			<DeleteLocationDialog
+				open={showDelete}
+				location={locationToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setLocationToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
+		</ListPageWrapper>
 	);
 }
