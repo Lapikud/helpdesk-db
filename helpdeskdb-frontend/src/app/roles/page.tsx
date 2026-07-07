@@ -5,28 +5,52 @@ import { AccountContext } from "@/context/AccountContext";
 import { RoleService } from "@/services/RoleService";
 import { useRouter } from "next/navigation";
 
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { IRole } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { IRole, IRoleAdd } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
+import { CreateRoleDialog } from "@/components/dialogs/roleDialogs/CreateRoleDialog";
+import { EditRoleDialog } from "@/components/dialogs/roleDialogs/EditRoleDialog";
+import { DeleteRoleDialog } from "@/components/dialogs/roleDialogs/DeleteRoleDialog";
 
 export default function Roles() {
+	const { t: tRole } = useTranslation("approle");
 	const { t: tCommon } = useTranslation("common");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const roleService: RoleService = useMemo(() => new RoleService(), []);
-	if (setAccountInfo) {
-		roleService.injectSetAccountInfo(setAccountInfo);
-	}
+	if (setAccountInfo) roleService.injectSetAccountInfo(setAccountInfo);
+
 	const router = useRouter();
 	const [data, setData] = useState<IRole[]>([]);
 	const [hydrated, setHydrated] = useState(false);
-
 	const isAdmin = accountInfo?.roles?.includes("admins");
+
+	const [showCreate, setShowCreate] = useState(false);
+	const [showEdit, setShowEdit] = useState(false);
+	const [showDelete, setShowDelete] = useState(false);
+
+	const [roleToEdit, setRoleToEdit] = useState<IRole | null>(null);
+	const [roleToDelete, setRoleToDelete] = useState<IRole | null>(null);
+
+	const [createLoading, setCreateLoading] = useState(false);
+	const [editLoading, setEditLoading] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
+
+	const fetchData = useCallback(async () => {
+		const result = await roleService.getAllAsync();
+		if (!result.errors && result.data) setData(result.data);
+	}, [roleService]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -36,88 +60,146 @@ export default function Roles() {
 			return;
 		}
 
-		const fetchData = async () => {
-			try {
-				const result = await roleService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
 		fetchData();
-	}, [hydrated, accountInfo, router, roleService, isAdmin]);
+	}, [hydrated, router, isAdmin, fetchData]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	const handleCreate = async (dto: IRoleAdd) => {
+		setCreateLoading(true);
+		try {
+			const result = await roleService.addAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to create role",
+				};
+			}
+			await fetchData();
+			setShowCreate(false);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setCreateLoading(false);
+		}
+	};
+
+	const handleEdit = async (dto: IRole) => {
+		setEditLoading(true);
+		try {
+			const result = await roleService.updateAsync(dto);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to update role",
+				};
+			}
+			await fetchData();
+			setShowEdit(false);
+			setRoleToEdit(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setEditLoading(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(true);
+		try {
+			const result = await roleService.deleteAsync(id);
+			if (result.errors || (result.statusCode ?? 0) >= 400) {
+				return {
+					error:
+						result.errors?.join(", ") || "Failed to delete role",
+				};
+			}
+			await fetchData();
+			setShowDelete(false);
+			setRoleToDelete(null);
+		} catch (error) {
+			return { error: (error as Error).message };
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = isAdmin
+		? [tRole("AppRoleName"), tCommon("Actions")]
+		: [tRole("AppRoleName")];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [
+			item.name,
+			...(isAdmin
+				? [
+						<ActionCell key="actions">
+							<EditButton
+								label={tCommon("EditLink")}
+								onClick={() => {
+									setRoleToEdit(item);
+									setShowEdit(true);
+								}}
+							/>
+							<DeleteButton
+								label={tCommon("DeleteLink")}
+								onClick={() => {
+									setRoleToDelete(item);
+									setShowDelete(true);
+								}}
+							/>
+						</ActionCell>,
+					]
+				: []),
+		],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">Roles</h1>
-
-			{(isAdmin) && (
-				<p className="mb-4">
-					<Link
-						href="/roles/create"
-						className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+		<ListPageWrapper
+			title={tRole("AppRoles")}
+			createButton={
+				isAdmin && (
+					<button
+						type="button"
+						onClick={() => setShowCreate(true)}
+						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
-					</Link>
-				</p>
-			)}
+					</button>
+				)
+			}
+		>
+			<DataTable columns={columns} rows={rows} />
 
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								Name{/* {tRole("RoleName")} */}
-							</th>
-							{isAdmin && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.name}
-								</td>
-								<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-									<Link
-										href={`/roles/edit/${item.id}`}
-										className="hover:underline"
-									>
-										{tCommon("EditLink")}
-									</Link>
-									<span className="text-gray-400">|</span>
-									<Link
-										href={`/roles/details/${item.id}`}
-										className="hover:underline"
-									>
-										{tCommon("DetailsLink")}
-									</Link>
-									<span className="text-gray-400">|</span>
-									<Link
-										href={`/roles/delete/${item.id}`}
-										className="hover:underline"
-									>
-										{tCommon("DeleteLink")}
-									</Link>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+			<CreateRoleDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onConfirm={handleCreate}
+				isLoading={createLoading}
+			/>
+
+			<EditRoleDialog
+				open={showEdit}
+				role={roleToEdit}
+				onClose={() => {
+					setShowEdit(false);
+					setRoleToEdit(null);
+				}}
+				onConfirm={handleEdit}
+				isLoading={editLoading}
+			/>
+
+			<DeleteRoleDialog
+				open={showDelete}
+				role={roleToDelete}
+				onClose={() => {
+					setShowDelete(false);
+					setRoleToDelete(null);
+				}}
+				onConfirm={handleDelete}
+				isLoading={deleteLoading}
+			/>
+		</ListPageWrapper>
 	);
 }
