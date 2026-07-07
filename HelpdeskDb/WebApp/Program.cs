@@ -28,6 +28,15 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+// Fail fast if the JWT signing key is missing or too weak. HS256 requires a key of at
+// least 256 bits (32 bytes); a shorter key silently weakens every issued token.
+var jwtSigningKey = builder.Configuration.GetValue<string>("JWTSecurity:Key");
+if (string.IsNullOrEmpty(jwtSigningKey) || Encoding.UTF8.GetByteCount(jwtSigningKey) < 32)
+{
+    throw new InvalidOperationException(
+        "JWTSecurity:Key is missing or shorter than 32 bytes. HS256 requires at least a 256-bit key.");
+}
+
 // NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 if (builder.Environment.IsProduction())
 {
@@ -211,21 +220,25 @@ app.UseRouting();
 
 app.UseCors("FrontendOnly");
 
-app.UseSwagger();
-app.UseSwaggerUI(options =>
-    {
-        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-        foreach (var description in provider.ApiVersionDescriptions)
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint(
-                $"/swagger/{description.GroupName}/swagger.json",
-                description.GroupName.ToUpperInvariant()
-            );
+            var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+            foreach (var description in provider.ApiVersionDescriptions)
+            {
+                options.SwaggerEndpoint(
+                    $"/swagger/{description.GroupName}/swagger.json",
+                    description.GroupName.ToUpperInvariant()
+                );
+            }
+            // serve from root
+            // options.RoutePrefix = string.Empty;
         }
-        // serve from root
-        // options.RoutePrefix = string.Empty;
-    }
-);
+    );
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

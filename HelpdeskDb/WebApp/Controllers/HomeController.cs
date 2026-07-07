@@ -87,7 +87,13 @@ public class HomeController : Controller
                 Expires = DateTimeOffset.UtcNow.AddYears(1)
             }
         );
-        return LocalRedirect(returnUrl);
+        // Only redirect back to a local path; a null / off-site returnUrl would otherwise throw
+        // (500) or enable an open redirect.
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return LocalRedirect(returnUrl);
+        }
+        return RedirectToAction(nameof(Index));
     }
 
     // GET: Home/CreateNewAsset

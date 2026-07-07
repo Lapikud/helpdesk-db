@@ -96,7 +96,7 @@ public class AccountController : ControllerBase
                 });
             if (loginResult.Success)
             {
-                _logger.LogInformation($"User: {loginRequest.Username} logged in.");
+                _logger.LogInformation("User: {Username} logged in.", loginRequest.Username);
 
                 var user = _context.Users.FirstOrDefault(u => u.Username == loginRequest.Username);
 
@@ -152,14 +152,22 @@ public class AccountController : ControllerBase
             else
             {
                 ModelState.AddModelError(string.Empty, Base.Resources.Errors.IdentityErrors.InvalidLogin);
+                await RandomDelayAsync();
                 return NotFound(new Message(Base.Resources.Errors.IdentityErrors.InvalidLogin));
             }
         }
         catch (Exception e)
         {
+            // Log server-side so an IPA outage isn't silently masked as "invalid login",
+            // but still return the same generic message + delay to the caller.
+            _logger.LogWarning(e, "Login failed for {Username}", loginRequest.Username);
+            await RandomDelayAsync();
             return NotFound(new Message(Base.Resources.Errors.IdentityErrors.InvalidLogin));
         }
     }
+
+    // Randomized delay on failed logins to blunt username-enumeration / timing side channels.
+    private Task RandomDelayAsync() => Task.Delay(_random.Next(RandomDelayMin, RandomDelayMax));
 
 
     /// <summary>
@@ -186,7 +194,6 @@ public class AccountController : ControllerBase
         }
 
         var appUser = await _context.Users
-            .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.Id == User.GetUserId());
 
         if (appUser == null)
@@ -201,7 +208,11 @@ public class AccountController : ControllerBase
 
         if (!string.IsNullOrEmpty(refreshTokenFromCookie))
         {
-            await _context.Entry(appUser)
+            // Delete only the token tied to this session's cookie (or its just-rotated
+            // predecessor) so logging out on one device does not kill the user's other
+            // sessions. The previous code discarded this query's result and removed every
+            // token loaded via Include.
+            var tokensToDelete = await _context.Entry(appUser)
                 .Collection(u => u.RefreshTokens!)
                 .Query()
                 .Where(x =>
@@ -210,10 +221,7 @@ public class AccountController : ControllerBase
                 )
                 .ToListAsync();
 
-            foreach (var appRefreshToken in appUser.RefreshTokens!)
-            {
-                _context.RefreshTokens.Remove(appRefreshToken);
-            }
+            _context.RefreshTokens.RemoveRange(tokensToDelete);
 
             deleteCount = await _context.SaveChangesAsync();
         }

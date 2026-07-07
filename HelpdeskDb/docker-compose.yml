@@ -3,8 +3,10 @@ services:
     image: postgres:latest
     container_name: "lapikudhelpdesk-db-postgres"
     ports:
+      # Bind to loopback only - the app container reaches the db over the compose network,
+      # so there is no reason to expose Postgres on all host interfaces (public reachability).
       # first port is the host port, second port is the container port
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - db-volume:/var/lib/postgresql/data
     environment:
