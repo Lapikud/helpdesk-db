@@ -3,24 +3,34 @@
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
 import { UserService } from "@/services/UserService";
+import { RoleService } from "@/services/RoleService";
+import { UserRoleService } from "@/services/UserRoleService";
 import { useRouter } from "next/navigation";
 
-import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { IUser } from "@/types/domain/DomainTypes";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { IUserWithRoles } from "@/types/domain/DomainTypes";
 import Spinner from "@/components/LoadingSpinner";
+import ListPageWrapper from "@/components/ListPageWrapper";
+import DataTable from "@/components/DataTable";
 
 export default function Users() {
-	// const { t: tUser } = useTranslation("user");
-	const { t: tCommon } = useTranslation("common");
+	const { t: tUser } = useTranslation("appuser");
+	const { t: tRole } = useTranslation("approle");
 
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const userService: UserService = useMemo(() => new UserService(), []);
+	const roleService: RoleService = useMemo(() => new RoleService(), []);
+	const userRoleService: UserRoleService = useMemo(
+		() => new UserRoleService(),
+		[],
+	);
 	if (setAccountInfo) {
 		userService.injectSetAccountInfo(setAccountInfo);
+		roleService.injectSetAccountInfo(setAccountInfo);
+		userRoleService.injectSetAccountInfo(setAccountInfo);
 	}
 	const router = useRouter();
-	const [data, setData] = useState<IUser[]>([]);
+	const [data, setData] = useState<IUserWithRoles[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
@@ -28,6 +38,39 @@ export default function Users() {
 	useEffect(() => {
 		setHydrated(true);
 	}, []);
+
+	const fetchData = useCallback(async () => {
+		const [usersResult, rolesResult, userRolesResult] = await Promise.all([
+			userService.getAllAsync(),
+			roleService.getAllAsync(),
+			userRoleService.getAllAsync(),
+		]);
+
+		if (
+			usersResult.errors ||
+			!usersResult.data ||
+			rolesResult.errors ||
+			!rolesResult.data ||
+			userRolesResult.errors ||
+			!userRolesResult.data
+		) {
+			return;
+		}
+
+		const roleNameById = new Map(
+			rolesResult.data.map((r) => [r.id, r.name]),
+		);
+
+		const withRoles: IUserWithRoles[] = usersResult.data.map((user) => ({
+			...user,
+			roles: userRolesResult
+				.data!.filter((ur) => ur.userId === user.id)
+				.map((ur) => roleNameById.get(ur.roleId))
+				.filter(Boolean) as string[],
+		}));
+
+		setData(withRoles);
+	}, [userService, roleService, userRoleService]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -37,63 +80,21 @@ export default function Users() {
 			return;
 		}
 
-		const fetchData = async () => {
-			try {
-				const result = await userService.getAllAsync();
-				if (result.errors) {
-					console.log(result.errors);
-					return;
-				}
-				setData(result.data!);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
-
 		fetchData();
-	}, [hydrated, router, userService, isAdmin]);
+	}, [hydrated, router, isAdmin, fetchData]);
 
-	if (!hydrated) {
-		return <Spinner className="h-64" />;
-	}
+	if (!hydrated) return <Spinner className="h-64" />;
+
+	const columns = [tUser("AppUserName"), tRole("AppRoles")];
+
+	const rows = data.map((item) => ({
+		id: item.id,
+		cells: [item.username, item.roles.join(", ") || "-"],
+	}));
 
 	return (
-		<>
-			<h1 className="text-3xl font-semibold mb-4">Users</h1>
-
-			<div className="w-full max-w-7xl overflow-x-auto shadow rounded-lg">
-				<table className="w-full table-auto bg-white border border-gray-200 text-left">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-								Username{/* {tUser("UserName")} */}
-							</th>
-							{isAdmin && (
-								<th className="px-6 py-3 text-sm font-semibold text-gray-700 border-b whitespace-nowrap">
-									{tCommon("Actions")}
-								</th>
-							)}
-						</tr>
-					</thead>
-					<tbody>
-						{data.map((item) => (
-							<tr key={item.id} className="hover:bg-gray-50">
-								<td className="px-6 py-4 border-b">
-									{item.username}
-								</td>
-								<td className="px-6 py-4 border-b text-blue-600 space-x-2">
-									<Link
-										href={`/users/details/${item.id}`}
-										className="hover:underline"
-									>
-										{tCommon("DetailsLink")}
-									</Link>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-		</>
+		<ListPageWrapper title={tUser("AppUsers")}>
+			<DataTable columns={columns} rows={rows} />
+		</ListPageWrapper>
 	);
 }
