@@ -10,10 +10,12 @@ using Microsoft.EntityFrameworkCore;
 using App.DAL.EF;
 using App.Domain;
 using Base.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using WebApp.ViewModels;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "admins,helpdesk_db_admins,members,pixels")]
     public class AssetReservationsController : Controller
     {
         private readonly IAppBLL _bll;
@@ -71,7 +73,8 @@ namespace WebApp.Controllers
                     vm.AssetReservation.AssetId,
                     reservationFrom, reservationTo))
             {
-                await _bll.AssetReservationService.UserReserveAsset(vm.AssetReservation.UserId,
+                // Always reserve for the logged-in user - the posted UserId is client-controlled.
+                await _bll.AssetReservationService.UserReserveAsset(User.GetUserId(),
                     vm.AssetReservation.AssetId, reservationFrom,
                     reservationTo);
                 await _bll.SaveChangesAsync();
@@ -121,21 +124,37 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var changing = await _bll.AssetReservationService.FindAsync(vm.AssetReservation.Id, User.GetUserId());
+            var userId = User.GetUserId();
+            var changing = await _bll.AssetReservationService.FindAsync(vm.AssetReservation.Id, userId);
 
-            var check = vm.AssetReservation.AssetId == changing!.AssetId ||
+            // Everyone may view reservations, but only the owner may change theirs.
+            if (changing == null || !changing.UserId.Equals(userId))
+            {
+                return NotFound();
+            }
+
+            var check = vm.AssetReservation.AssetId == changing.AssetId ||
                         await _bll.AssetReservationService.GetAssetReservationsByUserIdAndAssetId(
-                            vm.AssetReservation.UserId, vm.AssetReservation.AssetId) == null;
+                            userId, vm.AssetReservation.AssetId) == null;
+
+            var reservationFrom = vm.AssetReservation.ReservationFrom.ToUniversalTime();
+            var reservationTo = vm.AssetReservation.ReservationTo.ToUniversalTime();
+
+            if (!await _bll.AssetReservationService.IsAssetReservationAvailable(
+                    vm.AssetReservation.AssetId, reservationFrom, reservationTo, vm.AssetReservation.Id))
+            {
+                ModelState.AddModelError(nameof(AssetReservation.ReservationFrom),
+                    "Reservation for that time is unavailable.");
+                ModelState.AddModelError(nameof(AssetReservation.ReservationTo),
+                    "Reservation for that time is unavailable.");
+            }
 
             if (ModelState.IsValid && check)
             {
-                var reservationFrom = vm.AssetReservation.ReservationFrom.ToUniversalTime();
-                var reservationTo = vm.AssetReservation.ReservationTo.ToUniversalTime();
-
                 vm.AssetReservation.ReservationFrom = reservationFrom;
                 vm.AssetReservation.ReservationTo = reservationTo;
-                
-                await _bll.AssetReservationService.UpdateAsync(vm.AssetReservation);
+
+                await _bll.AssetReservationService.UpdateAsync(vm.AssetReservation, userId);
                 await _bll.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }

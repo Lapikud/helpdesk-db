@@ -183,6 +183,19 @@ namespace WebApp.ApiControllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeleteAssetReservation(Guid id)
         {
+            var existing = await _bll.AssetReservationService.FindAsync(id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            // Owners may delete their own reservation; admins may delete any.
+            var isAdmin = User.IsInRole("admins") || User.IsInRole("helpdesk_db_admins");
+            if (!isAdmin && !existing.UserId.Equals(User.GetUserId()))
+            {
+                return NotFound();
+            }
+
             await _bll.AssetReservationService.RemoveAsync(id);
             await _bll.SaveChangesAsync();
 

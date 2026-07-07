@@ -24,7 +24,6 @@ export const EditAssetReservationDialog = ({
 	onConfirm,
 	isLoading,
 }: EditAssetReservationDialogProps) => {
-	const { t: tAssetReservation } = useTranslation("assetreservation");
 	const { t: tCommon } = useTranslation("common");
 	const { t: tValidation } = useTranslation("validationerrors");
 	const { t: tChangeReservationTime } = useTranslation("changeReservationTime");
