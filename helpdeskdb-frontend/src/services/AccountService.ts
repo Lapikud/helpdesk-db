@@ -19,7 +19,7 @@ export class AccountService extends BaseService {
 			const loginData = { username, password }
 
 			const response = await this.axiosInstance.post<IIdentityResponse>(
-				url + "?jwtExpiresInSeconds=5",
+				url,
 				loginData
 			)
 

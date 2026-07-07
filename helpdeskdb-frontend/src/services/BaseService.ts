@@ -2,6 +2,13 @@ import { IAccountInfo } from "@/context/AccountContext";
 import { IIdentityResponse } from "@/types/IIdentityResponse";
 import axios, { AxiosInstance } from "axios";
 
+// Shared across every service instance so concurrent 401s trigger only ONE
+// refresh-token rotation. Without this, two services hitting a 401 at the same
+// time both call renewRefreshToken, the backend rotates the hd_rt cookie on the
+// first, and the second presents an already-invalidated token, fails, and logs
+// the user out.
+let sharedRefresh: Promise<IIdentityResponse | null> | null = null;
+
 export abstract class BaseService {
 	protected axiosInstance: AxiosInstance;
 
@@ -34,16 +41,28 @@ export abstract class BaseService {
 				) {
 					originalRequest._retry = true;
 					try {
-						const response = await this.axiosInstance.post<IIdentityResponse>(
-							"account/renewRefreshToken?jwtExpiresInSeconds=5",
-							null
-						);
+						// Coalesce concurrent refreshes onto a single in-flight call.
+						if (!sharedRefresh) {
+							sharedRefresh = this.axiosInstance
+								.post<IIdentityResponse>(
+									"account/renewRefreshToken",
+									null
+								)
+								.then((response) =>
+									response.status < 300 ? response.data : null
+								)
+								.finally(() => {
+									sharedRefresh = null;
+								});
+						}
 
-						if (response.status < 300) {
+						const identity = await sharedRefresh;
+
+						if (identity) {
 							this.setAccountInfo?.({
-								id: response.data.id,
-								name: response.data.username,
-								roles: response.data.roles,
+								id: identity.id,
+								name: identity.username,
+								roles: identity.roles,
 							});
 							return this.axiosInstance(originalRequest);
 						}
