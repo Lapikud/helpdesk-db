@@ -19,7 +19,7 @@ interface AssetListProps {
 	onModeChange: (mode: string) => void;
 	searchInput: string;
 	onSearchChange: (value: string) => void;
-	onSearchSubmit: (e: React.FormEvent) => void;
+	onSearchSubmit: (e: React.SubmitEvent) => void;
 	createLoading: boolean;
 	onCreateAsset: () => void;
 }
@@ -349,6 +349,7 @@ export default function AssetList({
 						>
 							<input
 								type="text"
+								data-barcode-scan-target=""
 								className="bg-[#efefef] rounded-full pl-4 pr-10 py-2 text-sm text-[#585858] placeholder-[#585858] focus:outline-none w-52"
 								placeholder={tCommon("Search") + "..."}
 								value={searchInput}

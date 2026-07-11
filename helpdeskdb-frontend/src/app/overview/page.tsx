@@ -27,6 +27,7 @@ import {
 } from "@/types/domain/DomainTypes";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AssetList from "@/components/AssetList";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { EditAssetDialog } from "@/components/dialogs/overviewDialogs/EditAssetDialog";
 import { CategoryService } from "@/services/CategoryService";
 import { LocationService } from "@/services/LocationService";
@@ -198,12 +199,38 @@ export default function Overview() {
 		assetsReservedByUser.length,
 	]);
 
-	const handleSearch = (e: React.FormEvent) => {
+	const submitSearch = useCallback(
+		(value: string) => {
+			const params = new URLSearchParams();
+			if (value) params.set("searchTerm", value);
+			router.push(`${window.location.pathname}?${params.toString()}`);
+		},
+		[router],
+	);
+
+	const handleSearch = (e: React.SubmitEvent) => {
 		e.preventDefault();
-		const params = new URLSearchParams();
-		if (searchInput) params.set("searchTerm", searchInput);
-		router.push(`${window.location.pathname}?${params.toString()}`);
+		submitSearch(searchInput);
 	};
+
+	const anyDialogOpen =
+		showRemoveModal ||
+		showCreateModal ||
+		showUpdateModal ||
+		showReserveModal ||
+		showChangeReservationModal ||
+		showRemoveReservationModal;
+
+	useBarcodeScanner({
+		onScan: useCallback(
+			(code: string) => {
+				setSearchInput(code);
+				submitSearch(code);
+			},
+			[submitSearch],
+		),
+		enabled: !anyDialogOpen,
+	});
 
 	function updateQueryParam(
 		router: AppRouterInstance,
