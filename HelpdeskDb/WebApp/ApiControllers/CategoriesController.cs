@@ -146,7 +146,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetCategory", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoCategory);
         }
 

@@ -131,7 +131,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetLocation", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoLocation);
         }
 

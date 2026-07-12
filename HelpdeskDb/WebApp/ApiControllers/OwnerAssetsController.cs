@@ -128,7 +128,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetOwnerAssets", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoOwnerAsset);
         }
 

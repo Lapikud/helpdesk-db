@@ -131,7 +131,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetRemovedAssets", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoRemovedAsset);
         }
 

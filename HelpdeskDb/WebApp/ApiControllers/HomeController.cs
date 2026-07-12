@@ -108,7 +108,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetOverview", new
             {
                 id = bllEntityAsset.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, addedAssetViewModel);
         }
 

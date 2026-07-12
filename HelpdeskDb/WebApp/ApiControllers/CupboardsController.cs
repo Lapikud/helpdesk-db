@@ -127,7 +127,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetCupboard", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoCupboard);
         }
 

@@ -169,7 +169,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetAssetReservation", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoAssetReservation);
         }
 

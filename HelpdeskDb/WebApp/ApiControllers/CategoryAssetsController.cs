@@ -128,7 +128,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetCategoryAssets", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoCategoryAsset);
         }
 

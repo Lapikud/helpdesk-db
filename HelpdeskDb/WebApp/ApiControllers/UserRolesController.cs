@@ -126,7 +126,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetAppUserRole", new
             {
                 id = domainEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoEntity);
         }
 

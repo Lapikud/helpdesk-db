@@ -133,7 +133,7 @@ namespace WebApp.ApiControllers
             return CreatedAtAction("GetAsset", new
             {
                 id = bllEntity.Id,
-                version = HttpContext.GetRequestedApiVersion()!.ToString()
+                version = HttpContext.RequestedApiVersion!.ToString()
             }, dtoAsset);
         }
 

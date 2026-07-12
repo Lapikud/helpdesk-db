@@ -14,22 +14,22 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
-        <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
-        <PackageReference Include="DotNetEnv" Version="3.1.1" />
+        <PackageReference Include="Asp.Versioning.Mvc" Version="10.0.0" />
+        <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.0" />
+        <PackageReference Include="DotNetEnv" Version="3.2.0" />
         <PackageReference Include="FreeIPA.DotNet" Version="1.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.3" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3">
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.2" />
-        <PackageReference Include="System.DirectoryServices.Protocols" Version="10.0.3" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+        <PackageReference Include="System.DirectoryServices.Protocols" Version="10.0.9" />
     </ItemGroup>
 
     <ItemGroup>
