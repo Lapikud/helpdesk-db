@@ -10,7 +10,7 @@ i18n.use(HttpBackend) // loads translations via HTTP
 		fallbackLng: "en", // fallback language
 		ns: ['_assetlistpartial', '_languageselectionpartial', '_layout', '_loginpartial', 'approle', 'appuser', 'appuserrole', 'asset', 'assetviewmodel', 'category', 'categoryassets', 'common', 'createnewasset', 'cupboard', 'cupboardinroom', 'identityerrors', 'location', 'locationassets', 'locationincupboard', 'modelbindingerrors', 'owner', 'ownerassets', 'remove', 'removedassets', 'room', 'userassets', 'validationerrors'],
 		defaultNS: 'common',
-		debug: true, // helpful for debugging in dev
+		debug: process.env.NODE_ENV !== 'production', // helpful for debugging in dev only
 		interpolation: {
 			escapeValue: false, // React already escapes by default
 		},

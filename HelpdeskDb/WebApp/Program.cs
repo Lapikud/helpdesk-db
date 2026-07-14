@@ -9,6 +9,7 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Base.Contracts;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,13 +29,14 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// Fail fast if the JWT signing key is missing or too weak. HS256 requires a key of at
-// least 256 bits (32 bytes); a shorter key silently weakens every issued token.
+// Fail fast if the JWT signing key is missing or too weak. Tokens are signed with HS512
+// (see IdentityExtensions.GenerateJwt), which wants a 512-bit (64-byte) key; a shorter key
+// silently under-keys every issued token.
 var jwtSigningKey = builder.Configuration.GetValue<string>("JWTSecurity:Key");
-if (string.IsNullOrEmpty(jwtSigningKey) || Encoding.UTF8.GetByteCount(jwtSigningKey) < 32)
+if (string.IsNullOrEmpty(jwtSigningKey) || Encoding.UTF8.GetByteCount(jwtSigningKey) < 64)
 {
     throw new InvalidOperationException(
-        "JWTSecurity:Key is missing or shorter than 32 bytes. HS256 requires at least a 256-bit key.");
+        "JWTSecurity:Key is missing or shorter than 64 bytes. HS512 requires at least a 512-bit key.");
 }
 
 // NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
@@ -96,6 +98,9 @@ builder.Services
                         builder.Configuration.GetValue<string>("JWTSecurity:Key")!
                     )
                 ),
+                // Pin the accepted signature algorithm to what we actually issue (HS512),
+                // so a token forged with any other alg is rejected outright.
+                ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha512 },
                 ClockSkew = TimeSpan.Zero
             };
             options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
@@ -200,6 +205,20 @@ if (!app.Environment.IsEnvironment("Testing"))
     await app.SeedSampleData();
 }
 
+// Behind the TLS-terminating reverse proxy the backend receives plain HTTP, so recover the
+// original scheme/host from X-Forwarded-* before anything (cookie Secure decisions, HSTS,
+// redirects) inspects the request. Must run before UseHsts/UseAuthentication.
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+// The proxy IP is not fixed inside the container network; clear the known-proxy allowlist so
+// forwarded headers from the internal proxy are honored. Tighten to the proxy's address/subnet
+// via KnownProxies/KnownNetworks if the deployment gives the proxy a stable internal IP.
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -212,7 +231,13 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// TLS is terminated at the reverse proxy; the backend itself only listens on HTTP inside the
+// container, so redirecting to HTTPS here would loop or point at a non-existent port. Only
+// enable if the app is ever configured to serve HTTPS directly (EnableHttpsRedirection=true).
+if (builder.Configuration.GetValue("EnableHttpsRedirection", false))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRequestLocalization(options: app.Services.GetService<IOptions<RequestLocalizationOptions>>()!.Value);
 
