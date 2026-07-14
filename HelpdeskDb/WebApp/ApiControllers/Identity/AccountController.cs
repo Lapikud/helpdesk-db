@@ -1,5 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using App.DAL.EF;
 using App.DTO.v1;
@@ -14,6 +16,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using AppRefreshToken = App.Domain.Identity.AppRefreshToken;
 using AppUser = App.Domain.Identity.AppUser;
 using AppUserRole = App.Domain.Identity.AppUserRole;
@@ -33,6 +36,7 @@ public class AccountController : ControllerBase
     private readonly ILogger<AccountController> _logger;
     private readonly AppDbContext _context;
     private readonly IIpaAuthClient _ipaClient;
+    private readonly IWebHostEnvironment _env;
 
     private readonly Random _random = new Random();
 
@@ -60,13 +64,22 @@ public class AccountController : ControllerBase
     /// <summary>
     /// Constructor
     /// </summary>
-    public AccountController(IConfiguration configuration, ILogger<AccountController> logger, AppDbContext context, IIpaAuthClient ipaClient)
+    public AccountController(IConfiguration configuration, ILogger<AccountController> logger, AppDbContext context, IIpaAuthClient ipaClient, IWebHostEnvironment env)
     {
         _configuration = configuration;
         _logger = logger;
         _context = context;
         _ipaClient = ipaClient;
+        _env = env;
     }
+
+    // Auth cookies must never leave the browser over plain HTTP once deployed. In dev/testing
+    // over http://localhost we cannot set Secure (the browser/test client would drop the
+    // cookie), so we force Secure in Production. Under the reverse-proxy deployment the backend
+    // sees plain HTTP from the proxy, so Request.IsHttps alone is not enough — IsProduction
+    // carries it. (UseForwardedHeaders makes Request.IsHttps true too when the proxy sets
+    // X-Forwarded-Proto=https, so either condition suffices.)
+    private bool UseSecureCookies => Request.IsHttps || _env.IsProduction();
 
 
     /// <summary>
@@ -130,16 +143,19 @@ public class AccountController : ControllerBase
                     _logger.LogInformation("Deleted {DeletedRows} refresh tokens", deletedRows);
                 }
 
+                // Hand the raw token to the client, persist only its hash.
+                var rawRefreshToken = GenerateRefreshToken();
                 var refreshToken = new AppRefreshToken()
                 {
                     UserId = user.Id,
+                    RefreshToken = HashRefreshToken(rawRefreshToken),
                 };
 
                 _context.RefreshTokens.Add(refreshToken);
                 await _context.SaveChangesAsync();
 
                 var (jwt, _) = await CreateJwt(user, jwtExpiresInSeconds);
-                SetAuthCookies(jwt, refreshToken.RefreshToken, refreshToken.Expiration);
+                SetAuthCookies(jwt, rawRefreshToken, refreshToken.Expiration);
 
                 var roleNames = await GetRoleNamesAsync(user.Id);
                 return Ok(new IdentityResponse
@@ -168,6 +184,15 @@ public class AccountController : ControllerBase
 
     // Randomized delay on failed logins to blunt username-enumeration / timing side channels.
     private Task RandomDelayAsync() => Task.Delay(_random.Next(RandomDelayMin, RandomDelayMax));
+
+    // Refresh tokens are opaque random secrets handed to the client in the hd_rt cookie, but
+    // only their SHA-256 hash is stored in the DB. A leaked DB (backup/dump) therefore never
+    // yields usable session tokens — the raw value cannot be recovered from the hash.
+    private static string GenerateRefreshToken() =>
+        Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+    private static string HashRefreshToken(string rawToken) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
 
 
     /// <summary>
@@ -208,6 +233,9 @@ public class AccountController : ControllerBase
 
         if (!string.IsNullOrEmpty(refreshTokenFromCookie))
         {
+            // Tokens are stored hashed, so hash the cookie value before matching.
+            var hashedFromCookie = HashRefreshToken(refreshTokenFromCookie);
+
             // Delete only the token tied to this session's cookie (or its just-rotated
             // predecessor) so logging out on one device does not kill the user's other
             // sessions. The previous code discarded this query's result and removed every
@@ -216,8 +244,8 @@ public class AccountController : ControllerBase
                 .Collection(u => u.RefreshTokens!)
                 .Query()
                 .Where(x =>
-                    (x.RefreshToken == refreshTokenFromCookie) ||
-                    (x.PreviousRefreshToken == refreshTokenFromCookie)
+                    (x.RefreshToken == hashedFromCookie) ||
+                    (x.PreviousRefreshToken == hashedFromCookie)
                 )
                 .ToListAsync();
 
@@ -293,11 +321,14 @@ public class AccountController : ControllerBase
             return NotFound($"User with name {username} not found");
         }
 
+        // The cookie carries the raw token; the DB stores only its hash — compare hashes.
+        var hashedFromCookie = HashRefreshToken(refreshFromCookie);
+
         var validTokens = await _context.Entry(appUser).Collection(u => u.RefreshTokens!)
             .Query()
             .Where(x =>
-                (x.RefreshToken == refreshFromCookie && x.Expiration > DateTime.UtcNow) ||
-                (x.PreviousRefreshToken == refreshFromCookie &&
+                (x.RefreshToken == hashedFromCookie && x.Expiration > DateTime.UtcNow) ||
+                (x.PreviousRefreshToken == hashedFromCookie &&
                  x.PreviousExpiration > DateTime.UtcNow)
             )
             .ToListAsync();
@@ -316,15 +347,29 @@ public class AccountController : ControllerBase
 
         var refreshToken = appUser.RefreshTokens.First();
 
-        if (refreshToken.RefreshToken == refreshFromCookie)
+        string rawForCookie;
+        DateTime cookieExpiry;
+        if (refreshToken.RefreshToken == hashedFromCookie)
         {
+            // Current token presented → rotate. Keep the just-used token valid for a short
+            // grace window (concurrent-request safety), mint a fresh raw token, store its hash.
             refreshToken.PreviousRefreshToken = refreshToken.RefreshToken;
             refreshToken.PreviousExpiration = DateTime.UtcNow.AddMinutes(1);
 
-            refreshToken.RefreshToken = Guid.NewGuid().ToString();
+            rawForCookie = GenerateRefreshToken();
+            refreshToken.RefreshToken = HashRefreshToken(rawForCookie);
             refreshToken.Expiration = DateTime.UtcNow.AddDays(7);
+            cookieExpiry = refreshToken.Expiration;
             _context.RefreshTokens.Update(refreshToken);
             await _context.SaveChangesAsync();
+        }
+        else
+        {
+            // Previous token presented within the grace window (a raced concurrent refresh).
+            // The current raw token is unrecoverable from its hash, so refresh only the JWT and
+            // hand the client's existing (previous) token back until the grace window closes.
+            rawForCookie = refreshFromCookie;
+            cookieExpiry = refreshToken.PreviousExpiration;
         }
 
         try
@@ -337,7 +382,7 @@ public class AccountController : ControllerBase
         }
 
         var (newJwt, _) = await CreateJwt(appUser, jwtExpiresInSeconds);
-        SetAuthCookies(newJwt, refreshToken.RefreshToken, refreshToken.Expiration);
+        SetAuthCookies(newJwt, rawForCookie, cookieExpiry);
 
         var roleNames = await GetRoleNamesAsync(appUser.Id);
         return Ok(new IdentityResponse
@@ -518,12 +563,13 @@ public class AccountController : ControllerBase
     // token. The server validates the JWT signature/claims independently of the cookie lifetime.
     // SameSite=Strict only works while the frontend and backend are same-site
     // (same registrable domain, e.g. both on localhost or both under example.com).
-    // If the SPA is deployed on a different registrable domain than the API, the
+    // The intended deployment keeps both under lapikud.ee, so Strict stays valid.
+    // If the SPA is ever deployed on a different registrable domain than the API, the
     // browser will drop these cookies on cross-site requests — switch to
-    // SameSiteMode.None and force Secure=true (HTTPS-only) when that day comes.
+    // SameSiteMode.None (which also requires Secure=true) when that day comes.
     private void SetAuthCookies(string jwt, string refreshToken, DateTime refreshExpiresAt)
     {
-        var secure = Request.IsHttps;
+        var secure = UseSecureCookies;
 
         Response.Cookies.Append(JwtCookieName, jwt, new CookieOptions
         {
@@ -546,7 +592,7 @@ public class AccountController : ControllerBase
 
     private void ClearAuthCookies()
     {
-        var secure = Request.IsHttps;
+        var secure = UseSecureCookies;
 
         Response.Cookies.Delete(JwtCookieName, new CookieOptions
         {
