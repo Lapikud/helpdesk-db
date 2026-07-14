@@ -31,7 +31,7 @@ export class OverviewService extends BaseService {
 					},
 				);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 
@@ -53,7 +53,7 @@ export class OverviewService extends BaseService {
 				data,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 
@@ -76,7 +76,7 @@ export class OverviewService extends BaseService {
 				data,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: null };
 			}
 
@@ -99,7 +99,7 @@ export class OverviewService extends BaseService {
 				data,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 
@@ -132,7 +132,7 @@ export class OverviewService extends BaseService {
 				data,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 
@@ -155,7 +155,7 @@ export class OverviewService extends BaseService {
 				data,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: null };
 			}
 
@@ -176,7 +176,7 @@ export class OverviewService extends BaseService {
 				`home/overview/remove-reservation/${id}`,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 
@@ -197,7 +197,7 @@ export class OverviewService extends BaseService {
 				`home/overview/return/${id}`,
 			);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 

@@ -13,7 +13,7 @@ export class UserManagementService extends BaseService {
 			const response = await this.axiosInstance.post<null>(
 				`usermanagementapi/roleadd?userId=${userId}&roleId=${roleId}`
 			);
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: null };
 			}
 			return {
@@ -31,7 +31,7 @@ export class UserManagementService extends BaseService {
 			const response = await this.axiosInstance.delete<null>(
 				`usermanagementapi/roleremove?userId=${userId}&roleId=${roleId}`
 			);
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: null };
 			}
 			return {
@@ -49,7 +49,7 @@ export class UserManagementService extends BaseService {
 			const response = await this.axiosInstance.get<{ email: string; passwordResetLink: string }>(
 				`usermanagementapi/passwordlink/${userId}`
 			);
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 			return {

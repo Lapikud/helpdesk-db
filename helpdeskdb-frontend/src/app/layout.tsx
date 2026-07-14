@@ -27,9 +27,7 @@ export default function RootLayout({
 					name: result.data.username,
 					roles: result.data.roles,
 				});
-				console.log("result:", result.data);
 			} else {
-				console.log("result.errors:", result.errors, "status:", result.statusCode);
 				setAccountInfo({});
 			}
 			setHydrated(true);

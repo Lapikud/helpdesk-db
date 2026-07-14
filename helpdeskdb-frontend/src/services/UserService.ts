@@ -16,7 +16,7 @@ export class UserService extends BaseService {
 
 			console.log('getAll response', response)
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data
@@ -39,7 +39,7 @@ export class UserService extends BaseService {
 
 			console.log('get response', response)
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data

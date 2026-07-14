@@ -17,7 +17,7 @@ export class AssetService extends EntityService<IAsset, IAssetAdd> {
 					params: { includeRemoved },
 				},
 			);
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return { statusCode: response.status, data: response.data };
 			}
 			return {

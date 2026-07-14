@@ -23,7 +23,7 @@ export class AccountService extends BaseService {
 				loginData
 			)
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data
@@ -45,8 +45,7 @@ export class AccountService extends BaseService {
 	async meAsync(): Promise<IResultObject<IIdentityResponse>> {
 		try {
 			const response = await this.axiosInstance.get<IIdentityResponse>('account/me')
-			console.log("/me response: " + response.data);
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data
@@ -57,7 +56,6 @@ export class AccountService extends BaseService {
 				errors: [(response.status.toString() + ' ' + response.statusText).trim()],
 			}
 		} catch (error) {
-			console.log("/me response: " + error);
 			return {
 				statusCode: (error as AxiosError)?.response?.status ?? (error as AxiosError)?.status,
 				errors: [(error as AxiosError).code ?? ""],

@@ -19,7 +19,7 @@ export abstract class EntityService<
 
 			console.log("getAll response", response);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data,
@@ -49,7 +49,7 @@ export abstract class EntityService<
 
 			console.log("get response", response);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data,
@@ -79,7 +79,7 @@ export abstract class EntityService<
 
 			console.log("get response", response);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: null,
@@ -110,7 +110,7 @@ export abstract class EntityService<
 
 			console.log("login response", response);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data,
@@ -141,7 +141,7 @@ export abstract class EntityService<
 
 			console.log("login response", response);
 
-			if (response.status <= 300) {
+			if (response.status < 300) {
 				return {
 					statusCode: response.status,
 					data: response.data,

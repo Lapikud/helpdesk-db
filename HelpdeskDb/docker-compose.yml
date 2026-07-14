@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:latest
+    image: postgres:17
     container_name: "lapikudhelpdesk-db-postgres"
     ports:
       # Bind to loopback only - the app container reaches the db over the compose network,

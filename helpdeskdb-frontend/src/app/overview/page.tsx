@@ -283,7 +283,7 @@ export default function Overview() {
 		setCreateLoading(true);
 		try {
 			const result = await overviewService.createAsset(createAssetModel);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				alert(result.errors?.join(", ") || "Failed to create asset");
 			} else {
 				await fetchData();
@@ -354,7 +354,7 @@ export default function Overview() {
 				assetId,
 				updadeAssetModel,
 			);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				alert(result.errors?.join(", ") || "Failed to edit asset");
 			} else {
 				await fetchData();
@@ -379,7 +379,7 @@ export default function Overview() {
 				assetId,
 				assetRemoveVm,
 			);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				alert(result.errors?.join(", ") || "Failed to remove asset");
 			} else {
 				await fetchData();
@@ -404,7 +404,7 @@ export default function Overview() {
 				assetId,
 				assetReservationVm,
 			);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				return {
 					success: false,
 					error:
@@ -426,7 +426,7 @@ export default function Overview() {
 		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
 			const result = await overviewService.returnAsset(assetId);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				alert(result.errors?.join(", ") || "Failed to return asset");
 			} else {
 				await fetchData();
@@ -443,7 +443,7 @@ export default function Overview() {
 		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
 			const result = await overviewService.removeReservation(assetId);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				alert(
 					result.errors?.join(", ") || "Failed to remove reservation",
 				);
@@ -470,7 +470,7 @@ export default function Overview() {
 				assetReservationId,
 				updateData,
 			);
-			if (result.statusCode! >= 400) {
+			if (!result.statusCode || result.statusCode >= 400) {
 				return {
 					error:
 						result.errors?.join(", ") ||
