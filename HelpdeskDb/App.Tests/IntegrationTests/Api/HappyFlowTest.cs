@@ -252,6 +252,33 @@ public class HappyFlowTest : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task ReserveAsset_IgnoresClientSuppliedUserId()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var asset = AddAsset();
+        _dbContext.ChangeTracker.Clear();
+
+        // IDOR regression: a client must not be able to reserve on behalf of another user.
+        var spoofedUserId = Guid.NewGuid();
+        var response = await _client.PostAsJsonAsync(ReserveAssetUri + asset.Id,
+            new AssetReservationCreate
+            {
+                AssetId = asset.Id,
+                UserId = spoofedUserId,
+                ReservationFrom = DateTime.UtcNow.AddHours(1),
+                ReservationTo = DateTime.UtcNow.AddHours(2)
+            }, ct);
+
+        response.EnsureSuccessStatusCode();
+
+        _dbContext.ChangeTracker.Clear();
+        var reservation = await _dbContext.AssetReservations
+            .SingleAsync(r => r.AssetId == asset.Id, ct);
+        Assert.Equal(_userId, reservation.UserId);
+        Assert.NotEqual(spoofedUserId, reservation.UserId);
+    }
+
+    [Fact]
     public async Task ReturnAsset()
     {
         var ct = TestContext.Current.CancellationToken;
