@@ -285,8 +285,10 @@ namespace WebApp.ApiControllers
                     $"Asset: {asset.AssetName} reservation for: {reservationFrom:u} – {reservationTo:u} is not available"));
             }
 
+            // Always reserve for the authenticated caller — never trust the client-supplied
+            // UserId in the body (it would let a user reserve in someone else's name).
             await _bll.AssetReservationService.UserReserveAsset(
-                assetReservationVm.UserId,
+                User.GetUserId(),
                 assetReservationVm.AssetId,
                 reservationFrom,
                 reservationTo
