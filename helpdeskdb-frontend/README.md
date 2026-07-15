@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HelpdeskDb frontend
 
-## Getting Started
+Next.js 15 (App Router) frontend for **HelpdeskDb**, an IT asset management system — browsing, reserving, and administering physical assets stored in cupboards and rooms. Talks to the ASP.NET Core backend in [`../HelpdeskDb`](../HelpdeskDb).
 
-First, run the development server:
+## Prerequisites
+
+- **Node.js 20+** and npm
+- The backend running on `http://localhost:5018` (see the [root README](../README.md) for full-stack setup)
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local   # sets NEXT_PUBLIC_BACKEND_URL (default http://localhost:5018)
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run dev         # dev server (Turbopack) → http://localhost:3000
+npm run dev:https   # dev server over HTTPS with a self-signed cert (tests Secure-cookie behavior)
+npm run build       # production build
+npm run lint        # ESLint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How the API proxy works
 
-## Learn More
+The app calls relative `/api/*` URLs. A `rewrites()` rule in `next.config.ts` proxies them to `${NEXT_PUBLIC_BACKEND_URL}/api/*`, so browser requests stay same-origin and CORS never fires in dev. Auth uses HttpOnly cookies set by the backend (`hd_jwt`, `hd_rt`) — the frontend never sees the tokens. `src/middleware.ts` forwards the browser's real scheme (`X-Forwarded-Proto`) on proxied requests so the backend marks the cookies `Secure` when you run over HTTPS.
 
-To learn more about Next.js, take a look at the following resources:
+## Further reading
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`CLAUDE.md`](CLAUDE.md) — architecture: service layer, auth flow, entity dialog system, list-page components, i18n
+- [Root `CLAUDE.md`](../CLAUDE.md) — cross-cutting auth/CORS/deployment notes

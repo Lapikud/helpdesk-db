@@ -70,7 +70,7 @@ Frontend `.env.local` keys:
 Pick a Postgres source and align the local port:
 
 - **Your own Postgres on `localhost:5432`** — set both connection strings to `Port=5432`. You do not need to run `docker-compose up db`.
-- **Bundled `docker-compose` Postgres** — `docker-compose.yml` publishes the container on host port **`5433`** (`"5433:5432"`). Set `ConnectionStrings__DefaultConnection` to `Port=5433` for local `dotnet run`. (If `5433` is taken on your machine, edit the mapping in `docker-compose.yml` and keep the connection string in sync.)
+- **Bundled `docker-compose` Postgres** — `docker-compose.yml` publishes the container on host port **`5433`**, bound to loopback only (`"127.0.0.1:5433:5432"`). Set `ConnectionStrings__DefaultConnection` to `Port=5433` for local `dotnet run`. (If `5433` is taken on your machine, edit the mapping in `docker-compose.yml` and keep the connection string in sync.)
 
 `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` in `.env` must match the `Username=` / `Password=` / `Database=` segments inside both connection strings — otherwise the db container initializes with one set of credentials while the backend tries to connect with another.
 
@@ -100,12 +100,17 @@ npm run dev
 # → http://localhost:3000
 ```
 
+To test HTTPS locally: `dotnet run --project WebApp/WebApp.csproj --launch-profile https` (→ `https://localhost:7234`) and/or `npm run dev:https` (self-signed cert). With `npm run dev:https`, the frontend's `src/middleware.ts` forwards the real scheme to the backend so the auth cookies are marked `Secure`.
+
 **Option B — backend in Docker, frontend local:**
 
 ```bash
 # from HelpdeskDb/
 docker-compose up
 # Postgres + backend come up together; backend on host port 80
+# (container lapikudhelpdesk-db-backend runs with ASPNETCORE_ENVIRONMENT=Production,
+#  which forces the auth cookies to Secure — a plain-http frontend can't use them;
+#  put a TLS-terminating proxy in front or run the backend locally instead)
 
 # from helpdeskdb-frontend/ (separate terminal)
 npm run dev
@@ -126,7 +131,7 @@ Tests are self-contained — they use **SQLite in-memory** and a `FakeIpaAuthCli
 
 ## Authentication (one-paragraph summary)
 
-Login goes to `POST /api/v1/account/login`. The backend authenticates against FreeIPA, syncs IPA group membership into the local `AppUserRole` table, and sets two HttpOnly cookies (`hd_jwt`, `hd_rt`). The frontend hydrates its identity by calling `GET /api/v1/account/me` on app mount — the JWT itself is never exposed to JavaScript. Full flow in [`CLAUDE.md`](CLAUDE.md).
+Login goes to `POST /api/v1/account/login`. The backend authenticates against FreeIPA, syncs IPA group membership into the local `AppUserRole` table, and sets two HttpOnly cookies (`hd_jwt`, `hd_rt`). The frontend hydrates its identity by calling `GET /api/v1/account/me` on app mount — the JWT itself is never exposed to JavaScript. Refresh tokens are stored server-side only as SHA-256 hashes, and the cookies are marked `Secure` on HTTPS requests or whenever the backend runs in Production. Full flow in [`CLAUDE.md`](CLAUDE.md).
 
 ## Localization
 

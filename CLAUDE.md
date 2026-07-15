@@ -22,10 +22,12 @@ Each subdirectory has its own `CLAUDE.md` with full detail. This file provides t
 # Terminal 1 — backend (from HelpdeskDb/)
 dotnet run --project WebApp/WebApp.csproj
 # Listens on http://localhost:5018
+# (HTTPS: dotnet run --project WebApp/WebApp.csproj --launch-profile https → https://localhost:7234)
 
 # Terminal 2 — frontend (from helpdeskdb-frontend/)
 npm run dev
 # Listens on http://localhost:3000
+# (HTTPS: npm run dev:https — self-signed cert, for testing Secure-cookie behavior)
 ```
 
 Or run only the backend + database via Docker (from `HelpdeskDb/`):
@@ -36,13 +38,13 @@ cp .env.example .env
 docker-compose up
 ```
 
-The frontend uses relative `/api/*` URLs — Next.js proxies them to the backend via a `rewrites()` rule in `next.config.ts`. The proxy destination is `${NEXT_PUBLIC_BACKEND_URL}/api/*`, configured in `helpdeskdb-frontend/.env.local` (default `http://localhost:5018`). Copy `.env.local.example` → `.env.local` before running the frontend.
+The frontend uses relative `/api/*` URLs — Next.js proxies them to the backend via a `rewrites()` rule in `next.config.ts`. The proxy destination is `${NEXT_PUBLIC_BACKEND_URL}/api/*`, configured in `helpdeskdb-frontend/.env.local` (default `http://localhost:5018`). Copy `.env.local.example` → `.env.local` before running the frontend. `helpdeskdb-frontend/src/middleware.ts` adds `X-Forwarded-Proto` (the browser's real scheme) to proxied requests, and the backend's `UseForwardedHeaders` trusts it — so when the frontend runs over HTTPS, the backend sees HTTPS and marks the auth cookies `Secure` even though the proxied hop is plain HTTP.
 
 ## Authentication flow (end-to-end)
 
 1. User submits credentials on the frontend `/login` page.
 2. Frontend calls `POST /api/v1/account/login` with `withCredentials: true`.
-3. Backend authenticates against **FreeIPA** (`ipa.lapikud.ee`) via JSON-RPC, syncs the user's IPA groups into the local `AppUserRole` table, and sets two **HttpOnly cookies** on the response: `hd_jwt` (path `/api`) and `hd_rt` (path `/api/v1/account`). Both are `SameSite=Strict` and `Secure` when the request is HTTPS. The response body returns only the user identity (id, username, roles).
+3. Backend authenticates against **FreeIPA** (`ipa.lapikud.ee`) via JSON-RPC, syncs the user's IPA groups into the local `AppUserRole` table, and sets two **HttpOnly cookies** on the response: `hd_jwt` (path `/api`) and `hd_rt` (path `/api/v1/account`). Both are `SameSite=Strict`, and `Secure` when the request is HTTPS **or the environment is Production** (docker-compose runs the backend as Production, so cookies are always Secure there). The response body returns only the user identity (id, username, roles). Server-side, the refresh token is stored as a SHA-256 hash — the raw token exists only in the `hd_rt` cookie.
 4. The frontend cannot read the JWT (HttpOnly), so on app mount `layout.tsx` calls `GET /api/v1/account/me`, which validates the cookie server-side and returns the identity used to hydrate `AccountContext`.
 5. All subsequent API calls go through axios with `withCredentials: true`; the browser attaches `hd_jwt` automatically. The backend's `JwtBearerEvents.OnMessageReceived` handler in `Program.cs` pulls the token out of the cookie when no `Authorization` header is present — the SPA never sends a `Bearer` header.
 6. On 401, the axios interceptor calls `POST /api/v1/account/renewRefreshToken`, which rotates the refresh token, sets new cookies, and returns the new identity.
@@ -55,6 +57,7 @@ Roles used throughout both layers: `admins`, `helpdesk_db_admins`, `members`, `p
 - In production with the frontend calling the backend directly, the backend uses the `FrontendOnly` CORS policy (registered in `Program.cs`) which reads the allowed origins from the `AllowedOrigins` configuration array. Set this via the `AllowedOrigins__0`, `AllowedOrigins__1`, … keys — loaded from `HelpdeskDb/.env` in dev via `DotNetEnv`, or set directly on the process in production. `appsettings.json` ships an empty placeholder.
 - `AllowCredentials()` is required for the auth cookies to cross origins, which means `AllowAnyOrigin()` cannot be used — the allowlist must be explicit.
 - If the deployed frontend and backend live on **different registrable domains** (not just different subdomains of the same domain), the auth cookies must switch from `SameSite=Strict` to `SameSite=None` + `Secure=true` in `AccountController.SetAuthCookies` or the browser will drop them.
+- TLS terminates at a reverse proxy; the backend trusts `X-Forwarded-For`/`X-Forwarded-Proto` via `UseForwardedHeaders` in `Program.cs`. `UseHttpsRedirection()` is opt-in via the `EnableHttpsRedirection` config key (default false) to avoid redirect loops behind a TLS-terminating proxy.
 
 ## API contract
 

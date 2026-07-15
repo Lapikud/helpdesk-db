@@ -83,7 +83,11 @@ Because `IIpaAuthClient` is scoped (each request gets a fresh `FreeIPA.DotNet.Ip
 
 Both cookie auth (MVC) and JWT Bearer (API) are registered. API controllers use `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`.
 
-The API delivers the JWT to the SPA as an **HttpOnly cookie** named `hd_jwt` (set by `AccountController.SetAuthCookies`). The companion refresh token rides in `hd_rt`. Both are `SameSite=Strict`, `HttpOnly`, and `Secure` over HTTPS. The `JwtBearerEvents.OnMessageReceived` handler in `Program.cs` (around line 94) pulls the JWT out of the `hd_jwt` cookie when the `Authorization` header is missing, so the SPA never needs to send a `Bearer` header. `GET /api/v1/account/me` lets the SPA hydrate its identity state from the server-validated cookie.
+The API delivers the JWT to the SPA as an **HttpOnly cookie** named `hd_jwt` (path `/api`, set by `AccountController.SetAuthCookies`). The companion refresh token rides in `hd_rt` (path `/api/v1/account`). Both are `SameSite=Strict` and `HttpOnly`; `Secure` is set when the request is HTTPS **or the environment is Production** (`UseSecureCookies` = `Request.IsHttps || _env.IsProduction()`) — note docker-compose runs the backend with `ASPNETCORE_ENVIRONMENT=Production`, so cookies are always Secure there. The `JwtBearerEvents.OnMessageReceived` handler in `Program.cs` pulls the JWT out of the `hd_jwt` cookie when the `Authorization` header is missing, so the SPA never needs to send a `Bearer` header. `GET /api/v1/account/me` lets the SPA hydrate its identity state from the server-validated cookie.
+
+**Refresh tokens are hashed at rest.** The raw token (32 random bytes, hex) is sent only in the `hd_rt` cookie; the DB stores its SHA-256 hex digest (`HashRefreshToken` in `AccountController`). Logout and renew hash the cookie value before matching. Rotation keeps the previous token's hash in `PreviousRefreshToken` with a 1-minute grace window so an in-flight request with the old token still succeeds. Refresh-token lifetime is hardcoded to 7 days (`BaseRefreshToken` / renew logic) — it is not configurable via `JWTSecurity`.
+
+JWT validation is hardened in `Program.cs`: the app fails fast at startup on a missing or short `JWTSecurity__Key`, pins `ValidAlgorithms` to HMAC-SHA512, and sets `ClockSkew = TimeSpan.Zero`.
 
 IPA calls go through the `IIpaAuthClient` abstraction (`WebApp/ApiControllers/Identity/IIpaAuthClient.cs`), registered scoped in `Program.cs`. The real implementation `IpaAuthClient` wraps `FreeIPA.DotNet.IpaClient`. `AccountController` depends on `IIpaAuthClient` (not the concrete client), which lets tests substitute `FakeIpaAuthClient` instead of hitting the real IPA server. Both the API login and the MVC `Areas/Identity/Pages/Account/Login.cshtml.cs` resolve `IIpaAuthClient` from DI.
 
@@ -92,6 +96,12 @@ IPA calls go through the `IIpaAuthClient` abstraction (`WebApp/ApiControllers/Id
 The `FrontendOnly` policy (registered in `Program.cs`) reads its allowlist from the `AllowedOrigins` configuration array and calls `AllowCredentials()` so the auth cookies survive cross-origin requests. Because of `AllowCredentials()`, `AllowAnyOrigin()` cannot be used — the allowlist must be explicit. `appsettings.json` ships an empty `AllowedOrigins: [""]` placeholder; real values come from `.env` (via `AllowedOrigins__0=http://localhost:3000`, `AllowedOrigins__1=https://...`, etc.) since `DotNetEnv` loads `.env` into the environment before the configuration builder runs.
 
 If a deployed frontend and backend are on different registrable domains (e.g. `app.foo.com` and `api.bar.com`), `SameSite=Strict` will block the auth cookies on cross-site requests — switch the cookie options in `AccountController.SetAuthCookies` to `SameSiteMode.None` + `Secure=true` (HTTPS only) when that happens.
+
+### HTTPS and reverse proxies
+
+TLS is expected to terminate at a reverse proxy (in dev, the Next.js server acts as that proxy for `/api/*`). `Program.cs` registers `UseForwardedHeaders` early in the pipeline with `XForwardedFor | XForwardedProto` and cleared `KnownNetworks`/`KnownProxies`, so `Request.IsHttps` reflects the client's real scheme when the proxy sends `X-Forwarded-Proto` (the frontend's `src/middleware.ts` does this). `UseHsts()` runs in non-Development environments. `UseHttpsRedirection()` is opt-in via the `EnableHttpsRedirection` configuration key (default false) so a plain-HTTP backend behind a TLS proxy is not redirected into a loop.
+
+Launch profiles (`WebApp/Properties/launchSettings.json`): `http` → `http://localhost:5018` (the default used by docs and the frontend proxy); `https` → `https://localhost:7234` + `http://localhost:5018` (`dotnet run --launch-profile https`).
 
 ### Domain model overview
 
@@ -106,6 +116,7 @@ Assets are the core entity. Each asset can have:
   - Availability check applies a ±10-minute buffer around reservation times to prevent back-to-back conflicts.
 - `SerialNumber` and `Barcode` on `Asset` are nullable strings (no min-length — optional identifiers). Both are included in the MVC overview search.
 - `AssetReservation` extends `BaseEntityUser<AppUser>` (not `BaseEntity`) — `UserId` is inherited from the base class.
+- Reservation ownership is server-enforced: the API `HomeController.Reserve` always sets the reservation's `UserId` from `User.GetUserId()`, ignoring any client-supplied `UserId` (covered by `HappyFlowTest.ReserveAsset_IgnoresClientSuppliedUserId`).
 
 Physical location hierarchy: `Room` → `CupboardInRoom` → `Cupboard` → `LocationInCupboard` → `Location`.
 
@@ -147,7 +158,7 @@ Integration tests (`App.Tests/IntegrationTests/`) use `CustomWebApplicationFacto
 - Swaps the Npgsql `DbContextOptions<AppDbContext>` registration for a **SQLite in-memory** connection (`DataSource=:memory:`), kept open for the lifetime of the factory so the schema survives between calls.
 - Replaces `IIpaAuthClient` with `FakeIpaAuthClient` (`App.Tests/IntegrationTests/FakeIpaAuthClient.cs`) so login succeeds without real IPA credentials. The fake returns a successful login and a canned `memberof_group` payload listing all four roles (`admins`, `members`, `pixels`, `helpdesk_db_admins`) — tweak `FakeIpaAuthClient.Groups` to simulate different role sets.
 - Injects a test JWT signing key + issuer/audience via `AddInMemoryCollection`, so the test host does not depend on `.env`.
-- Seeds deterministic rows (roles + categories, rooms, cupboards, locations, owners with fixed Guid IDs) in `SeedData` before tests run.
+- Seeds deterministic rows with fixed Guid IDs (roles, categories, rooms, cupboards, cupboardsInRooms, locations, locationsInCupboards — no owners; those come from the runtime `DataSeeder` or per-user creation at login) in `SeedData` before tests run.
 
 Unit tests (`App.Tests/UnitTests/`) use `TestDatabaseFixture.CreateContext()` — EF Core's **InMemory provider** with a fresh uniquely-named database per test (`AppTests_{Guid.NewGuid()}`). The fixture seeds the same entity shape as the integration factory and mocks `IUserNameResolver`. Repository and service layers both have coverage; unit tests exercise repositories directly against the in-memory context (not via Moq mocks of EF).
 
@@ -175,6 +186,6 @@ Key variables in `.env`:
 | `DOCKER_DB_CONNECTION` | docker-compose webapp container (host = `lapikudhelpdesk-db-postgres`, matching the db service's `container_name`) |
 | `AllowedOrigins__0`, `AllowedOrigins__1`, … | CORS allowlist for the `FrontendOnly` policy (one frontend origin per index, no trailing slash) |
 
-JWT settings are under `JWTSecurity:` (Key, Issuer, Audience, ExpiresInSeconds, RefreshTokenExpiresInSeconds). Supported cultures and default culture are also in `appsettings.json`.
+JWT settings are under `JWTSecurity:` (Key, Issuer, Audience, ExpiresInSeconds). Refresh-token lifetime is not configurable — it is hardcoded to 7 days. Supported cultures and default culture are also in `appsettings.json`. `EnableHttpsRedirection` (default false) toggles `UseHttpsRedirection()` — see "HTTPS and reverse proxies".
 
 On startup, `DataSeeder` runs migrations and seeds roles and sample data (categories, rooms, cupboards, locations, owners) if the tables are empty.
