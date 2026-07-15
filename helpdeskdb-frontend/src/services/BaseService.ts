@@ -48,9 +48,8 @@ export abstract class BaseService {
 									"account/renewRefreshToken",
 									null
 								)
-								.then((response) =>
-									response.status < 300 ? response.data : null
-								)
+								// axios rejects non-2xx responses, so reaching .then means success
+								.then((response) => response.data)
 								.finally(() => {
 									sharedRefresh = null;
 								});

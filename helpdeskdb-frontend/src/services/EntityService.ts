@@ -17,8 +17,6 @@ export abstract class EntityService<
 				this.basePath,
 			);
 
-			console.log("getAll response", response);
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -47,8 +45,6 @@ export abstract class EntityService<
 				this.basePath + "/" + id,
 			);
 
-			console.log("get response", response);
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -76,8 +72,6 @@ export abstract class EntityService<
 			const response = await this.axiosInstance.delete<null>(
 				this.basePath + "/" + id,
 			);
-
-			console.log("get response", response);
 
 			if (response.status < 300) {
 				return {
@@ -108,8 +102,6 @@ export abstract class EntityService<
 				entity,
 			);
 
-			console.log("login response", response);
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -139,8 +131,6 @@ export abstract class EntityService<
 				entity,
 			);
 
-			console.log("login response", response);
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -165,11 +155,7 @@ export abstract class EntityService<
 
 	protected handleError<T>(error: unknown): IResultObject<T> {
 		const axiosErr = error as AxiosError;
-		console.log(
-			"EntityService error:",
-			axiosErr.message,
-			axiosErr.response?.data,
-		);
+		console.error("EntityService error:", axiosErr.message);
 
 		const response = axiosErr.response as
 			| AxiosResponse<{

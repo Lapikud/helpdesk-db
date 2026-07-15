@@ -63,7 +63,7 @@ export class UserManagementService extends BaseService {
 
 	private handleError<T>(error: unknown): IResultObject<T> {
 		const axiosErr = error as AxiosError;
-		console.log("UserManagementService error:", axiosErr.message);
+		console.error("UserManagementService error:", axiosErr.message);
 
 		return {
 			statusCode: axiosErr.status ?? 0,

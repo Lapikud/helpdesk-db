@@ -8,7 +8,7 @@ i18n.use(HttpBackend) // loads translations via HTTP
 	.use(initReactI18next) // passes i18n to react-i18next
 	.init({
 		fallbackLng: "en", // fallback language
-		ns: ['_assetlistpartial', '_languageselectionpartial', '_layout', '_loginpartial', 'approle', 'appuser', 'appuserrole', 'asset', 'assetviewmodel', 'category', 'categoryassets', 'common', 'createnewasset', 'cupboard', 'cupboardinroom', 'identityerrors', 'location', 'locationassets', 'locationincupboard', 'modelbindingerrors', 'owner', 'ownerassets', 'remove', 'removedassets', 'room', 'userassets', 'validationerrors'],
+		ns: ['_assetlistpartial', '_languageselectionpartial', '_layout', '_loginpartial', 'approle', 'appuser', 'appuserrole', 'asset', 'assetreservation', 'assetviewmodel', 'category', 'categoryassets', 'changeReservationTime', 'common', 'createnewasset', 'cupboard', 'cupboardinroom', 'identityerrors', 'location', 'locationassets', 'locationincupboard', 'modelbindingerrors', 'owner', 'ownerassets', 'refreshtoken', 'remove', 'removedassets', 'removeReservation', 'reserve', 'room', 'validationerrors'],
 		defaultNS: 'common',
 		debug: process.env.NODE_ENV !== 'production', // helpful for debugging in dev only
 		interpolation: {

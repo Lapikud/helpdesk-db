@@ -14,8 +14,6 @@ export class UserService extends BaseService {
 
 			const response = await this.axiosInstance.get<IUser[]>("users")
 
-			console.log('getAll response', response)
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -37,8 +35,6 @@ export class UserService extends BaseService {
 
 			const response = await this.axiosInstance.get<IUser>("users" + "/" + id)
 
-			console.log('get response', response)
-
 			if (response.status < 300) {
 				return {
 					statusCode: response.status,
@@ -57,7 +53,7 @@ export class UserService extends BaseService {
 
 	private handleError<T>(error: unknown): IResultObject<T> {
 		const axiosErr = error as AxiosError;
-		console.log("UserService error:", axiosErr.message);
+		console.error("UserService error:", axiosErr.message);
 
 		return {
 			statusCode: axiosErr.status ?? 0,

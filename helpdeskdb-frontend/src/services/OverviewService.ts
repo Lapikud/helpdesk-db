@@ -116,16 +116,6 @@ export class OverviewService extends BaseService {
 		id: string,
 		data: IAssetReservationAdd,
 	): Promise<IResultObject<{ message: string }>> {
-		console.log(
-			"data: " +
-				data.assetId +
-				", " +
-				data.userId +
-				", " +
-				data.reservationFrom +
-				", " +
-				data.reservationTo,
-		);
 		try {
 			const response = await this.axiosInstance.post<{ message: string }>(
 				`home/overview/reserve/${id}`,
@@ -212,11 +202,7 @@ export class OverviewService extends BaseService {
 
 	private handleError<T>(error: unknown): IResultObject<T> {
 		const axiosErr = error as AxiosError;
-		console.log(
-			"OverviewService error:",
-			axiosErr.message,
-			axiosErr.response?.data,
-		);
+		console.error("OverviewService error:", axiosErr.message);
 
 		const response = axiosErr.response as
 			| AxiosResponse<{

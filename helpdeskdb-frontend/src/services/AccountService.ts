@@ -34,9 +34,8 @@ export class AccountService extends BaseService {
 				errors: [(response.status.toString() + ' ' + response.statusText).trim()],
 			}
 		} catch (error) {
-			console.log('login error: ', (error as Error).message)
 			return {
-				statusCode: (error as AxiosError)?.status,
+				statusCode: (error as AxiosError)?.response?.status ?? (error as AxiosError)?.status,
 				errors: [(error as AxiosError).code ?? ""],
 			}
 		}
