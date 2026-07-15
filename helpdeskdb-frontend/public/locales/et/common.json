@@ -42,5 +42,6 @@
   "Welcome": "Tere tulemast!",
   "Logout": "Logi välja",
   "Loading": "Laadimine...",
-  "Processing": "Töötlemine..."
+  "Processing": "Töötlemine...",
+  "LoadFailed": "Andmete laadimine ebaõnnestus. Palun proovi uuesti."
 }

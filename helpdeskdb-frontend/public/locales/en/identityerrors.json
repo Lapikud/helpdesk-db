@@ -1,4 +1,5 @@
 {
   "DefaultError": "Default identity error",
-  "InvalidLogin": "Invalid login attempt"
+  "InvalidLogin": "Invalid login attempt",
+  "LoginServiceUnavailable": "Login is currently unavailable. Please try again later."
 }

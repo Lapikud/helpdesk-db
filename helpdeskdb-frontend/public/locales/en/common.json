@@ -38,5 +38,6 @@
   "Welcome": "Welcome!",
   "Logout": "Logout",
   "Loading": "Loading...",
-  "Processing": "Processing..."
+  "Processing": "Processing...",
+  "LoadFailed": "Failed to load data. Please try again."
 }

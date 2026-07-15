@@ -1,4 +1,5 @@
 {
   "InvalidLogin": "Vigane sisselogimiskatse",
-  "DefaultError": "Identity viga"
+  "DefaultError": "Identity viga",
+  "LoginServiceUnavailable": "Sisselogimine pole hetkel saadaval. Palun proovi hiljem uuesti."
 }
