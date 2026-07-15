@@ -30,6 +30,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
 	// output: "export",
+	// Strip console.* from production bundles so entity data (users, reservations,
+	// refresh-token records) never lands in end users' browser consoles.
+	compiler: {
+		removeConsole: isDev ? false : { exclude: ["error", "warn"] },
+	},
 	trailingSlash: true,
 	skipTrailingSlashRedirect: true,
 	// basePath: '/~maperm/helpdeskDb'
