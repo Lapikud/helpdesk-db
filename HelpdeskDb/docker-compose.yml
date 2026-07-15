@@ -23,7 +23,9 @@ services:
     build: ./
     container_name: lapikudhelpdesk-db-backend
     ports:
-      - 80:80
+      # Loopback only - the app serves plain HTTP and expects a co-located
+      # TLS-terminating reverse proxy in front; don't expose it on all interfaces.
+      - "127.0.0.1:80:80"
     restart: on-failure
     logging:
       options:
@@ -32,6 +34,12 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: ${DOCKER_DB_CONNECTION}
       JWTSecurity__Key: ${JWTSecurity__Key}
+      # Without the service account the role re-sync on renewRefreshToken silently
+      # no-ops, so FreeIPA role revocations would not propagate for up to 7 days.
+      IpaServiceAccount__Username: ${IpaServiceAccount__Username}
+      IpaServiceAccount__Password: ${IpaServiceAccount__Password}
+      AllowedOrigins__0: ${AllowedOrigins__0}
+      AllowedOrigins__1: ${AllowedOrigins__1:-}
       ASPNETCORE_ENVIRONMENT: "Production"
       ASPNETCORE_URLS: "http://+:80"
     depends_on:

@@ -70,6 +70,7 @@ RUN dotnet publish -c Release -o out
 # intel cpu image - aspnet:9.0-bookworm-slim-amd64 AS runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-EXPOSE 8080
+# docker-compose sets ASPNETCORE_URLS=http://+:80
+EXPOSE 80
 COPY --from=build /app/out ./
 ENTRYPOINT ["dotnet", "WebApp.dll"]
