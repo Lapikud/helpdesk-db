@@ -29,6 +29,7 @@ export default function Categories() {
 	if (setAccountInfo) categoryService.injectSetAccountInfo(setAccountInfo);
 
 	const [data, setData] = useState<ICategory[]>([]);
+	const [fetchError, setFetchError] = useState(false);
 	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
 
@@ -53,7 +54,12 @@ export default function Categories() {
 
 	const fetchData = useCallback(async () => {
 		const result = await categoryService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
+		if (!result.errors && result.data) {
+			setData(result.data);
+			setFetchError(false);
+		} else {
+			setFetchError(true);
+		}
 	}, [categoryService]);
 
 	useEffect(() => {
@@ -172,6 +178,11 @@ export default function Categories() {
 				)
 			}
 		>
+			{fetchError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateCategoryDialog

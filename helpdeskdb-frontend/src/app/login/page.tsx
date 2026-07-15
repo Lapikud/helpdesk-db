@@ -3,7 +3,7 @@
 import { AccountContext } from "@/context/AccountContext";
 import { AccountService } from "@/services/AccountService";
 import { useRouter } from "next/navigation";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -11,7 +11,7 @@ export default function Login() {
 	const { t: tCommon } = useTranslation("common");
 	const { t: tValidation } = useTranslation("validationerrors");
 	const { t: tIdentityerrors } = useTranslation("identityerrors");
-	const accountService = new AccountService();
+	const accountService = useMemo(() => new AccountService(), []);
 
 	const { setAccountInfo } = useContext(AccountContext);
 
@@ -41,10 +41,12 @@ export default function Login() {
 				data.password,
 			);
 			if (result.errors || !result.data) {
+				// 401 = bad credentials; anything else (network error, 5xx,
+				// IPA outage) is a service problem, not the user's fault.
 				setErrorMessage(
-					result.statusCode +
-						" - " +
-						(result.errors?.[0] ?? "Login failed"),
+					result.statusCode === 401
+						? "InvalidLogin"
+						: "LoginServiceUnavailable",
 				);
 				return;
 			}
@@ -55,8 +57,8 @@ export default function Login() {
 				roles: result.data.roles,
 			});
 			router.push("/");
-		} catch (error) {
-			setErrorMessage("Login failed - " + (error as Error).message);
+		} catch {
+			setErrorMessage("LoginServiceUnavailable");
 		} finally {
 			setIsLoading(false);
 		}
@@ -69,7 +71,7 @@ export default function Login() {
 			</h1>
 			{errorMessage && (
 				<div className="mb-4 text-center text-red-600 text-sm">
-					{tIdentityerrors("InvalidLogin")}
+					{tIdentityerrors(errorMessage)}
 				</div>
 			)}
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

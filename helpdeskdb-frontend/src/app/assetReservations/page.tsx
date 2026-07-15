@@ -49,6 +49,7 @@ export default function AssetReservations() {
 	}
 
 	const [data, setData] = useState<IAssetReservationWithNames[]>([]);
+	const [fetchError, setFetchError] = useState(false);
 	const [hydrated, setHydrated] = useState(false);
 
 	const [assets, setAssets] = useState<IAsset[]>([]);
@@ -78,7 +79,10 @@ export default function AssetReservations() {
 	const fetchData = useCallback(async () => {
 		try {
 			const result = await assetReservationService.getAllAsync();
-			if (result.errors) return;
+			if (result.errors) {
+				setFetchError(true);
+				return;
+			}
 			if (result.data) {
 				const [assetsResult, usersResult, removedResult] =
 					await Promise.all([
@@ -106,9 +110,11 @@ export default function AssetReservations() {
 						new Date(a.reservationTo).getTime(),
 				);
 				setData(enrichedData);
+				setFetchError(false);
 			}
 		} catch (error) {
 			console.error("Error fetching data:", error);
+			setFetchError(true);
 		}
 	}, [
 		assetReservationService,
@@ -288,6 +294,11 @@ export default function AssetReservations() {
 				)
 			}
 		>
+			{fetchError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[700px]" />
 
 			<CreateAssetReservationDialog

@@ -25,7 +25,14 @@ import {
 	IAssetReservationAdd,
 	IAssetReservationUpdate,
 } from "@/types/domain/DomainTypes";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import AssetList from "@/components/AssetList";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { EditAssetDialog } from "@/components/dialogs/overviewDialogs/EditAssetDialog";
@@ -47,6 +54,7 @@ import { RemoveReservationDialog } from "@/components/dialogs/overviewDialogs/Re
 
 export default function Overview() {
 	const { t: tAssetViewModel } = useTranslation("assetviewmodel");
+	const { t: tCommon } = useTranslation("common");
 	const { accountInfo, setAccountInfo } = useContext(AccountContext);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -78,6 +86,8 @@ export default function Overview() {
 
 	const [hydrated, setHydrated] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+	const [fetchError, setFetchError] = useState(false);
+	const hasLoadedOnce = useRef(false);
 
 	const [assetToRemove, setAssetToRemove] = useState<IAssetViewModel | null>(
 		null,
@@ -169,13 +179,16 @@ export default function Overview() {
 				if (showSpinner) setIsLoading(true);
 				const result = await overviewService.getOverview(searchTerm);
 				if (result.errors) {
-					console.log(result.errors);
+					setFetchError(true);
 					return;
 				}
+				setFetchError(false);
+				hasLoadedOnce.current = true;
 				setAvailableAssets(result.data!.availableAssets);
 				setAssetsReservedByUser(result.data!.assetsReservedByUser);
 			} catch (error) {
 				console.error("Error fetching data:", error);
+				setFetchError(true);
 			} finally {
 				setIsLoading(false);
 			}
@@ -186,18 +199,9 @@ export default function Overview() {
 	useEffect(() => {
 		if (!hydrated) return;
 
-		// Only show spinner on first load or if data is empty
-		const shouldShowSpinner =
-			availableAssets.length === 0 && assetsReservedByUser.length === 0;
-		fetchData(shouldShowSpinner);
-	}, [
-		hydrated,
-		accountInfo,
-		searchTerm,
-		fetchData,
-		availableAssets.length,
-		assetsReservedByUser.length,
-	]);
+		// Only show the full-page spinner before the first successful load
+		fetchData(!hasLoadedOnce.current);
+	}, [hydrated, accountInfo, searchTerm, fetchData]);
 
 	const submitSearch = useCallback(
 		(value: string) => {
@@ -347,7 +351,6 @@ export default function Overview() {
 		assetId: string,
 		updadeAssetModel: IAssetViewModelUpdate,
 	) => {
-		console.log(updadeAssetModel);
 		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
 			const result = await overviewService.updateAsset(
@@ -501,6 +504,11 @@ export default function Overview() {
 			<h1 className="text-3xl font-bold text-[#424242] mb-6">
 				{tAssetViewModel("AssetsOverview")}
 			</h1>
+			{fetchError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+				</div>
+			)}
 			<AssetList
 				availableAssets={availableAssets}
 				assetsReservedByUser={assetsReservedByUser}
@@ -521,7 +529,6 @@ export default function Overview() {
 					setShowRemoveModal(true);
 				}}
 				onReserveAsset={async (asset: IAssetViewModel) => {
-					console.log("onReseveAsset clicked: " + asset.assetName);
 					updateQueryParam(
 						router,
 						searchParams,
