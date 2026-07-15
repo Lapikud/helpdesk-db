@@ -214,6 +214,7 @@ public class HomeController : Controller
 
     [Authorize(Roles = "admins,helpdesk_db_admins,members,pixels")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveReservation(Guid id)
     {
         var asset = await _bll.AssetService.FindAsync(id);
@@ -231,6 +232,7 @@ public class HomeController : Controller
     
     [Authorize(Roles = "admins,helpdesk_db_admins,members,pixels")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Returned(Guid id)
     {
         var asset = await _bll.AssetService.FindAsync(id);
@@ -377,7 +379,8 @@ public class HomeController : Controller
                 reservationFrom,
                 reservationTo))
         {
-            await _bll.AssetReservationService.UserReserveAsset(vm.AssetReservation.UserId,
+            // Never trust the client-supplied UserId — reserve for the authenticated user
+            await _bll.AssetReservationService.UserReserveAsset(User.GetUserId(),
                 vm.AssetReservation.AssetId, reservationFrom,
                 reservationTo);
 

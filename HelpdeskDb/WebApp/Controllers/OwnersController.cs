@@ -30,6 +30,7 @@ public class OwnersController : Controller
     }
 
     // GET: Owners/Create
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public IActionResult Create()
     {
         return View();
@@ -40,6 +41,7 @@ public class OwnersController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public async Task<IActionResult> Create(Owner owner)
     {
         var owners = await _bll.OwnerService.AllAsync();
@@ -59,6 +61,7 @@ public class OwnersController : Controller
     }
 
     // GET: Owners/Edit/5
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public async Task<IActionResult> Edit(Guid? id)
     {
         if (id == null)
@@ -79,6 +82,7 @@ public class OwnersController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public async Task<IActionResult> Edit(Guid id, Owner owner)
     {
         if (id != owner.Id)
@@ -103,6 +107,7 @@ public class OwnersController : Controller
     }
 
     // GET: Owners/Delete/5
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public async Task<IActionResult> Delete(Guid? id)
     {
         if (id == null)
@@ -122,6 +127,7 @@ public class OwnersController : Controller
     // POST: Owners/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "admins,helpdesk_db_admins")]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {
         var ownerAssets = (await _bll.OwnerAssetsService.AllAsync()).Where(ca => ca.OwnerId == id).ToList();
