@@ -161,9 +161,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: "FrontendOnly", policy =>
     {
-        var origins = builder.Configuration
-            .GetSection("AllowedOrigins").Get<string[]>()
-            ?? Array.Empty<string>();
+        // Filter blanks — appsettings ships an empty placeholder and unset
+        // AllowedOrigins__N env vars bind as empty strings.
+        var origins = (builder.Configuration
+                .GetSection("AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>())
+            .Where(o => !string.IsNullOrWhiteSpace(o))
+            .ToArray();
         policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()

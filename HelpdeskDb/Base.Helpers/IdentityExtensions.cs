@@ -50,6 +50,10 @@ public static class IdentityExtensions
             ValidAudience = audience,
             ValidateAudience = true,
 
+            // Pin the algorithm like the JwtBearer setup in Program.cs —
+            // only tokens we signed ourselves (HS512) are acceptable.
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha512],
+
             ValidateLifetime = false
         };
 
