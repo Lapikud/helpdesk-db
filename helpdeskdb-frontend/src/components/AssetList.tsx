@@ -74,7 +74,13 @@ export default function AssetList({
 	function getInitialSections() {
 		if (typeof window !== "undefined") {
 			const stored = localStorage.getItem("assetListOpenSections");
-			if (stored) return JSON.parse(stored);
+			if (stored) {
+				try {
+					return JSON.parse(stored);
+				} catch {
+					localStorage.removeItem("assetListOpenSections");
+				}
+			}
 		}
 		return { availableAssets: true, assetsReservedByUser: true };
 	}
