@@ -32,6 +32,19 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
     {
         builder.UseEnvironment("Testing");
 
+        // Program.cs reads configuration inline while the WebApplicationBuilder is being
+        // set up (fail-fast JWT key validation, token validation parameters). With minimal
+        // hosting, ConfigureAppConfiguration sources are merged in too late for those reads,
+        // so without a .env on the machine the 64-byte key check would fail. UseSetting
+        // lands in the builder's initial configuration and is visible to the inline reads.
+        builder.UseSetting("ConnectionStrings:DefaultConnection", "DataSource=:memory:");
+        builder.UseSetting("JWTSecurity:Key", "test-only-signing-key-please-do-not-use-in-production-1234567890");
+        builder.UseSetting("JWTSecurity:Issuer", "LapikudHelpdesk");
+        builder.UseSetting("JWTSecurity:Audience", "LapikudHelpdesk");
+        builder.UseSetting("JWTSecurity:ExpiresInSeconds", "120");
+        builder.UseSetting("IpaServiceAccount:Username", "test-service-account");
+        builder.UseSetting("IpaServiceAccount:Password", "test-service-account-password");
+
         builder.ConfigureAppConfiguration((context, config) =>
         {
             config.AddJsonFile("appsettings.json")
