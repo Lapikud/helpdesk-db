@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+.git
+logs
+*.log
+
+# Never bake local secrets or dev TLS certs into the image
+.env
+.env.*
+certificates
+*.pem
+*.key

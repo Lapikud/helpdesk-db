@@ -30,15 +30,19 @@ npm run dev
 # (HTTPS: npm run dev:https — self-signed cert, for testing Secure-cookie behavior)
 ```
 
-Or run only the backend + database via Docker (from `HelpdeskDb/`):
+Or run the full stack (database + backend + frontend) via Docker (from `HelpdeskDb/`):
 
 ```bash
 # First-time: copy the example env file and fill in your values
 cp .env.example .env
-docker-compose up
+docker compose up --build                # everything loopback-bound; bring your own TLS proxy
+# or, with the bundled Caddy TLS proxy (set DOMAIN in .env, DNS + ports 80/443 required):
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up --build
 ```
 
-The frontend uses relative `/api/*` URLs — Next.js proxies them to the backend via a `rewrites()` rule in `next.config.ts`. The proxy destination is `${NEXT_PUBLIC_BACKEND_URL}/api/*`, configured in `helpdeskdb-frontend/.env.local` (default `http://localhost:5018`). Copy `.env.local.example` → `.env.local` before running the frontend. `helpdeskdb-frontend/src/middleware.ts` adds `X-Forwarded-Proto` (the browser's real scheme) to proxied requests, and the backend's `UseForwardedHeaders` trusts it — so when the frontend runs over HTTPS, the backend sees HTTPS and marks the auth cookies `Secure` even though the proxied hop is plain HTTP.
+The frontend container (`helpdeskdb-frontend/Dockerfile`) builds Next.js with `output: "standalone"` and runs it as non-root on port 3000. Because `rewrites()` is resolved at build time, the backend URL is a **build arg** (`FRONTEND_BACKEND_URL`, default `http://lapikudhelpdesk-db-backend:8080`) — changing it requires rebuilding the image. The backend container listens on 8080 internally (non-root). The auth cookies are always `Secure` in the containers (Production env), so the browser-facing side must be HTTPS — either the bundled Caddy overlay or an external reverse proxy pointing at `127.0.0.1:3000`; deployment recipes are in the root `README.md`.
+
+The frontend uses relative `/api/*` URLs — Next.js proxies them to the backend via a `rewrites()` rule in `next.config.ts`. The proxy destination is `${NEXT_PUBLIC_BACKEND_URL}/api/*`, configured in `helpdeskdb-frontend/.env.local` (default `http://localhost:5018`). Copy `.env.local.example` → `.env.local` before running the frontend. `helpdeskdb-frontend/src/middleware.ts` adds `X-Forwarded-Proto` (the browser's real scheme) to proxied requests when no upstream proxy has set it already (a TLS-terminating proxy's value is preserved), and the backend's `UseForwardedHeaders` trusts it — so when the browser-facing side runs over HTTPS, the backend sees HTTPS and marks the auth cookies `Secure` even though the proxied hops are plain HTTP.
 
 ## Authentication flow (end-to-end)
 

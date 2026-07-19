@@ -30,6 +30,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
 	// output: "export",
+	// Self-contained production server (.next/standalone) — the Dockerfile copies it
+	// into a minimal Node image. Has no effect on `next dev`.
+	output: "standalone",
 	// Strip console.* from production bundles so entity data (users, reservations,
 	// refresh-token records) never lands in end users' browser consoles.
 	compiler: {

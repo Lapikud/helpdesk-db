@@ -31,6 +31,14 @@ First-time setup — copy the example env file:
 cp .env.local.example .env.local
 ```
 
+### Docker
+
+The frontend is containerized (`Dockerfile` + `.dockerignore` in this directory) and runs as the `frontend` service in `../HelpdeskDb/docker-compose.yml`. Notes:
+
+- `next.config.ts` sets `output: "standalone"`; the runtime image copies `.next/standalone` + `.next/static` + `public` and runs `node server.js` as the non-root `node` user on port 3000.
+- `rewrites()` is resolved during `next build`, so the backend URL is a **build arg** (`NEXT_PUBLIC_BACKEND_URL`, compose passes `FRONTEND_BACKEND_URL`, default `http://lapikudhelpdesk-db-backend:8080`) — not a runtime env var. Changing it requires an image rebuild.
+- Deployment requires a TLS proxy in front (bundled Caddy overlay or an external proxy) — see the root `README.md`.
+
 ## Architecture
 
 This is a **Next.js 15** frontend (App Router, React 19, Tailwind CSS 3) for the HelpdeskDb asset management system. All pages use `"use client"` — there are no server components.
@@ -38,7 +46,7 @@ This is a **Next.js 15** frontend (App Router, React 19, Tailwind CSS 3) for the
 ### Proxy and middleware
 
 - `next.config.ts` `rewrites()` proxies `/api/:path*` to `${NEXT_PUBLIC_BACKEND_URL}/api/:path*` (set in `.env.local`; default `http://localhost:5018`), so all browser requests stay same-origin and CORS never fires in dev.
-- **`src/middleware.ts`** (matcher `/api/:path*`) sets `x-forwarded-proto` to the browser's real scheme on every proxied API request. The Next proxy doesn't add this header itself; the backend's `UseForwardedHeaders` reads it, so when running `npm run dev:https` the backend sees HTTPS and marks the auth cookies `Secure`. Over plain HTTP it forwards `http` — a no-op.
+- **`src/middleware.ts`** (matcher `/api/:path*`) sets `x-forwarded-proto` to the browser's real scheme on every proxied API request — unless an upstream TLS-terminating proxy (Caddy, nginx) already set the header, in which case that value is preserved. The Next proxy doesn't add this header itself; the backend's `UseForwardedHeaders` reads it, so when running `npm run dev:https` (or deployed behind an HTTPS proxy) the backend sees HTTPS and marks the auth cookies `Secure`. Over plain HTTP it forwards `http` — a no-op.
 - `next.config.ts` also sets `trailingSlash: true` + `skipTrailingSlashRedirect: true` and attaches a **security headers** block to every response: CSP (`'unsafe-inline'` for Next bootstrap scripts; dev additionally gets `'unsafe-eval'` and localhost websockets for Turbopack HMR), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS.
 
 ### Service layer

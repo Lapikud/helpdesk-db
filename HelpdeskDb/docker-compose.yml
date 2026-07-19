@@ -25,7 +25,10 @@ services:
     ports:
       # Loopback only - the app serves plain HTTP and expects a co-located
       # TLS-terminating reverse proxy in front; don't expose it on all interfaces.
-      - "127.0.0.1:80:80"
+      # Container listens on 8080 because it runs as a non-root user (can't bind 80).
+      # Browser traffic goes through the frontend container's /api proxy; this host
+      # port only exposes the MVC admin surface to the host itself (e.g. SSH tunnel).
+      - "127.0.0.1:80:8080"
     restart: on-failure
     logging:
       options:
@@ -40,10 +43,38 @@ services:
       IpaServiceAccount__Password: ${IpaServiceAccount__Password}
       AllowedOrigins__0: ${AllowedOrigins__0}
       AllowedOrigins__1: ${AllowedOrigins__1:-}
+      # Host-header allowlist; default * keeps current behavior. Requests proxied by the
+      # frontend arrive with Host=lapikudhelpdesk-db-backend, so a restricted value must
+      # include the container name (see .env.example).
+      AllowedHosts: ${ALLOWED_HOSTS:-*}
       ASPNETCORE_ENVIRONMENT: "Production"
-      ASPNETCORE_URLS: "http://+:80"
+      ASPNETCORE_URLS: "http://+:8080"
     depends_on:
       - db
+
+  frontend:
+    build:
+      # Compose resolves the relative context from this file's directory
+      context: ../helpdeskdb-frontend
+      args:
+        # Baked into the Next.js build (rewrites() proxy target). Matches the app
+        # service's container_name + internal port; override in .env only if the
+        # backend runs elsewhere.
+        NEXT_PUBLIC_BACKEND_URL: ${FRONTEND_BACKEND_URL:-http://lapikudhelpdesk-db-backend:8080}
+    container_name: lapikudhelpdesk-db-frontend
+    ports:
+      # Loopback only - plain HTTP; a TLS-terminating reverse proxy must sit in front
+      # (either your own on the host pointing at 127.0.0.1:3000, or the bundled Caddy
+      # via docker-compose.caddy.yml). The backend runs as Production, so its auth
+      # cookies are always Secure - without HTTPS in front, login will not work.
+      - "127.0.0.1:3000:3000"
+    restart: on-failure
+    logging:
+      options:
+        max-size: 10m
+        max-file: 3
+    depends_on:
+      - app
 
 volumes:
   db-volume:

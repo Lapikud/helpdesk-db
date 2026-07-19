@@ -102,23 +102,34 @@ npm run dev
 
 To test HTTPS locally: `dotnet run --project WebApp/WebApp.csproj --launch-profile https` (→ `https://localhost:7234`) and/or `npm run dev:https` (self-signed cert). With `npm run dev:https`, the frontend's `src/middleware.ts` forwards the real scheme to the backend so the auth cookies are marked `Secure`.
 
-**Option B — backend in Docker, frontend local:**
+**Option B — full stack in Docker (deployment):**
 
 ```bash
 # from HelpdeskDb/
-docker-compose up
-# Postgres + backend come up together; backend on host port 80
-# (container lapikudhelpdesk-db-backend runs with ASPNETCORE_ENVIRONMENT=Production,
-#  which forces the auth cookies to Secure — a plain-http frontend can't use them;
-#  put a TLS-terminating proxy in front or run the backend locally instead)
-
-# from helpdeskdb-frontend/ (separate terminal)
-npm run dev
+docker compose up -d --build
+# Postgres + backend + frontend come up together, all bound to loopback:
+#   frontend  127.0.0.1:3000  (Next.js standalone server, proxies /api/* to the backend)
+#   backend   127.0.0.1:80    (MVC admin surface; API traffic goes via the frontend proxy)
+#   postgres  127.0.0.1:5433
 ```
+
+The backend container runs with `ASPNETCORE_ENVIRONMENT=Production`, which forces the auth cookies to `Secure` — **the browser-facing side must be HTTPS or login will not work.** Two ways to get there:
+
+- **Bundled Caddy proxy (no reverse proxy on the host yet):** set `DOMAIN` in `HelpdeskDb/.env`, point DNS at the host, open ports 80/443, then:
+
+  ```bash
+  docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+  ```
+
+  Caddy terminates TLS with an auto-provisioned Let's Encrypt certificate, redirects HTTP→HTTPS, and forwards `X-Forwarded-Proto: https` so the auth cookies work. Certs persist in the `caddy-data` volume. (In this mode the backend's MVC admin moves to `127.0.0.1:8080`, since Caddy owns port 80.)
+
+- **Existing reverse proxy on the host** (Nginx Proxy Manager, host nginx, Traefik, …): run the plain `docker compose up` above and point the proxy's HTTPS site at `127.0.0.1:3000`. The proxy **must** send `X-Forwarded-Proto` (all mainstream proxies do by default) — the frontend passes it through to the backend so cookies are issued `Secure`.
+
+The frontend image bakes its backend proxy target in at build time (`FRONTEND_BACKEND_URL`, default = the backend container on the compose network) — changing it requires an image rebuild.
 
 In dev, Next.js proxies `/api/*` to the backend (`rewrites()` in `next.config.ts`), so the browser stays same-origin and CORS never fires. On startup, the backend's `DataSeeder` applies migrations and seeds roles + sample data if the tables are empty.
 
-Open `http://localhost:3000`, log in with FreeIPA credentials, and you're in.
+Open `http://localhost:3000` (dev) or `https://$DOMAIN` (deployed), log in with FreeIPA credentials, and you're in.
 
 ## Tests
 

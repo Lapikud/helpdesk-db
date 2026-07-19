@@ -1,0 +1,46 @@
+# Overlay that adds a bundled Caddy TLS-terminating reverse proxy (Let's Encrypt).
+# Use this when the deployment host has no reverse proxy of its own:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+#
+# Requires: DOMAIN set in .env, a DNS record for it pointing at this host, and
+# ports 80 + 443 reachable from the internet (Let's Encrypt HTTP challenge).
+# Needs docker compose v2.24.4+ for the `!override` tags below.
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: lapikudhelpdesk-db-caddy
+    ports:
+      # Public on purpose - this is the only container that should face the internet.
+      # 80 is needed for the ACME HTTP challenge and the HTTP->HTTPS redirect.
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Persist certificates and ACME account across container recreation,
+      # otherwise every deploy re-requests certs and hits Let's Encrypt rate limits.
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: on-failure
+    logging:
+      options:
+        max-size: 10m
+        max-file: 3
+    depends_on:
+      - frontend
+
+  app:
+    # Caddy owns host port 80 now; keep the MVC admin surface reachable from the
+    # host itself (e.g. SSH tunnel) on 8080 instead.
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  frontend:
+    # No host port needed - Caddy reaches the frontend over the compose network.
+    ports: !override []
+
+volumes:
+  caddy-data:
+  caddy-config:

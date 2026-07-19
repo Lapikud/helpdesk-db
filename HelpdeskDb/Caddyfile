@@ -1,0 +1,10 @@
+# Caddy config for the bundled-TLS deployment mode (docker-compose.caddy.yml).
+# {$DOMAIN} comes from the caddy service's environment (set DOMAIN in .env).
+#
+# Caddy automatically obtains and renews a Let's Encrypt certificate for the
+# domain, redirects HTTP -> HTTPS, and sets X-Forwarded-Proto: https on the
+# proxied hop. The frontend's src/middleware.ts passes that header through to
+# the backend, so auth cookies are issued Secure and accepted by the browser.
+{$DOMAIN} {
+	reverse_proxy lapikudhelpdesk-db-frontend:3000
+}
