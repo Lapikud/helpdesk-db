@@ -2,88 +2,52 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { UserService } from "@/services/UserService";
-import { RoleService } from "@/services/RoleService";
-import { UserRoleService } from "@/services/UserRoleService";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo } from "react";
+import {
+	useRoles,
+	useUserRoles,
+	useUsers,
+} from "@/hooks/queries/entityQueries";
 import { IUserWithRoles } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 
 export default function Users() {
 	const { t: tUser } = useTranslation("appuser");
 	const { t: tRole } = useTranslation("approle");
+	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const userService: UserService = useMemo(() => new UserService(), []);
-	const roleService: RoleService = useMemo(() => new RoleService(), []);
-	const userRoleService: UserRoleService = useMemo(
-		() => new UserRoleService(),
-		[],
-	);
-	if (setAccountInfo) {
-		userService.injectSetAccountInfo(setAccountInfo);
-		roleService.injectSetAccountInfo(setAccountInfo);
-		userRoleService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IUserWithRoles[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
 
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
 	useEffect(() => {
-		setHydrated(true);
-	}, []);
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
 
-	const fetchData = useCallback(async () => {
-		const [usersResult, rolesResult, userRolesResult] = await Promise.all([
-			userService.getAllAsync(),
-			roleService.getAllAsync(),
-			userRoleService.getAllAsync(),
-		]);
+	const { data: users, isError, error } = useUsers();
+	const { data: roles } = useRoles();
+	const { data: userRoles } = useUserRoles();
 
-		if (
-			usersResult.errors ||
-			!usersResult.data ||
-			rolesResult.errors ||
-			!rolesResult.data ||
-			userRolesResult.errors ||
-			!userRolesResult.data
-		) {
-			return;
-		}
+	const data: IUserWithRoles[] = useMemo(() => {
+		if (!users) return [];
 
-		const roleNameById = new Map(
-			rolesResult.data.map((r) => [r.id, r.name]),
-		);
+		const roleNameById = new Map((roles ?? []).map((r) => [r.id, r.name]));
 
-		const withRoles: IUserWithRoles[] = usersResult.data.map((user) => ({
+		return users.map((user) => ({
 			...user,
-			roles: userRolesResult
-				.data!.filter((ur) => ur.userId === user.id)
+			roles: (userRoles ?? [])
+				.filter((ur) => ur.userId === user.id)
 				.map((ur) => roleNameById.get(ur.roleId))
-				.filter(Boolean) as string[],
+				.filter((name): name is string => Boolean(name)),
 		}));
-
-		setData(withRoles);
-	}, [userService, roleService, userRoleService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
-	if (!hydrated) return <Spinner className="h-64" />;
+	}, [users, roles, userRoles]);
 
 	const columns = [tUser("AppUserName"), tRole("AppRoles")];
 
@@ -94,6 +58,12 @@ export default function Users() {
 
 	return (
 		<ListPageWrapper title={tUser("AppUsers")}>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 		</ListPageWrapper>
 	);
