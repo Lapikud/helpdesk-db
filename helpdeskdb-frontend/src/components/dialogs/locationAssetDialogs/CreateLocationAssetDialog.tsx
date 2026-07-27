@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import { IAsset, ILocation } from "@/types/domain/DomainTypes";
+import { IAsset, ILocation, ILocationAssetAdd } from "@/types/domain/DomainTypes";
 import { EntityFormDialog } from "../common/EntityFormDialog";
 import {
 	assetsToOptions,
 	locationAssetFormConfig,
+	locationAssetToAdd,
 	locationsToOptions,
 } from "../entityConfigs/locationAsset";
 
@@ -12,10 +13,7 @@ interface CreateLocationAssetDialogProps {
 	assets: IAsset[];
 	locations: ILocation[];
 	onClose: () => void;
-	onConfirm: (data: {
-		assetId: string;
-		locationId: string;
-	}) => Promise<{ error?: string } | void>;
+	onConfirm: (data: ILocationAssetAdd) => Promise<{ error?: string } | void>;
 	isLoading: boolean;
 }
 
@@ -42,7 +40,7 @@ export const CreateLocationAssetDialog = ({
 			config={locationAssetFormConfig}
 			options={options}
 			onClose={onClose}
-			onConfirm={onConfirm}
+			onConfirm={(data) => onConfirm(locationAssetToAdd(data))}
 			isLoading={isLoading}
 		/>
 	);

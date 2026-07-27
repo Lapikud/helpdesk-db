@@ -2,23 +2,22 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { LocationAssetsService } from "@/services/LocationAssetsService";
-import { LocationService } from "@/services/LocationService";
-import { AssetService } from "@/services/AssetService";
+import { locationAssetsService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+	useAssets,
+	useLocations,
+	useLocationAssets,
+} from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
 import {
-	IAsset,
-	ILocation,
 	ILocationAsset,
+	ILocationAssetAdd,
 	ILocationAssetWithNames,
 } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
@@ -30,161 +29,120 @@ export default function LocationAssets() {
 	const { t: tLocationAssets } = useTranslation("locationassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const locationAssetsService: LocationAssetsService = useMemo(
-		() => new LocationAssetsService(),
-		[],
-	);
-	const locationService: LocationService = useMemo(
-		() => new LocationService(),
-		[],
-	);
-	const assetService: AssetService = useMemo(() => new AssetService(), []);
-	if (setAccountInfo) {
-		locationAssetsService.injectSetAccountInfo(setAccountInfo);
-		locationService.injectSetAccountInfo(setAccountInfo);
-		assetService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
+	const router = useRouter();
 
-	const [data, setData] = useState<ILocationAssetWithNames[]>([]);
-	const [allAssets, setAllAssets] = useState<IAsset[]>([]);
-	const [locations, setLocations] = useState<ILocation[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const {
+		data: locationAssets,
+		isError,
+		error,
+	} = useLocationAssets();
+	const { data: assets } = useAssets(true);
+	const { data: locations } = useLocations();
+
+	const data: ILocationAssetWithNames[] = useMemo(() => {
+		if (!locationAssets) return [];
+
+		const assetById = new Map((assets ?? []).map((a) => [a.id, a]));
+		const locationById = new Map((locations ?? []).map((l) => [l.id, l]));
+
+		return locationAssets.map((la) => ({
+			...la,
+			assetName: assetById.get(la.assetId)?.assetName ?? la.assetId,
+			locationName:
+				locationById.get(la.locationId)?.locationName ?? la.locationId,
+		}));
+	}, [locationAssets, assets, locations]);
+
+	const unusedAssets = useMemo(() => {
+		const used = new Set((locationAssets ?? []).map((la) => la.assetId));
+		return (assets ?? []).filter((a) => !used.has(a.id));
+	}, [assets, locationAssets]);
+
+	const queryClient = useQueryClient();
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.locationAssets() });
+
+	const createLocationAsset = useMutation({
+		mutationFn: (dto: ILocationAssetAdd) =>
+			unwrap(locationAssetsService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editLocationAsset = useMutation({
+		mutationFn: (dto: ILocationAsset) =>
+			unwrap(locationAssetsService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteLocationAsset = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(locationAssetsService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
 	const [showDelete, setShowDelete] = useState(false);
 
-	const [locationAssetToEdit, setLocationAssetToEdit] =
+	const [itemToEdit, setItemToEdit] =
 		useState<ILocationAssetWithNames | null>(null);
-	const [locationAssetToDelete, setLocationAssetToDelete] =
+	const [itemToDelete, setItemToDelete] =
 		useState<ILocationAssetWithNames | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const [laResult, assetsResult, locationsResult] = await Promise.all([
-			locationAssetsService.getAllAsync(),
-			assetService.getAllAsync(),
-			locationService.getAllAsync(),
-		]);
-
-		const assets = assetsResult.data ?? [];
-		const locationList = locationsResult.data ?? [];
-		setAllAssets(assets);
-		setLocations(locationList);
-
-		const assetMap = new Map(assets.map((a) => [a.id, a.assetName]));
-		const locationMap = new Map(
-			locationList.map((l) => [l.id, l.locationName]),
-		);
-
-		const records = laResult.data ?? [];
-		setData(
-			records.map((r) => ({
-				...r,
-				assetName: assetMap.get(r.assetId) ?? r.assetId,
-				locationName: locationMap.get(r.locationId) ?? r.locationId,
-			})),
-		);
-	}, [locationAssetsService, assetService, locationService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
-	const availableAssets = useMemo(() => {
-		const used = new Set(data.map((d) => d.assetId));
-		return allAssets.filter((a) => !used.has(a.id));
-	}, [data, allAssets]);
-
+	// The edit dialog offers the unused assets plus the row's own asset — so
+	// the mapping can keep its asset or move to a free one, but never steal an
+	// asset already mapped to another location.
 	const assetsForEdit = useMemo(() => {
-		if (!locationAssetToEdit) return availableAssets;
-		const current = allAssets.find(
-			(a) => a.id === locationAssetToEdit.assetId,
-		);
-		if (!current || availableAssets.some((a) => a.id === current.id)) {
-			return availableAssets;
+		if (!itemToEdit) return unusedAssets;
+		const current = (assets ?? []).find((a) => a.id === itemToEdit.assetId);
+		if (!current || unusedAssets.some((a) => a.id === current.id)) {
+			return unusedAssets;
 		}
-		return [current, ...availableAssets];
-	}, [availableAssets, allAssets, locationAssetToEdit]);
+		return [current, ...unusedAssets];
+	}, [unusedAssets, assets, itemToEdit]);
 
-	const handleCreate = async (dto: { assetId: string; locationId: string }) => {
-		setCreateLoading(true);
+	const handleCreate = async (dto: ILocationAssetAdd) => {
 		try {
-			const result = await locationAssetsService.addAsync({
+			await createLocationAsset.mutateAsync({
 				...dto,
 				createdBy: accountInfo?.name ?? "",
 			});
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create location asset",
-				};
-			}
-			await fetchData();
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ILocationAsset) => {
-		setEditLoading(true);
 		try {
-			const result = await locationAssetsService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update location asset",
-				};
-			}
-			await fetchData();
+			await editLocationAsset.mutateAsync(dto);
 			setShowEdit(false);
-			setLocationAssetToEdit(null);
+			setItemToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await locationAssetsService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete location asset",
-				};
-			}
-			await fetchData();
+			await deleteLocationAsset.mutateAsync(id);
 			setShowDelete(false);
-			setLocationAssetToDelete(null);
+			setItemToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tLocationAssets("Asset"),
 				tLocationAssets("Location"),
@@ -203,20 +161,20 @@ export default function LocationAssets() {
 			item.assetName,
 			item.locationName,
 			item.createdBy,
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
 								onClick={() => {
-									setLocationAssetToEdit(item);
+									setItemToEdit(item);
 									setShowEdit(true);
 								}}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
 								onClick={() => {
-									setLocationAssetToDelete(item);
+									setItemToDelete(item);
 									setShowDelete(true);
 								}}
 							/>
@@ -230,7 +188,7 @@ export default function LocationAssets() {
 		<ListPageWrapper
 			title={tLocationAssets("LocationAssetsTitle")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -241,39 +199,45 @@ export default function LocationAssets() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[600px]" />
 
 			<CreateLocationAssetDialog
 				open={showCreate}
-				assets={availableAssets}
-				locations={locations}
+				assets={unusedAssets}
+				locations={locations ?? []}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createLocationAsset.isPending}
 			/>
 
 			<EditLocationAssetDialog
 				open={showEdit}
-				locationAsset={locationAssetToEdit}
+				locationAsset={itemToEdit}
 				assets={assetsForEdit}
-				locations={locations}
+				locations={locations ?? []}
 				onClose={() => {
 					setShowEdit(false);
-					setLocationAssetToEdit(null);
+					setItemToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editLocationAsset.isPending}
 			/>
 
 			<DeleteLocationAssetDialog
 				open={showDelete}
-				locationAsset={locationAssetToDelete}
+				locationAsset={itemToDelete}
 				onClose={() => {
 					setShowDelete(false);
-					setLocationAssetToDelete(null);
+					setItemToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteLocationAsset.isPending}
 			/>
 		</ListPageWrapper>
 	);
