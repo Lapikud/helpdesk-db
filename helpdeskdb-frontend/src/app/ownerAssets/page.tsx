@@ -2,19 +2,22 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { OwnerAssetsService } from "@/services/OwnerAssetsService";
-import { OwnerService } from "@/services/OwnerService";
-import { AssetService } from "@/services/AssetService";
+import { ownerAssetsService } from "@/services";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-	IAsset,
-	IOwner,
+	useAssets,
+	useOwners,
+	useOwnerAssets,
+} from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
+import {
+	IOwnerAsset,
 	IOwnerAssetAdd,
 	IOwnerAssetWithNames,
 } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -30,168 +33,107 @@ export default function OwnerAssets() {
 	const { t: tOwnerAssets } = useTranslation("ownerassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const ownerAssetsService: OwnerAssetsService = useMemo(
-		() => new OwnerAssetsService(),
-		[],
-	);
-	const ownerService: OwnerService = useMemo(() => new OwnerService(), []);
-	const assetService: AssetService = useMemo(() => new AssetService(), []);
-	if (setAccountInfo) {
-		ownerAssetsService.injectSetAccountInfo(setAccountInfo);
-		ownerService.injectSetAccountInfo(setAccountInfo);
-		assetService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IOwnerAssetWithNames[]>([]);
-	const [allAssets, setAllAssets] = useState<IAsset[]>([]);
-	const [allOwners, setAllOwners] = useState<IOwner[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const {
+		data: ownerAssets,
+		isError,
+		error,
+	} = useOwnerAssets();
+	const { data: assets } = useAssets(true);
+	const { data: owners } = useOwners();
+
+	const data: IOwnerAssetWithNames[] = useMemo(() => {
+		if (!ownerAssets) return [];
+
+		const assetById = new Map((assets ?? []).map((a) => [a.id, a]));
+		const ownerById = new Map((owners ?? []).map((o) => [o.id, o]));
+
+		return ownerAssets.map((oa) => ({
+			...oa,
+			assetName: assetById.get(oa.assetId)?.assetName ?? oa.assetId,
+			ownerName:
+				ownerById.get(oa.ownerId)?.ownerName ?? oa.ownerId,
+		}));
+	}, [ownerAssets, assets, owners]);
+
+	// The create dialog only offers assets that aren't mapped to an owner yet.
+	const unusedAssets = useMemo(() => {
+		const used = new Set((ownerAssets ?? []).map((oa) => oa.assetId));
+		return (assets ?? []).filter((a) => !used.has(a.id));
+	}, [assets, ownerAssets]);
+
+	const queryClient = useQueryClient();
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.ownerAssets() });
+
+	const createOwnerAsset = useMutation({
+		mutationFn: (dto: IOwnerAssetAdd) =>
+			unwrap(ownerAssetsService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editOwnerAsset = useMutation({
+		mutationFn: (dto: IOwnerAsset) =>
+			unwrap(ownerAssetsService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteOwnerAsset = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(ownerAssetsService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
 	const [showDelete, setShowDelete] = useState(false);
 
-	const [itemToEdit, setItemToEdit] = useState<IOwnerAssetWithNames | null>(
-		null,
-	);
+	const [itemToEdit, setItemToEdit] =
+		useState<IOwnerAssetWithNames | null>(null);
 	const [itemToDelete, setItemToDelete] =
 		useState<IOwnerAssetWithNames | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const [ownerAssetsResult, assetsResult, ownersResult] =
-			await Promise.all([
-				ownerAssetsService.getAllAsync(),
-				assetService.getAllAsync(true),
-				ownerService.getAllAsync(),
-			]);
-
-		if (
-			ownerAssetsResult.errors ||
-			!ownerAssetsResult.data ||
-			assetsResult.errors ||
-			!assetsResult.data ||
-			ownersResult.errors ||
-			!ownersResult.data
-		) {
-			return;
-		}
-
-		const assetById = new Map(assetsResult.data.map((a) => [a.id, a]));
-		const ownerById = new Map(ownersResult.data.map((o) => [o.id, o]));
-
-		const withNames: IOwnerAssetWithNames[] = ownerAssetsResult.data.map(
-			(oa) => ({
-				...oa,
-				assetName: assetById.get(oa.assetId)?.assetName ?? oa.assetId,
-				ownerName: ownerById.get(oa.ownerId)?.ownerName ?? oa.ownerId,
-			}),
-		);
-
-		setData(withNames);
-		setAllAssets(assetsResult.data);
-		setAllOwners(ownersResult.data);
-	}, [ownerAssetsService, assetService, ownerService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
-	const unusedAssets = useMemo(() => {
-		const used = new Set(data.map((oa) => oa.assetId));
-		return allAssets.filter((a) => !used.has(a.id));
-	}, [allAssets, data]);
-
 	const handleCreate = async (dto: IOwnerAssetAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await ownerAssetsService.addAsync({
+			await createOwnerAsset.mutateAsync({
 				...dto,
 				createdBy: accountInfo?.name ?? "",
 			});
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create owner asset",
-				};
-			}
-			await fetchData();
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
-	const handleEdit = async (dto: IOwnerAssetWithNames) => {
-		setEditLoading(true);
+	const handleEdit = async (dto: IOwnerAsset) => {
 		try {
-			const result = await ownerAssetsService.updateAsync({
-				id: dto.id,
-				assetId: dto.assetId,
-				ownerId: dto.ownerId,
-				createdBy: accountInfo?.name ?? dto.createdBy,
-			});
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update owner asset",
-				};
-			}
-			await fetchData();
+			await editOwnerAsset.mutateAsync(dto);
 			setShowEdit(false);
 			setItemToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await ownerAssetsService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete owner asset",
-				};
-			}
-			await fetchData();
+			await deleteOwnerAsset.mutateAsync(id);
 			setShowDelete(false);
 			setItemToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tOwnerAssets("Asset"),
 				tOwnerAssets("Owner"),
@@ -206,7 +148,7 @@ export default function OwnerAssets() {
 			item.assetName,
 			item.ownerName,
 			item.createdBy || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -233,7 +175,7 @@ export default function OwnerAssets() {
 		<ListPageWrapper
 			title={tOwnerAssets("OwnerAssetsTitle")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -244,27 +186,33 @@ export default function OwnerAssets() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateOwnerAssetDialog
 				open={showCreate}
 				assets={unusedAssets}
-				owners={allOwners}
+				owners={owners ?? []}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createOwnerAsset.isPending}
 			/>
 
 			<EditOwnerAssetDialog
 				open={showEdit}
 				ownerAsset={itemToEdit}
-				owners={allOwners}
+				owners={owners ?? []}
 				onClose={() => {
 					setShowEdit(false);
 					setItemToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editOwnerAsset.isPending}
 			/>
 
 			<DeleteOwnerAssetDialog
@@ -275,7 +223,7 @@ export default function OwnerAssets() {
 					setItemToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteOwnerAsset.isPending}
 			/>
 		</ListPageWrapper>
 	);

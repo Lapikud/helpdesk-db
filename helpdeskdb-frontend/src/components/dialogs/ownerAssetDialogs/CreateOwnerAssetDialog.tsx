@@ -4,6 +4,7 @@ import { EntityFormDialog } from "../common/EntityFormDialog";
 import {
 	assetsToOptions,
 	ownerAssetCreateConfig,
+	ownerAssetToAdd,
 	ownersToOptions,
 } from "../entityConfigs/ownerAsset";
 
@@ -39,13 +40,7 @@ export const CreateOwnerAssetDialog = ({
 			config={ownerAssetCreateConfig}
 			options={options}
 			onClose={onClose}
-			onConfirm={(data) =>
-				onConfirm({
-					assetId: data.assetId,
-					ownerId: data.ownerId,
-					createdBy: "",
-				})
-			}
+			onConfirm={(data) => onConfirm(ownerAssetToAdd(data))}
 			isLoading={isLoading}
 		/>
 	);
