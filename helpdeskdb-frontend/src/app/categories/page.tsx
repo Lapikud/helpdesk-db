@@ -2,10 +2,13 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { CategoryService } from "@/services/CategoryService";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { categoryService } from "@/services";
+import { useContext, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCategories } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { ICategory, ICategoryAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -21,17 +24,29 @@ export default function Categories() {
 	const { t: tCategory } = useTranslation("category");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const categoryService: CategoryService = useMemo(
-		() => new CategoryService(),
-		[],
-	);
-	if (setAccountInfo) categoryService.injectSetAccountInfo(setAccountInfo);
-
-	const [data, setData] = useState<ICategory[]>([]);
-	const [fetchError, setFetchError] = useState(false);
-	const [hydrated, setHydrated] = useState(false);
+	const { accountInfo } = useContext(AccountContext);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useCategories();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.categories() });
+
+	const createCategory = useMutation({
+		mutationFn: (dto: ICategoryAdd) => unwrap(categoryService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editCategory = useMutation({
+		mutationFn: (dto: ICategory) => unwrap(categoryService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteCategory = useMutation({
+		mutationFn: (id: string) => unwrap(categoryService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -44,94 +59,38 @@ export default function Categories() {
 		null,
 	);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await categoryService.getAllAsync();
-		if (!result.errors && result.data) {
-			setData(result.data);
-			setFetchError(false);
-		} else {
-			setFetchError(true);
-		}
-	}, [categoryService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
+	// mutateAsync (not mutate) so a failure rejects and can be surfaced through
+	// the dialogs' ConfirmResult contract.
 	const handleCreate = async (dto: ICategoryAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await categoryService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create category",
-				};
-			}
-			await fetchData();
+			await createCategory.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ICategory) => {
-		setEditLoading(true);
 		try {
-			const result = await categoryService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update category",
-				};
-			}
-			await fetchData();
+			await editCategory.mutateAsync(dto);
 			setShowEdit(false);
 			setCategoryToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await categoryService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete category",
-				};
-			}
-			await fetchData();
+			await deleteCategory.mutateAsync(id);
 			setShowDelete(false);
 			setCategoryToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [tCategory("CategoryName"), tCommon("Comment"), tCommon("Actions")]
 		: [tCategory("CategoryName"), tCommon("Comment")];
 
@@ -140,7 +99,7 @@ export default function Categories() {
 		cells: [
 			item.categoryName,
 			item.comment || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -167,7 +126,7 @@ export default function Categories() {
 		<ListPageWrapper
 			title={tCategory("Categories")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -178,9 +137,10 @@ export default function Categories() {
 				)
 			}
 		>
-			{fetchError && (
+			{isError && (
 				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
 					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
 				</div>
 			)}
 			<DataTable columns={columns} rows={rows} />
@@ -189,7 +149,7 @@ export default function Categories() {
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createCategory.isPending}
 			/>
 
 			<EditCategoryDialog
@@ -200,7 +160,7 @@ export default function Categories() {
 					setCategoryToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editCategory.isPending}
 			/>
 
 			<DeleteCategoryDialog
@@ -211,7 +171,7 @@ export default function Categories() {
 					setCategoryToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteCategory.isPending}
 			/>
 		</ListPageWrapper>
 	);
