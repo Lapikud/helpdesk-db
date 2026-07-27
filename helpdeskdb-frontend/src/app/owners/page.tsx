@@ -2,10 +2,13 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { OwnerService } from "@/services/OwnerService";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ownerService } from "@/services";
+import { useContext, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOwners } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { IOwner, IOwnerAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -21,13 +24,29 @@ export default function Owners() {
 	const { t: tOwner } = useTranslation("owner");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const ownerService: OwnerService = useMemo(() => new OwnerService(), []);
-	if (setAccountInfo) ownerService.injectSetAccountInfo(setAccountInfo);
-
-	const [data, setData] = useState<IOwner[]>([]);
-	const [hydrated, setHydrated] = useState(false);
+	const { accountInfo } = useContext(AccountContext);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useOwners();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.owners() });
+
+	const createOwner = useMutation({
+		mutationFn: (dto: IOwnerAdd) => unwrap(ownerService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editOwner = useMutation({
+		mutationFn: (dto: IOwner) => unwrap(ownerService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteOwner = useMutation({
+		mutationFn: (id: string) => unwrap(ownerService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -36,86 +55,36 @@ export default function Owners() {
 	const [ownerToEdit, setOwnerToEdit] = useState<IOwner | null>(null);
 	const [ownerToDelete, setOwnerToDelete] = useState<IOwner | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await ownerService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
-	}, [ownerService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
 	const handleCreate = async (dto: IOwnerAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await ownerService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create owner",
-				};
-			}
-			await fetchData();
+			await createOwner.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: IOwner) => {
-		setEditLoading(true);
 		try {
-			const result = await ownerService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to update owner",
-				};
-			}
-			await fetchData();
+			await editOwner.mutateAsync(dto);
 			setShowEdit(false);
 			setOwnerToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await ownerService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to delete owner",
-				};
-			}
-			await fetchData();
+			await deleteOwner.mutateAsync(id);
 			setShowDelete(false);
 			setOwnerToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [tOwner("OwnerName"), tCommon("Comment"), tCommon("Actions")]
 		: [tOwner("OwnerName"), tCommon("Comment")];
 
@@ -124,7 +93,7 @@ export default function Owners() {
 		cells: [
 			item.ownerName,
 			item.comment || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -151,7 +120,7 @@ export default function Owners() {
 		<ListPageWrapper
 			title={tOwner("Owners")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -162,13 +131,19 @@ export default function Owners() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateOwnerDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createOwner.isPending}
 			/>
 
 			<EditOwnerDialog
@@ -179,7 +154,7 @@ export default function Owners() {
 					setOwnerToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editOwner.isPending}
 			/>
 
 			<DeleteOwnerDialog
@@ -190,7 +165,7 @@ export default function Owners() {
 					setOwnerToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteOwner.isPending}
 			/>
 		</ListPageWrapper>
 	);
