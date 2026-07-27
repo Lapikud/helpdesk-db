@@ -2,12 +2,14 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { RoleService } from "@/services/RoleService";
+import { roleService } from "@/services";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRoles } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { IRole, IRoleAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -23,14 +25,35 @@ export default function Roles() {
 	const { t: tRole } = useTranslation("approle");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const roleService: RoleService = useMemo(() => new RoleService(), []);
-	if (setAccountInfo) roleService.injectSetAccountInfo(setAccountInfo);
-
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IRole[]>([]);
-	const [hydrated, setHydrated] = useState(false);
+
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useRoles();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.roles() });
+
+	const createRole = useMutation({
+		mutationFn: (dto: IRoleAdd) => unwrap(roleService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editRole = useMutation({
+		mutationFn: (dto: IRole) => unwrap(roleService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteRole = useMutation({
+		mutationFn: (id: string) => unwrap(roleService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -39,92 +62,36 @@ export default function Roles() {
 	const [roleToEdit, setRoleToEdit] = useState<IRole | null>(null);
 	const [roleToDelete, setRoleToDelete] = useState<IRole | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await roleService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
-	}, [roleService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
 	const handleCreate = async (dto: IRoleAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await roleService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create role",
-				};
-			}
-			await fetchData();
+			await createRole.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: IRole) => {
-		setEditLoading(true);
 		try {
-			const result = await roleService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to update role",
-				};
-			}
-			await fetchData();
+			await editRole.mutateAsync(dto);
 			setShowEdit(false);
 			setRoleToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await roleService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to delete role",
-				};
-			}
-			await fetchData();
+			await deleteRole.mutateAsync(id);
 			setShowDelete(false);
 			setRoleToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [tRole("AppRoleName"), tCommon("Actions")]
 		: [tRole("AppRoleName")];
 
@@ -132,7 +99,7 @@ export default function Roles() {
 		id: item.id,
 		cells: [
 			item.name,
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -159,7 +126,7 @@ export default function Roles() {
 		<ListPageWrapper
 			title={tRole("AppRoles")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -170,13 +137,19 @@ export default function Roles() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateRoleDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createRole.isPending}
 			/>
 
 			<EditRoleDialog
@@ -187,7 +160,7 @@ export default function Roles() {
 					setRoleToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editRole.isPending}
 			/>
 
 			<DeleteRoleDialog
@@ -198,7 +171,7 @@ export default function Roles() {
 					setRoleToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteRole.isPending}
 			/>
 		</ListPageWrapper>
 	);
