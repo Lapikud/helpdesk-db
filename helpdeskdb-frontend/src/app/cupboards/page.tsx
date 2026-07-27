@@ -2,10 +2,13 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { CupboardService } from "@/services/CupboardService";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { cupboardService } from "@/services";
+import { useContext, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCupboards } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { ICupboard, ICupboardAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -21,16 +24,28 @@ export default function Cupboards() {
 	const { t: tCupboard } = useTranslation("cupboard");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const cupboardService: CupboardService = useMemo(
-		() => new CupboardService(),
-		[],
-	);
-	if (setAccountInfo) cupboardService.injectSetAccountInfo(setAccountInfo);
-
-	const [data, setData] = useState<ICupboard[]>([]);
-	const [hydrated, setHydrated] = useState(false);
+	const { accountInfo } = useContext(AccountContext);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useCupboards();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.cupboards() });
+
+	const createCupboard = useMutation({
+		mutationFn: (dto: ICupboardAdd) => unwrap(cupboardService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editCupboard = useMutation({
+		mutationFn: (dto: ICupboard) => unwrap(cupboardService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteCupboard = useMutation({
+		mutationFn: (id: string) => unwrap(cupboardService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -43,89 +58,36 @@ export default function Cupboards() {
 		null,
 	);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await cupboardService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
-	}, [cupboardService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
 	const handleCreate = async (dto: ICupboardAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await cupboardService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create cupboard",
-				};
-			}
-			await fetchData();
+			await createCupboard.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ICupboard) => {
-		setEditLoading(true);
 		try {
-			const result = await cupboardService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update cupboard",
-				};
-			}
-			await fetchData();
+			await editCupboard.mutateAsync(dto);
 			setShowEdit(false);
 			setCupboardToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await cupboardService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete cupboard",
-				};
-			}
-			await fetchData();
+			await deleteCupboard.mutateAsync(id);
 			setShowDelete(false);
 			setCupboardToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = isAdmin || isHelpdeskDbAdmin
 		? [tCupboard("CodeName"), tCommon("Actions")]
 		: [tCupboard("CodeName")];
 
@@ -133,7 +95,7 @@ export default function Cupboards() {
 		id: item.id,
 		cells: [
 			item.codeName,
-			...(isAdmin
+			...(isAdmin || isHelpdeskDbAdmin
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -160,7 +122,7 @@ export default function Cupboards() {
 		<ListPageWrapper
 			title={tCupboard("Cupboards")}
 			createButton={
-				isAdmin && (
+				(isAdmin || isHelpdeskDbAdmin) && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -171,13 +133,20 @@ export default function Cupboards() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
+
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateCupboardDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createCupboard.isPending}
 			/>
 
 			<EditCupboardDialog
@@ -188,7 +157,7 @@ export default function Cupboards() {
 					setCupboardToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editCupboard.isPending}
 			/>
 
 			<DeleteCupboardDialog
@@ -199,7 +168,7 @@ export default function Cupboards() {
 					setCupboardToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteCupboard.isPending}
 			/>
 		</ListPageWrapper>
 	);
