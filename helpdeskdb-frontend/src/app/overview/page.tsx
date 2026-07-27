@@ -2,12 +2,22 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { OverviewService } from "@/services/OverviewService";
+import { overviewService } from "@/services";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOverview } from "@/hooks/queries/overviewQueries";
 import {
-	ReadonlyURLSearchParams,
-	useRouter,
-	useSearchParams,
-} from "next/navigation";
+	useAsset,
+	useAssetReservation,
+	useCategories,
+	useCategoryAssetByAsset,
+	useLocationAssetByAsset,
+	useLocations,
+	useOwnerAssetByAsset,
+	useOwners,
+} from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
 import {
 	IAssetViewModel,
 	IAssetViewModelCreate,
@@ -15,39 +25,17 @@ import {
 	IAssetViewModelUpdate,
 } from "@/types/domain/IAssetViewModels";
 import {
-	ICategory,
-	ILocation,
-	IOwner,
-	ICategoryAsset,
-	ILocationAsset,
-	IOwnerAsset,
 	IAssetReservationWithNames,
 	IAssetReservationAdd,
 	IAssetReservationUpdate,
 } from "@/types/domain/DomainTypes";
-import {
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AssetList from "@/components/AssetList";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { EditAssetDialog } from "@/components/dialogs/overviewDialogs/EditAssetDialog";
-import { CategoryService } from "@/services/CategoryService";
-import { LocationService } from "@/services/LocationService";
-import { OwnerService } from "@/services/OwnerService";
-import { CategoryAssetsService } from "@/services/CategoryAssetsService";
-import { AssetService } from "@/services/AssetService";
-import { LocationAssetsService } from "@/services/LocationAssetsService";
-import { OwnerAssetsService } from "@/services/OwnerAssetsService";
-import { AssetReservationService } from "@/services/AssetReservationService";
 import { RemoveAssetDialog } from "@/components/dialogs/overviewDialogs/RemoveAssetDialog";
 import Spinner from "@/components/LoadingSpinner";
 import { CreateAssetDialog } from "@/components/dialogs/overviewDialogs/CreateAssetDialog";
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { ReserveAssetDialog } from "@/components/dialogs/overviewDialogs/ReserveAssetDialog";
 import { ChangeReservationTimeDialog } from "@/components/dialogs/overviewDialogs/ChangeReservationTimeDialog";
 import { RemoveReservationDialog } from "@/components/dialogs/overviewDialogs/RemoveReservationDialog";
@@ -55,153 +43,188 @@ import { RemoveReservationDialog } from "@/components/dialogs/overviewDialogs/Re
 export default function Overview() {
 	const { t: tAssetViewModel } = useTranslation("assetviewmodel");
 	const { t: tCommon } = useTranslation("common");
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
 	const [selectedMode, setSelectedMode] = useState<string>("lines");
 
-	const [loading, setLoading] = useState<Record<string, boolean>>({});
-	const [createLoading, setCreateLoading] = useState(false);
-
-	const [showRemoveModal, setShowRemoveModal] = useState(false);
-	const [showCreateModal, setShowCreateModal] = useState(false);
-	const [showUpdateModal, setShowUpdateModal] = useState(false);
-	const [showReserveModal, setShowReserveModal] = useState(false);
-	const [showChangeReservationModal, setShowChangeReservationModal] =
-		useState(false);
-	const [showRemoveReservationModal, setShowRemoveReservationModal] =
-		useState(false);
-
-	const [assetComment, setAssetComment] = useState<string>("");
-
-	const [categories, setCategories] = useState<ICategory[]>([]);
-	const [locations, setLocations] = useState<ILocation[]>([]);
-	const [owners, setOwners] = useState<IOwner[]>([]);
-
-	const [searchTerm, setSearchTerm] = useState(
-		searchParams.get("searchTerm") || "",
-	);
+	// The URL is the source of truth for the search term; `searchInput` is just
+	// the uncontrolled field's draft until it is submitted.
+	const searchTerm = searchParams.get("searchTerm") || "";
 	const [searchInput, setSearchInput] = useState(searchTerm);
 
-	const [hydrated, setHydrated] = useState(false);
-	const [isLoading, setIsLoading] = useState(true);
-	const [fetchError, setFetchError] = useState(false);
-	const hasLoadedOnce = useRef(false);
+	useEffect(() => {
+		setSearchInput(searchTerm);
+	}, [searchTerm]);
 
-	const [assetToRemove, setAssetToRemove] = useState<IAssetViewModel | null>(
-		null,
-	);
+	const overview = useOverview(searchTerm);
+	const availableAssets = overview.data?.availableAssets ?? [];
+	const assetsReservedByUser = overview.data?.assetsReservedByUser ?? [];
+
+	// Reference data for the create/edit dropdowns. Shared with /categories,
+	// /locations and /owners through the cache, and held for 5 minutes, so the
+	// dialogs open with the lists already in hand.
+	const categoriesQuery = useCategories();
+	const locationsQuery = useLocations();
+	const ownersQuery = useOwners();
+	const categories = categoriesQuery.data ?? [];
+	const locations = locationsQuery.data ?? [];
+	const owners = ownersQuery.data ?? [];
+
+	// --------------------------------------------------------------- dialogs
+	//
+	// Each dialog is driven by the entity it acts on rather than a separate
+	// `show…` flag: selecting a row enables that dialog's queries, and the
+	// dialog opens once they have resolved. That keeps the row spinner and the
+	// dialog's data in lockstep without an imperative fetch-then-open step.
+
+	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [assetToUpdate, setAssetToUpdate] = useState<IAssetViewModel | null>(
 		null,
 	);
-	const [reservationToRemove, setReservationToRemove] =
-		useState<IAssetReservationWithNames | null>(null);
+	const [assetToRemove, setAssetToRemove] = useState<IAssetViewModel | null>(
+		null,
+	);
 	const [assetToReserve, setAssetToReserve] =
 		useState<IAssetViewModel | null>(null);
 	const [reservationIdToChange, setReservationIdToChange] = useState<
 		string | null
 	>(null);
-	const [initialReservationFrom, setInitialReservationFrom] =
-		useState<Date | null>(null);
-	const [initialReservationTo, setInitialReservationTo] =
-		useState<Date | null>(null);
-	const [categoryAssets, setCategoryAssets] = useState<ICategoryAsset | null>(
-		null,
-	);
-	const [locationAssets, setLocationAssets] = useState<ILocationAsset | null>(
-		null,
-	);
-	const [ownerAssets, setOwnerAssets] = useState<IOwnerAsset | null>(null);
+	const [assetIdToFreeUp, setAssetIdToFreeUp] = useState<string | null>(null);
 
-	const [availableAssets, setAvailableAssets] = useState<IAssetViewModel[]>(
-		[],
-	);
-	const [assetsReservedByUser, setAssetsReservedByUser] = useState<
-		IAssetViewModel[]
-	>([]);
+	const editAssetId = assetToUpdate?.id ?? null;
+	const editAssetQuery = useAsset(editAssetId);
+	const editCategoryAssetQuery = useCategoryAssetByAsset(editAssetId);
+	const editLocationAssetQuery = useLocationAssetByAsset(editAssetId);
+	const editOwnerAssetQuery = useOwnerAssetByAsset(editAssetId);
+	const editQueries = [
+		editAssetQuery,
+		editCategoryAssetQuery,
+		editLocationAssetQuery,
+		editOwnerAssetQuery,
+	];
 
-	const overviewService: OverviewService = useMemo(
-		() => new OverviewService(),
-		[],
-	);
-	const categoryService: CategoryService = useMemo(
-		() => new CategoryService(),
-		[],
-	);
-	const locationService: LocationService = useMemo(
-		() => new LocationService(),
-		[],
-	);
-	const ownerService: OwnerService = useMemo(() => new OwnerService(), []);
-	const assetsService: AssetService = useMemo(() => new AssetService(), []);
-	const categoryAssetsService: CategoryAssetsService = useMemo(
-		() => new CategoryAssetsService(),
-		[],
-	);
-	const locationAssetsService: LocationAssetsService = useMemo(
-		() => new LocationAssetsService(),
-		[],
-	);
-	const ownerAssetsService: OwnerAssetsService = useMemo(
-		() => new OwnerAssetsService(),
-		[],
-	);
-	const assetReservationService: AssetReservationService = useMemo(
-		() => new AssetReservationService(),
-		[],
-	);
-	if (setAccountInfo) {
-		overviewService.injectSetAccountInfo(setAccountInfo);
-		categoryService.injectSetAccountInfo(setAccountInfo);
-		locationService.injectSetAccountInfo(setAccountInfo);
-		ownerService.injectSetAccountInfo(setAccountInfo);
-		assetsService.injectSetAccountInfo(setAccountInfo);
-		categoryAssetsService.injectSetAccountInfo(setAccountInfo);
-		locationAssetsService.injectSetAccountInfo(setAccountInfo);
-		ownerAssetsService.injectSetAccountInfo(setAccountInfo);
-		assetReservationService.injectSetAccountInfo(setAccountInfo);
-	}
+	// `isSuccess`, not `!isLoading`: a failed query is also "not loading", and
+	// opening the dialog then would hand it undefined data. Note the three
+	// mapping queries resolve to `null` when an asset has no mapping yet —
+	// still a success.
+	const editDataReady =
+		!!editAssetId && editQueries.every((query) => query.isSuccess);
 
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
+	const changeReservationQuery = useAssetReservation(reservationIdToChange);
+	const assetToChangeReservation =
+		assetsReservedByUser.find(
+			(asset) => asset.reservationId === reservationIdToChange,
+		) ?? null;
 
-	useEffect(() => {
-		const urlTerm = searchParams.get("searchTerm") || "";
-		setSearchTerm(urlTerm);
-		setSearchInput(urlTerm);
-	}, [searchParams]);
+	const assetToFreeUp =
+		assetsReservedByUser.find((asset) => asset.id === assetIdToFreeUp) ??
+		null;
+	const freeUpReservationQuery = useAssetReservation(
+		assetToFreeUp?.reservationId ?? null,
+	);
 
-	const fetchData = useCallback(
-		async (showSpinner = false) => {
-			try {
-				if (showSpinner) setIsLoading(true);
-				const result = await overviewService.getOverview(searchTerm);
-				if (result.errors) {
-					setFetchError(true);
-					return;
-				}
-				setFetchError(false);
-				hasLoadedOnce.current = true;
-				setAvailableAssets(result.data!.availableAssets);
-				setAssetsReservedByUser(result.data!.assetsReservedByUser);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-				setFetchError(true);
-			} finally {
-				setIsLoading(false);
-			}
+	// RemoveReservationDialog renders the asset and user names alongside the
+	// reservation, which the reservation endpoint doesn't return — join them
+	// from the row and the current identity.
+	const reservationToFreeUp: IAssetReservationWithNames | null = useMemo(() => {
+		if (!freeUpReservationQuery.data || !assetToFreeUp) return null;
+		return {
+			...freeUpReservationQuery.data,
+			assetName: assetToFreeUp.assetName,
+			userName: accountInfo?.name ?? "",
+		};
+	}, [freeUpReservationQuery.data, assetToFreeUp, accountInfo?.name]);
+
+	// ------------------------------------------------------------- mutations
+
+	const queryClient = useQueryClient();
+
+	// Creating or editing an asset writes its category/location/owner mappings
+	// too, so those lists have to go stale alongside the asset lists.
+	const invalidateAssetData = () => {
+		for (const queryKey of [
+			qk.overviewRoot(),
+			qk.assetsRoot(),
+			qk.removedAssets(),
+			qk.categoryAssets(),
+			qk.locationAssets(),
+			qk.ownerAssets(),
+		]) {
+			queryClient.invalidateQueries({ queryKey });
+		}
+	};
+
+	const invalidateReservationData = () => {
+		for (const queryKey of [qk.overviewRoot(), qk.assetReservations()]) {
+			queryClient.invalidateQueries({ queryKey });
+		}
+	};
+
+	const createAsset = useMutation({
+		mutationFn: (data: IAssetViewModelCreate) =>
+			unwrap(overviewService.createAsset(data)),
+		onSuccess: invalidateAssetData,
+	});
+
+	const updateAsset = useMutation({
+		mutationFn: (vars: { assetId: string; data: IAssetViewModelUpdate }) =>
+			unwrap(overviewService.updateAsset(vars.assetId, vars.data)),
+		onSuccess: invalidateAssetData,
+	});
+
+	const removeAsset = useMutation({
+		mutationFn: (vars: { assetId: string; data: IAssetViewModelRemove }) =>
+			unwrap(overviewService.removeAsset(vars.assetId, vars.data)),
+		// Removing an asset also cancels its reservations.
+		onSuccess: () => {
+			invalidateAssetData();
+			invalidateReservationData();
 		},
-		[overviewService, searchTerm],
-	);
+	});
 
-	useEffect(() => {
-		if (!hydrated) return;
+	const reserveAsset = useMutation({
+		mutationFn: (vars: { assetId: string; data: IAssetReservationAdd }) =>
+			unwrap(overviewService.reserveAsset(vars.assetId, vars.data)),
+		onSuccess: invalidateReservationData,
+	});
 
-		// Only show the full-page spinner before the first successful load
-		fetchData(!hasLoadedOnce.current);
-	}, [hydrated, accountInfo, searchTerm, fetchData]);
+	const returnAsset = useMutation({
+		mutationFn: (assetId: string) =>
+			unwrap(overviewService.returnAsset(assetId)),
+		onSuccess: invalidateReservationData,
+	});
+
+	const removeReservation = useMutation({
+		mutationFn: (assetId: string) =>
+			unwrap(overviewService.removeReservation(assetId)),
+		onSuccess: invalidateReservationData,
+	});
+
+	const changeReservationTime = useMutation({
+		mutationFn: (vars: {
+			reservationId: string;
+			data: IAssetReservationUpdate;
+		}) =>
+			unwrap(
+				overviewService.changeReservationTime(
+					vars.reservationId,
+					vars.data,
+				),
+			),
+		// The list key no longer prefix-matches per-id entries, so the edited
+		// reservation's own entry must be invalidated explicitly — otherwise
+		// reopening the dialog within staleTime would show the pre-edit times.
+		onSuccess: (_data, vars) => {
+			invalidateReservationData();
+			queryClient.invalidateQueries({
+				queryKey: qk.assetReservation(vars.reservationId),
+			});
+		},
+	});
+
+	// ---------------------------------------------------------------- search
 
 	const submitSearch = useCallback(
 		(value: string) => {
@@ -217,13 +240,16 @@ export default function Overview() {
 		submitSearch(searchInput);
 	};
 
+	// Mirrors the dialogs' `open` props rather than the selection state: a
+	// selection whose data failed to load never opens a dialog, and must not
+	// leave the scanner disabled with no way to re-enable it.
 	const anyDialogOpen =
-		showRemoveModal ||
 		showCreateModal ||
-		showUpdateModal ||
-		showReserveModal ||
-		showChangeReservationModal ||
-		showRemoveReservationModal;
+		editDataReady ||
+		!!assetToRemove ||
+		!!assetToReserve ||
+		(changeReservationQuery.isSuccess && !!assetToChangeReservation) ||
+		!!reservationToFreeUp;
 
 	useBarcodeScanner({
 		onScan: useCallback(
@@ -236,139 +262,68 @@ export default function Overview() {
 		enabled: !anyDialogOpen,
 	});
 
-	function updateQueryParam(
-		router: AppRouterInstance,
-		searchParams: ReadonlyURLSearchParams,
-		key: string,
-		value: string | null,
-	) {
-		const params = new URLSearchParams(searchParams.toString());
-		if (value === null) {
-			params.delete(key);
-		} else {
-			params.set(key, value);
+	const setQueryParam = useCallback(
+		(key: string, value: string | null) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (value === null) {
+				params.delete(key);
+			} else {
+				params.set(key, value);
+			}
+			router.push(`${window.location.pathname}?${params.toString()}`, {
+				scroll: false,
+			});
+		},
+		[router, searchParams],
+	);
+
+	// A refetch can drop the selected reservation's row (returned or removed
+	// from another tab, say). The dialog can't render without the row, so the
+	// selection must be cleared — left set, it would keep `anyDialogOpen` true
+	// and pin the barcode scanner off with nothing visible to close.
+	useEffect(() => {
+		if (
+			reservationIdToChange &&
+			overview.isSuccess &&
+			!assetToChangeReservation
+		) {
+			setReservationIdToChange(null);
+			setQueryParam("changeReservationId", null);
 		}
-		router.push(`${window.location.pathname}?${params.toString()}`, {
-			scroll: false,
-		});
-	}
+	}, [
+		reservationIdToChange,
+		overview.isSuccess,
+		assetToChangeReservation,
+		setQueryParam,
+	]);
 
-	const getDataCreateMenu = async () => {
-		setCreateLoading(true);
-		try {
-			const [categoriesResponse, locationsResponse, ownersResponse] =
-				await Promise.all([
-					categoryService.getAllAsync(),
-					locationService.getAllAsync(),
-					ownerService.getAllAsync(),
-				]);
-
-			if (categoriesResponse.errors) {
-				throw new Error(categoriesResponse.errors.join(", "));
-			}
-			setCategories(categoriesResponse.data ?? []);
-
-			if (locationsResponse.errors) {
-				throw new Error(locationsResponse.errors.join(", "));
-			}
-			setLocations(locationsResponse.data ?? []);
-
-			if (ownersResponse.errors) {
-				throw new Error(ownersResponse.errors.join(", "));
-			}
-			setOwners(ownersResponse.data ?? []);
-		} catch (error) {
-			console.error("Error getting asset create viewmodel:", error);
-		}
-		setCreateLoading(false);
-	};
+	// -------------------------------------------------------------- handlers
+	//
+	// mutateAsync (not mutate) so a failure rejects here and can be reported
+	// the way each dialog expects: an alert for the fire-and-forget actions, a
+	// returned error object for the two dialogs that render it inline.
 
 	const handleCreate = async (createAssetModel: IAssetViewModelCreate) => {
-		setCreateLoading(true);
 		try {
-			const result = await overviewService.createAsset(createAssetModel);
-			if (!result.statusCode || result.statusCode >= 400) {
-				alert(result.errors?.join(", ") || "Failed to create asset");
-			} else {
-				await fetchData();
-			}
+			await createAsset.mutateAsync(createAssetModel);
 		} catch (error) {
-			console.error("Error creating asset:", error);
-			alert("Failed to create asset");
+			alert((error as Error).message || "Failed to create asset");
 		} finally {
-			setCreateLoading(false);
 			setShowCreateModal(false);
 		}
 	};
 
-	const getDataForEditMenu = async (assetId: string) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
-		try {
-			const [
-				assetResponse,
-				categoryAssets,
-				locationAssets,
-				ownerAssets,
-				categoriesResponse,
-				locationsResponse,
-				ownersResponse,
-			] = await Promise.all([
-				assetsService.getAsync(assetId),
-				categoryAssetsService.getCategoryAssetByAssetId(assetId),
-				locationAssetsService.getLocationAssetByAssetId(assetId),
-				ownerAssetsService.getOwnerAssetByAssetId(assetId),
-				categoryService.getAllAsync(),
-				locationService.getAllAsync(),
-				ownerService.getAllAsync(),
-			]);
-
-			if (assetResponse.errors)
-				throw new Error(assetResponse.errors.join(", "));
-			setAssetComment(assetResponse.data?.comment ?? "");
-
-			setCategoryAssets(categoryAssets);
-			setLocationAssets(locationAssets);
-			setOwnerAssets(ownerAssets);
-
-			if (categoriesResponse.errors)
-				throw new Error(categoriesResponse.errors.join(", "));
-			setCategories(categoriesResponse.data ?? []);
-
-			if (locationsResponse.errors)
-				throw new Error(locationsResponse.errors.join(", "));
-			setLocations(locationsResponse.data ?? []);
-
-			if (ownersResponse.errors)
-				throw new Error(ownersResponse.errors.join(", "));
-			setOwners(ownersResponse.data ?? []);
-		} catch (error) {
-			console.error("Error getting asset update viewmodel:", error);
-		}
-		setLoading((prev) => ({ ...prev, [assetId]: false }));
-	};
-
 	const handleEdit = async (
 		assetId: string,
-		updadeAssetModel: IAssetViewModelUpdate,
+		updateAssetModel: IAssetViewModelUpdate,
 	) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
-			const result = await overviewService.updateAsset(
-				assetId,
-				updadeAssetModel,
-			);
-			if (!result.statusCode || result.statusCode >= 400) {
-				alert(result.errors?.join(", ") || "Failed to edit asset");
-			} else {
-				await fetchData();
-			}
+			await updateAsset.mutateAsync({ assetId, data: updateAssetModel });
 		} catch (error) {
-			console.error("Error editing asset:", error);
-			alert("Failed to edit asset");
+			alert((error as Error).message || "Failed to edit asset");
 		} finally {
-			setLoading((prev) => ({ ...prev, [assetId]: false }));
-			setShowUpdateModal(false);
 			setAssetToUpdate(null);
+			setQueryParam("editId", null);
 		}
 	};
 
@@ -376,90 +331,52 @@ export default function Overview() {
 		assetId: string,
 		assetRemoveVm: IAssetViewModelRemove,
 	) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
-			const result = await overviewService.removeAsset(
-				assetId,
-				assetRemoveVm,
-			);
-			if (!result.statusCode || result.statusCode >= 400) {
-				alert(result.errors?.join(", ") || "Failed to remove asset");
-			} else {
-				await fetchData();
-			}
+			await removeAsset.mutateAsync({ assetId, data: assetRemoveVm });
 		} catch (error) {
-			console.error("Error removing asset:", error);
-			alert("Failed to remove asset");
+			alert((error as Error).message || "Failed to remove asset");
 		} finally {
-			setLoading((prev) => ({ ...prev, [assetId]: false }));
-			setShowRemoveModal(false);
 			setAssetToRemove(null);
+			setQueryParam("removeId", null);
 		}
 	};
 
+	// ReserveAssetDialog closes itself once this resolves without `success:
+	// false`, so the error path must not throw.
 	const handleReserve = async (
 		assetId: string,
 		assetReservationVm: IAssetReservationAdd,
 	) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
-			const result = await overviewService.reserveAsset(
+			await reserveAsset.mutateAsync({
 				assetId,
-				assetReservationVm,
-			);
-			if (!result.statusCode || result.statusCode >= 400) {
-				return {
-					success: false,
-					error:
-						result.errors?.join(", ") || "Failed to reserve asset",
-				};
-			} else {
-				await fetchData();
-				return { success: true };
-			}
+				data: assetReservationVm,
+			});
+			return { success: true };
 		} catch (error) {
-			console.error("Error reserving asset:", error);
-			return { success: false, error: "Failed to reserve asset" };
-		} finally {
-			setLoading((prev) => ({ ...prev, [assetId]: false }));
+			return {
+				success: false,
+				error: (error as Error).message || "Failed to reserve asset",
+			};
 		}
 	};
 
 	const handleReturnAsset = async (assetId: string) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
-			const result = await overviewService.returnAsset(assetId);
-			if (!result.statusCode || result.statusCode >= 400) {
-				alert(result.errors?.join(", ") || "Failed to return asset");
-			} else {
-				await fetchData();
-			}
+			await returnAsset.mutateAsync(assetId);
 		} catch (error) {
-			console.error("Error returning asset:", error);
-			alert("Failed to return asset");
-		} finally {
-			setLoading((prev) => ({ ...prev, [assetId]: false }));
+			alert((error as Error).message || "Failed to return asset");
 		}
 	};
 
+	// RemoveReservationDialog closes itself unless this throws — so it doesn't.
 	const handleRemoveReservation = async (assetId: string) => {
-		setLoading((prev) => ({ ...prev, [assetId]: true }));
 		try {
-			const result = await overviewService.removeReservation(assetId);
-			if (!result.statusCode || result.statusCode >= 400) {
-				alert(
-					result.errors?.join(", ") || "Failed to remove reservation",
-				);
-			} else {
-				await fetchData();
-			}
+			await removeReservation.mutateAsync(assetId);
 		} catch (error) {
-			console.error("Error removing reservation:", error);
-			alert("Failed to remove reservation");
+			alert((error as Error).message || "Failed to remove reservation");
 		} finally {
-			setLoading((prev) => ({ ...prev, [assetId]: false }));
-			setShowRemoveReservationModal(false);
-			setAssetToReserve(null);
+			setAssetIdToFreeUp(null);
 		}
 	};
 
@@ -467,35 +384,73 @@ export default function Overview() {
 		assetReservationId: string,
 		updateData: IAssetReservationUpdate,
 	): Promise<{ error?: string } | void> => {
-		setLoading((prev) => ({ ...prev, [updateData.assetId]: true }));
 		try {
-			const result = await overviewService.changeReservationTime(
-				assetReservationId,
-				updateData,
-			);
-			if (!result.statusCode || result.statusCode >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update reservation time",
-				};
-			}
-			await fetchData();
-			setShowChangeReservationModal(false);
-			setAssetToReserve(null);
+			await changeReservationTime.mutateAsync({
+				reservationId: assetReservationId,
+				data: updateData,
+			});
 			setReservationIdToChange(null);
+			setQueryParam("changeReservationId", null);
 		} catch (error) {
-			console.error("Error updating reservation time:", error);
-			return { error: (error as Error).message };
-		} finally {
-			setLoading((prev) => ({ ...prev, [updateData.assetId]: false }));
+			return {
+				error:
+					(error as Error).message ||
+					"Failed to update reservation time",
+			};
 		}
 	};
 
-	const hasData =
-		availableAssets.length > 0 || assetsReservedByUser.length > 0;
+	// --------------------------------------------------------- render state
 
-	if (!hydrated || (isLoading && !hasData)) {
+	// AssetList disables a row's actions while anything concerning that asset
+	// is in flight — either its dialog data loading, or its mutation running.
+	const loading: Record<string, boolean> = {};
+	const markLoading = (id: string | null | undefined) => {
+		if (id) loading[id] = true;
+	};
+
+	// `isLoading` (in flight), not `!isSuccess`: a query that errored is also
+	// not successful, and keying off that would pin the spinner on forever.
+	// A disabled query reports `isLoading: false`, so an asset with no
+	// reservation to load never spins either. The `isError && isFetching`
+	// term covers the retry after a failed load (re-clicking the row action
+	// refetches): that refetch keeps `status: "error"`, so `isLoading` alone
+	// would leave the row spinner off while the retry is in flight.
+	const dialogDataLoading = (query: {
+		isLoading: boolean;
+		isError: boolean;
+		isFetching: boolean;
+	}) => query.isLoading || (query.isError && query.isFetching);
+
+	const editDataLoading = editQueries.some(dialogDataLoading);
+
+	if (editDataLoading) markLoading(editAssetId);
+	if (dialogDataLoading(changeReservationQuery)) {
+		markLoading(assetToChangeReservation?.id);
+	}
+	if (dialogDataLoading(freeUpReservationQuery)) markLoading(assetIdToFreeUp);
+	if (updateAsset.isPending) markLoading(updateAsset.variables?.assetId);
+	if (removeAsset.isPending) markLoading(removeAsset.variables?.assetId);
+	if (reserveAsset.isPending) markLoading(reserveAsset.variables?.assetId);
+	if (returnAsset.isPending) markLoading(returnAsset.variables);
+	if (removeReservation.isPending) markLoading(removeReservation.variables);
+	if (changeReservationTime.isPending) {
+		markLoading(changeReservationTime.variables?.data.assetId);
+	}
+
+	const loadFailed =
+		overview.isError ||
+		// Without these the create/edit dropdowns would just render empty.
+		categoriesQuery.isError ||
+		locationsQuery.isError ||
+		ownersQuery.isError ||
+		editQueries.some((query) => query.isError) ||
+		changeReservationQuery.isError ||
+		freeUpReservationQuery.isError;
+
+	// True only before the very first result: `keepPreviousData` keeps the old
+	// list on screen while a new search term loads.
+	if (overview.isLoading) {
 		return <Spinner className="h-64" />;
 	}
 
@@ -504,7 +459,7 @@ export default function Overview() {
 			<h1 className="text-3xl font-bold text-[#424242] mb-6">
 				{tAssetViewModel("AssetsOverview")}
 			</h1>
-			{fetchError && (
+			{loadFailed && (
 				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
 					{tCommon("LoadFailed")}
 				</div>
@@ -513,30 +468,26 @@ export default function Overview() {
 				availableAssets={availableAssets}
 				assetsReservedByUser={assetsReservedByUser}
 				onEditAsset={async (asset: IAssetViewModel) => {
-					updateQueryParam(router, searchParams, "editId", asset.id);
+					// Re-clicking the same asset is the retry gesture after a
+					// failed load: the query keys don't change, so an errored
+					// query would otherwise never refetch and the row would be
+					// stuck. A different asset changes the keys and fetches on
+					// its own.
+					if (asset.id === editAssetId) {
+						for (const query of editQueries) {
+							if (query.isError) query.refetch();
+						}
+					}
+					setQueryParam("editId", asset.id);
 					setAssetToUpdate(asset);
-					await getDataForEditMenu(asset.id);
-					setShowUpdateModal(true);
 				}}
 				onRemoveAsset={async (asset: IAssetViewModel) => {
-					updateQueryParam(
-						router,
-						searchParams,
-						"removeId",
-						asset.id,
-					);
+					setQueryParam("removeId", asset.id);
 					setAssetToRemove(asset);
-					setShowRemoveModal(true);
 				}}
 				onReserveAsset={async (asset: IAssetViewModel) => {
-					updateQueryParam(
-						router,
-						searchParams,
-						"reserveId",
-						asset.id,
-					);
+					setQueryParam("reserveId", asset.id);
 					setAssetToReserve(asset);
-					setShowReserveModal(true);
 				}}
 				loading={loading}
 				mode={selectedMode}
@@ -544,85 +495,33 @@ export default function Overview() {
 				searchInput={searchInput}
 				onSearchChange={(v) => setSearchInput(v)}
 				onSearchSubmit={handleSearch}
-				createLoading={createLoading}
-				onCreateAsset={async () => {
-					await getDataCreateMenu();
-					setShowCreateModal(true);
-				}}
+				createLoading={
+					categoriesQuery.isLoading ||
+					locationsQuery.isLoading ||
+					ownersQuery.isLoading
+				}
+				onCreateAsset={async () => setShowCreateModal(true)}
 				onChangeReservationTime={async (reservationId: string) => {
-					setLoading((prev) => ({ ...prev, [reservationId]: true }));
-					updateQueryParam(
-						router,
-						searchParams,
-						"changeReservationId",
-						reservationId,
-					);
-					const asset = assetsReservedByUser.find(
-						(a) => a.reservationId === reservationId,
-					);
-					if (asset) {
-						setAssetToReserve(asset);
-						setReservationIdToChange(reservationId);
-
-						try {
-							const reservationResult =
-								await assetReservationService.getAsync(
-									reservationId,
-								);
-							if (reservationResult.data) {
-								setInitialReservationFrom(
-									new Date(
-										reservationResult.data.reservationFrom,
-									),
-								);
-								setInitialReservationTo(
-									new Date(
-										reservationResult.data.reservationTo,
-									),
-								);
-								setShowChangeReservationModal(true);
-							} else {
-								alert("Failed to load reservation details");
-							}
-						} catch (e) {
-							console.error(e);
-							alert("Failed to load reservation details");
-						}
+					// Same retry-on-re-click as onEditAsset.
+					if (
+						reservationId === reservationIdToChange &&
+						changeReservationQuery.isError
+					) {
+						changeReservationQuery.refetch();
 					}
-					setLoading((prev) => ({ ...prev, [reservationId]: false }));
+					setQueryParam("changeReservationId", reservationId);
+					setReservationIdToChange(reservationId);
 				}}
 				onReturnAsset={handleReturnAsset}
 				onRemoveReservation={async (assetId: string) => {
-					const asset = assetsReservedByUser.find(
-						(a) => a.id === assetId,
-					);
-					if (asset && asset.reservationId) {
-						setLoading((prev) => ({ ...prev, [assetId]: true }));
-						try {
-							const resInfo =
-								await assetReservationService.getAsync(
-									asset.reservationId,
-								);
-							if (resInfo.data) {
-								setReservationToRemove({
-									...resInfo.data,
-									assetName: asset.assetName,
-									userName: accountInfo?.name ?? "",
-								});
-								setShowRemoveReservationModal(true);
-							} else {
-								alert("Failed to load reservation details");
-							}
-						} catch (e) {
-							console.error(e);
-							alert("Failed to load reservation details");
-						} finally {
-							setLoading((prev) => ({
-								...prev,
-								[assetId]: false,
-							}));
-						}
+					// Same retry-on-re-click as onEditAsset.
+					if (
+						assetId === assetIdToFreeUp &&
+						freeUpReservationQuery.isError
+					) {
+						freeUpReservationQuery.refetch();
 					}
+					setAssetIdToFreeUp(assetId);
 				}}
 			/>
 			<CreateAssetDialog
@@ -632,79 +531,75 @@ export default function Overview() {
 				categories={categories}
 				locations={locations}
 				owners={owners}
-				isLoading={false}
+				isLoading={createAsset.isPending}
 			/>
 			<EditAssetDialog
-				open={showUpdateModal}
+				open={editDataReady}
 				asset={assetToUpdate}
-				comment={assetComment}
-				categoryAssets={categoryAssets}
-				ownerAssets={ownerAssets}
-				locationAssets={locationAssets}
+				comment={editAssetQuery.data?.comment ?? ""}
+				categoryAssets={editCategoryAssetQuery.data ?? null}
+				ownerAssets={editOwnerAssetQuery.data ?? null}
+				locationAssets={editLocationAssetQuery.data ?? null}
 				categories={categories}
 				owners={owners}
 				locations={locations}
 				onClose={() => {
-					setShowUpdateModal(false);
-					updateQueryParam(router, searchParams, "editId", null);
+					setAssetToUpdate(null);
+					setQueryParam("editId", null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={assetToUpdate ? loading[assetToUpdate.id] : false}
+				isLoading={updateAsset.isPending}
 			/>
 			<RemoveAssetDialog
-				open={showRemoveModal}
+				open={!!assetToRemove}
 				asset={assetToRemove}
 				onClose={() => {
-					setShowRemoveModal(false);
-					updateQueryParam(router, searchParams, "removeId", null);
+					setAssetToRemove(null);
+					setQueryParam("removeId", null);
 				}}
 				onConfirm={handleRemove}
-				isLoading={assetToRemove ? loading[assetToRemove.id] : false}
+				isLoading={removeAsset.isPending}
 			/>
 			<ReserveAssetDialog
-				open={showReserveModal}
+				open={!!assetToReserve}
 				asset={assetToReserve}
 				onClose={() => {
-					setShowReserveModal(false);
 					setAssetToReserve(null);
-					updateQueryParam(router, searchParams, "reserveId", null);
+					setQueryParam("reserveId", null);
 				}}
 				onConfirm={handleReserve}
-				isLoading={assetToReserve ? loading[assetToReserve.id] : false}
+				isLoading={reserveAsset.isPending}
 			/>
 			<ChangeReservationTimeDialog
-				open={showChangeReservationModal}
+				open={
+					changeReservationQuery.isSuccess &&
+					!!assetToChangeReservation
+				}
 				assetReservationId={reservationIdToChange}
-				asset={assetToReserve}
-				initialFrom={initialReservationFrom}
-				initialTo={initialReservationTo}
+				asset={assetToChangeReservation}
+				initialFrom={
+					changeReservationQuery.data
+						? new Date(changeReservationQuery.data.reservationFrom)
+						: null
+				}
+				initialTo={
+					changeReservationQuery.data
+						? new Date(changeReservationQuery.data.reservationTo)
+						: null
+				}
 				onClose={() => {
-					setShowChangeReservationModal(false);
-					updateQueryParam(
-						router,
-						searchParams,
-						"changeReservationId",
-						null,
-					);
-					setInitialReservationFrom(null);
-					setInitialReservationTo(null);
+					setReservationIdToChange(null);
+					setQueryParam("changeReservationId", null);
 				}}
 				onConfirm={handleChangeReservationTime}
-				isLoading={assetToReserve ? loading[assetToReserve.id] : false}
+				isLoading={changeReservationTime.isPending}
 			/>
 			<RemoveReservationDialog
-				open={showRemoveReservationModal}
-				reservation={reservationToRemove}
-				onClose={() => {
-					setShowRemoveReservationModal(false);
-					setReservationToRemove(null);
-				}}
+				open={!!reservationToFreeUp}
+				reservation={reservationToFreeUp}
+				onClose={() => setAssetIdToFreeUp(null)}
 				onConfirm={handleRemoveReservation}
-				isLoading={
-					reservationToRemove
-						? loading[reservationToRemove.assetId]
-						: false
-				}
+				isLoading={removeReservation.isPending}
 			/>
 		</div>
 	);
