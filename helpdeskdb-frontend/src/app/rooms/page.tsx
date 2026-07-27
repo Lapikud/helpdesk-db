@@ -2,12 +2,14 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { RoomService } from "@/services/RoomService";
+import { roomService } from "@/services";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRooms } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { IRoom, IRoomAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -23,14 +25,37 @@ export default function Rooms() {
 	const { t: tRoom } = useTranslation("room");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const roomService: RoomService = useMemo(() => new RoomService(), []);
-	if (setAccountInfo) roomService.injectSetAccountInfo(setAccountInfo);
-
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IRoom[]>([]);
-	const [hydrated, setHydrated] = useState(false);
+
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useRooms();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.rooms() });
+
+	const createRoom = useMutation({
+		mutationFn: (dto: IRoomAdd) => unwrap(roomService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editRoom = useMutation({
+		mutationFn: (dto: IRoom) => unwrap(roomService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteRoom = useMutation({
+		mutationFn: (id: string) => unwrap(roomService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -39,92 +64,38 @@ export default function Rooms() {
 	const [roomToEdit, setRoomToEdit] = useState<IRoom | null>(null);
 	const [roomToDelete, setRoomToDelete] = useState<IRoom | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await roomService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
-	}, [roomService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
+	// mutateAsync (not mutate) so a failure rejects and can be surfaced through
+	// the dialogs' ConfirmResult contract.
 	const handleCreate = async (dto: IRoomAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await roomService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create room",
-				};
-			}
-			await fetchData();
+			await createRoom.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: IRoom) => {
-		setEditLoading(true);
 		try {
-			const result = await roomService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to update room",
-				};
-			}
-			await fetchData();
+			await editRoom.mutateAsync(dto);
 			setShowEdit(false);
 			setRoomToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await roomService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to delete room",
-				};
-			}
-			await fetchData();
+			await deleteRoom.mutateAsync(id);
 			setShowDelete(false);
 			setRoomToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [tRoom("RoomName"), tCommon("Comment"), tCommon("Actions")]
 		: [tRoom("RoomName"), tCommon("Comment")];
 
@@ -133,7 +104,7 @@ export default function Rooms() {
 		cells: [
 			item.roomName,
 			item.comment || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -160,7 +131,7 @@ export default function Rooms() {
 		<ListPageWrapper
 			title={tRoom("Rooms")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -171,13 +142,19 @@ export default function Rooms() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateRoomDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createRoom.isPending}
 			/>
 
 			<EditRoomDialog
@@ -188,7 +165,7 @@ export default function Rooms() {
 					setRoomToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editRoom.isPending}
 			/>
 
 			<DeleteRoomDialog
@@ -199,7 +176,7 @@ export default function Rooms() {
 					setRoomToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteRoom.isPending}
 			/>
 		</ListPageWrapper>
 	);
