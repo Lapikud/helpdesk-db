@@ -1,6 +1,7 @@
 import {
 	IAsset,
 	ILocation,
+	ILocationAssetAdd,
 	ILocationAssetWithNames,
 } from "@/types/domain/DomainTypes";
 import {
@@ -45,6 +46,16 @@ export const locationsToOptions = (locations: ILocation[]): SelectOption[] =>
 		value: location.id,
 		label: location.locationName,
 	}));
+
+// createdBy is stamped by the page from AccountContext — the placeholder just
+// satisfies the DTO shape.
+export const locationAssetToAdd = (
+	data: LocationAssetForm,
+): ILocationAssetAdd => ({
+	assetId: data.assetId,
+	locationId: data.locationId,
+	createdBy: "",
+});
 
 export const locationAssetDeleteSummary: DeleteSummaryField<ILocationAssetWithNames>[] =
 	[

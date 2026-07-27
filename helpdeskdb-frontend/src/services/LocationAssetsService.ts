@@ -1,27 +1,19 @@
 import { ILocationAsset, ILocationAssetAdd } from "@/types/domain/DomainTypes";
 import { EntityService } from "./EntityService";
+import { unwrap } from "./errors";
 
 export class LocationAssetsService extends EntityService<ILocationAsset, ILocationAssetAdd> {
 	constructor() {
 		super('locationassets')
 	}
+	/**
+	 * `null` strictly means the asset has no location mapping; a failed fetch
+	 * rejects with `ApiError` instead. Callers (the edit-dialog queries) rely
+	 * on that distinction — a swallowed error here would present as "no
+	 * mapping" and let a save silently rewrite the asset's mappings.
+	 */
 	async getLocationAssetByAssetId(assetId: string): Promise<ILocationAsset | null> {
-		try {
-			const locationAssetsResponse = await this.getAllAsync();
-			if (!locationAssetsResponse.data) {
-				console.error("Error getting locationassets:", locationAssetsResponse.errors);
-				return null;
-			}
-
-			const locationAssetByAssetId: ILocationAsset | undefined = locationAssetsResponse.data?.find(ca => ca.assetId === assetId);
-			if (locationAssetByAssetId === undefined) {
-				return null;
-			}
-
-			return locationAssetByAssetId;
-		} catch (error) {
-			console.error("Error fetching asset name:", error);
-			return null;
-		}
+		const locationAssets = await unwrap(this.getAllAsync());
+		return locationAssets.find(la => la.assetId === assetId) ?? null;
 	}
 }

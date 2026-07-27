@@ -1,6 +1,7 @@
 import {
 	IAsset,
 	IOwner,
+	IOwnerAssetAdd,
 	IOwnerAssetWithNames,
 } from "@/types/domain/DomainTypes";
 import {
@@ -64,6 +65,16 @@ export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
 
 export const ownersToOptions = (owners: IOwner[]): SelectOption[] =>
 	owners.map((owner) => ({ value: owner.id, label: owner.ownerName }));
+
+// createdBy is stamped by the page from AccountContext — the placeholder just
+// satisfies the DTO shape.
+export const ownerAssetToAdd = (
+	data: OwnerAssetCreateForm,
+): IOwnerAssetAdd => ({
+	assetId: data.assetId,
+	ownerId: data.ownerId,
+	createdBy: "",
+});
 
 export const ownerAssetDeleteSummary: DeleteSummaryField<IOwnerAssetWithNames>[] =
 	[
