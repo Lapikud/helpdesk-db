@@ -1,29 +1,29 @@
 "use client";
 
 import { AccountContext } from "@/context/AccountContext";
-import { AccountService } from "@/services/AccountService";
+import { accountService } from "@/services";
+import { ApiError, unwrap } from "@/services/errors";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useContext, useMemo, useState } from "react";
+import { useContext, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+
+type Inputs = {
+	username: string;
+	password: string;
+};
 
 export default function Login() {
 	const { t: tCommon } = useTranslation("common");
 	const { t: tValidation } = useTranslation("validationerrors");
 	const { t: tIdentityerrors } = useTranslation("identityerrors");
-	const accountService = useMemo(() => new AccountService(), []);
 
 	const { setAccountInfo } = useContext(AccountContext);
 
 	const router = useRouter();
 
 	const [errorMessage, setErrorMessage] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
-
-	type Inputs = {
-		username: string;
-		password: string;
-	};
 
 	const {
 		register,
@@ -31,37 +31,38 @@ export default function Login() {
 		formState: { errors },
 	} = useForm<Inputs>({});
 
-	const onSubmit: SubmitHandler<Inputs> = async (data: Inputs) => {
-		setIsLoading(true);
-		setErrorMessage("");
-
-		try {
-			const result = await accountService.loginAsync(
-				data.username,
-				data.password,
-			);
-			if (result.errors || !result.data) {
-				// 401 = bad credentials; anything else (network error, 5xx,
-				// IPA outage) is a service problem, not the user's fault.
-				setErrorMessage(
-					result.statusCode === 401
-						? "InvalidLogin"
-						: "LoginServiceUnavailable",
-				);
-				return;
-			}
-
+	// `unwrap` turns the IResultObject into a rejection carrying the status
+	// code, which is what lets the 401-vs-everything-else split live in
+	// onError. Retries are off for mutations (see providers.tsx), so a failed
+	// login is never replayed.
+	const login = useMutation({
+		mutationFn: (data: Inputs) =>
+			unwrap(accountService.loginAsync(data.username, data.password)),
+		onSuccess: (identity) => {
 			setAccountInfo!({
-				id: result.data.id,
-				name: result.data.username,
-				roles: result.data.roles,
+				id: identity.id,
+				name: identity.username,
+				roles: identity.roles,
 			});
+			// The query cache from any previous session is dropped by
+			// QueryCacheReset, which watches the identity itself.
 			router.push("/");
-		} catch {
-			setErrorMessage("LoginServiceUnavailable");
-		} finally {
-			setIsLoading(false);
-		}
+		},
+		onError: (error) => {
+			// 401 = bad credentials; anything else (network error, 5xx, IPA
+			// outage) is a service problem, not the user's fault. A network
+			// failure has no status, which `unwrap` normalises to 0.
+			setErrorMessage(
+				error instanceof ApiError && error.statusCode === 401
+					? "InvalidLogin"
+					: "LoginServiceUnavailable",
+			);
+		},
+	});
+
+	const onSubmit: SubmitHandler<Inputs> = (data) => {
+		setErrorMessage("");
+		login.mutate(data);
 	};
 
 	return (
@@ -162,10 +163,10 @@ export default function Login() {
 				<button
 					id="loginSubmit"
 					type="submit"
-					disabled={isLoading}
+					disabled={login.isPending}
 					className="w-full py-2 px-4 mt-2 bg-[#f0941d] hover:bg-[#ffa80d] text-white font-semibold rounded-lg shadow transition-colors duration-200 disabled:opacity-50"
 				>
-					{isLoading ? tCommon("Loading") : tCommon("LoginLink")}
+					{login.isPending ? tCommon("Loading") : tCommon("LoginLink")}
 				</button>
 			</form>
 		</div>
