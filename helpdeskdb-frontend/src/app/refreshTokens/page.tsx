@@ -2,78 +2,41 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { RefreshTokenService } from "@/services/RefreshTokenService";
-import { UserService } from "@/services/UserService";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo } from "react";
+import { useRefreshTokens, useUsers } from "@/hooks/queries/entityQueries";
 import { IRefreshTokenWithUsername } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 
 export default function RefreshTokens() {
 	const { t: tRefreshToken } = useTranslation("refreshtoken");
+	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const refreshTokenService: RefreshTokenService = useMemo(
-		() => new RefreshTokenService(),
-		[],
-	);
-	const userService: UserService = useMemo(() => new UserService(), []);
-	if (setAccountInfo) {
-		refreshTokenService.injectSetAccountInfo(setAccountInfo);
-		userService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IRefreshTokenWithUsername[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
 
 	useEffect(() => {
-		setHydrated(true);
-	}, []);
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
 
-	const fetchData = useCallback(async () => {
-		const [tokensResult, usersResult] = await Promise.all([
-			refreshTokenService.getAllAsync(),
-			userService.getAllAsync(),
-		]);
+	const { data: tokens, isError, error } = useRefreshTokens();
+	const { data: users } = useUsers();
 
-		if (
-			tokensResult.errors ||
-			!tokensResult.data ||
-			usersResult.errors ||
-			!usersResult.data
-		) {
-			return;
-		}
+	const data: IRefreshTokenWithUsername[] = useMemo(() => {
+		if (!tokens) return [];
 
-		const userById = new Map(usersResult.data.map((u) => [u.id, u]));
+		const userById = new Map((users ?? []).map((u) => [u.id, u.username]));
 
-		const withUsernames: IRefreshTokenWithUsername[] =
-			tokensResult.data.map((token) => ({
-				...token,
-				username:
-					userById.get(token.userId)?.username ?? token.userId,
-			}));
-
-		setData(withUsernames);
-	}, [refreshTokenService, userService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
-	if (!hydrated) return <Spinner className="h-64" />;
+		return tokens.map((token) => ({
+			...token,
+			username: userById.get(token.userId) ?? token.userId,
+		}));
+	}, [tokens, users]);
 
 	const columns = [
 		tRefreshToken("User"),
@@ -98,6 +61,12 @@ export default function RefreshTokens() {
 
 	return (
 		<ListPageWrapper title={tRefreshToken("RefreshTokensTitle")}>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable
 				columns={columns}
 				rows={rows}
