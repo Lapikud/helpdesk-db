@@ -1,17 +1,15 @@
-import {
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../common/Modal";
-import { AccountContext } from "@/context/AccountContext";
-import { LocationInCupboardService } from "@/services/LocationInCupboardService";
-import { LocationService } from "@/services/LocationService";
+import { locationInCupboardService, locationService } from "@/services";
+import { unwrap } from "@/services/errors";
+import { qk } from "@/lib/queryKeys";
 import {
-	ILocation,
+	useLocations,
+	useLocationsInCupboards,
+} from "@/hooks/queries/entityQueries";
+import {
 	ILocationAdd,
 	ILocationInCupboard,
 	ILocationInCupboardAdd,
@@ -36,26 +34,64 @@ export const CupboardLocationsDialog = ({
 	const { t: tLocationInCupboard } = useTranslation("locationincupboard");
 	const { t: tCommon } = useTranslation("common");
 
-	const { setAccountInfo } = useContext(AccountContext);
-	const locationInCupboardService: LocationInCupboardService = useMemo(
-		() => new LocationInCupboardService(),
-		[],
+	const queryClient = useQueryClient();
+	const enabled = open && !!cupboard;
+	const locationsQuery = useLocations({ enabled });
+	const linksQuery = useLocationsInCupboards({ enabled });
+	const allLocations = useMemo(
+		() => locationsQuery.data ?? [],
+		[locationsQuery.data],
 	);
-	const locationService: LocationService = useMemo(
-		() => new LocationService(),
-		[],
-	);
-	if (setAccountInfo) {
-		locationInCupboardService.injectSetAccountInfo(setAccountInfo);
-		locationService.injectSetAccountInfo(setAccountInfo);
-	}
+	const records = useMemo(() => linksQuery.data ?? [], [linksQuery.data]);
+	const listLoading = locationsQuery.isLoading || linksQuery.isLoading;
+	const listError = locationsQuery.isError || linksQuery.isError;
 
-	const [entries, setEntries] = useState<ILocationInCupboardWithNames[]>([]);
-	const [allLocations, setAllLocations] = useState<ILocation[]>([]);
-	const [usedLocationIds, setUsedLocationIds] = useState<Set<string>>(
-		new Set(),
-	);
-	const [listLoading, setListLoading] = useState(false);
+	const invalidateLinks = () =>
+		queryClient.invalidateQueries({ queryKey: qk.locationsInCupboards() });
+
+	const createLink = useMutation({
+		mutationFn: (dto: ILocationInCupboardAdd) =>
+			unwrap(locationInCupboardService.addAsync(dto)),
+		onSuccess: invalidateLinks,
+	});
+	const createLocationAndLink = useMutation({
+		mutationFn: async ({
+			dto,
+			cupboardId,
+		}: {
+			dto: ILocationAdd;
+			cupboardId: string;
+		}) => {
+			const created = await unwrap(locationService.addAsync(dto));
+			try {
+				return await unwrap(
+					locationInCupboardService.addAsync({
+						locationId: created.id,
+						cupboardId,
+					}),
+				);
+			} catch {
+				throw new Error(
+					"Location created but failed to add it to the cupboard",
+				);
+			}
+		},
+		onSuccess: invalidateLinks,
+		// The location exists even when the link step failed, so refresh
+		// qk.locations() regardless of outcome.
+		onSettled: () =>
+			queryClient.invalidateQueries({ queryKey: qk.locations() }),
+	});
+	const editLink = useMutation({
+		mutationFn: (dto: ILocationInCupboard) =>
+			unwrap(locationInCupboardService.updateAsync(dto)),
+		onSuccess: invalidateLinks,
+	});
+	const deleteLink = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(locationInCupboardService.deleteAsync(id)),
+		onSuccess: invalidateLinks,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showCreateLocation, setShowCreateLocation] = useState(false);
@@ -65,45 +101,26 @@ export const CupboardLocationsDialog = ({
 		useState<ILocationInCupboardWithNames | null>(null);
 	const [entryToDelete, setEntryToDelete] =
 		useState<ILocationInCupboardWithNames | null>(null);
-	const [createLoading, setCreateLoading] = useState(false);
-	const [createLocationLoading, setCreateLocationLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
 
-	const fetchEntries = useCallback(async () => {
-		if (!cupboard) return;
-		setListLoading(true);
-		try {
-			const [recordsResult, locationsResult] = await Promise.all([
-				locationInCupboardService.getAllAsync(),
-				locationService.getAllAsync(),
-			]);
+	// Locations linked to *any* cupboard are unavailable, not just this one's.
+	const usedLocationIds = useMemo(
+		() => new Set(records.map((r) => r.locationId)),
+		[records],
+	);
 
-			const locations = locationsResult.data ?? [];
-			setAllLocations(locations);
-
-			const records = recordsResult.data ?? [];
-			setUsedLocationIds(new Set(records.map((r) => r.locationId)));
-
-			const locationMap = new Map(
-				locations.map((l) => [l.id, l.locationName]),
-			);
-			const withNames: ILocationInCupboardWithNames[] = records
-				.filter((r) => r.cupboardId === cupboard.id)
-				.map((r) => ({
-					...r,
-					codeName: cupboard.codeName,
-					locationName: locationMap.get(r.locationId) ?? r.locationId,
-				}));
-			setEntries(withNames);
-		} finally {
-			setListLoading(false);
-		}
-	}, [cupboard, locationInCupboardService, locationService]);
-
-	useEffect(() => {
-		if (open && cupboard) fetchEntries();
-	}, [open, cupboard, fetchEntries]);
+	const entries = useMemo<ILocationInCupboardWithNames[]>(() => {
+		if (!cupboard) return [];
+		const locationMap = new Map(
+			allLocations.map((l) => [l.id, l.locationName]),
+		);
+		return records
+			.filter((r) => r.cupboardId === cupboard.id)
+			.map((r) => ({
+				...r,
+				codeName: cupboard.codeName,
+				locationName: locationMap.get(r.locationId) ?? r.locationId,
+			}));
+	}, [records, allLocations, cupboard]);
 
 	const availableForCreate = useMemo(
 		() => allLocations.filter((l) => !usedLocationIds.has(l.id)),
@@ -121,95 +138,44 @@ export const CupboardLocationsDialog = ({
 	);
 
 	const handleCreate = async (dto: ILocationInCupboardAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await locationInCupboardService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create location in cupboard",
-				};
-			}
-			await fetchEntries();
+			await createLink.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleCreateLocation = async (dto: ILocationAdd) => {
 		if (!cupboard) return;
-		setCreateLocationLoading(true);
 		try {
-			const created = await locationService.addAsync(dto);
-			if (created.errors || (created.statusCode ?? 0) >= 400 || !created.data) {
-				return {
-					error:
-						created.errors?.join(", ") || "Failed to create location",
-				};
-			}
-			const linked = await locationInCupboardService.addAsync({
-				locationId: created.data.id,
+			await createLocationAndLink.mutateAsync({
+				dto,
 				cupboardId: cupboard.id,
 			});
-			if (linked.errors || (linked.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						linked.errors?.join(", ") ||
-						"Location created but failed to add it to the cupboard",
-				};
-			}
-			await fetchEntries();
 			setShowCreateLocation(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLocationLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ILocationInCupboard) => {
-		setEditLoading(true);
 		try {
-			const result = await locationInCupboardService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update location in cupboard",
-				};
-			}
-			await fetchEntries();
+			await editLink.mutateAsync(dto);
 			setShowEdit(false);
 			setEntryToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await locationInCupboardService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete location in cupboard",
-				};
-			}
-			await fetchEntries();
+			await deleteLink.mutateAsync(id);
 			setShowDelete(false);
 			setEntryToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
@@ -239,6 +205,12 @@ export const CupboardLocationsDialog = ({
 						{tCommon("CreateNewLink")}
 					</button>
 				</div>
+
+				{listError && (
+					<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+						{tCommon("LoadFailed")}
+					</div>
+				)}
 
 				<div className="bg-[#efefef] rounded-2xl p-3 max-h-[50vh] overflow-y-auto">
 					{listLoading ? (
@@ -295,14 +267,14 @@ export const CupboardLocationsDialog = ({
 				availableLocations={availableForCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createLink.isPending}
 			/>
 
 			<CreateLocationDialog
 				open={showCreateLocation}
 				onClose={() => setShowCreateLocation(false)}
 				onConfirm={handleCreateLocation}
-				isLoading={createLocationLoading}
+				isLoading={createLocationAndLink.isPending}
 			/>
 
 			<EditLocationInCupboardDialog
@@ -315,7 +287,7 @@ export const CupboardLocationsDialog = ({
 					setEntryToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editLink.isPending}
 			/>
 
 			<DeleteLocationInCupboardDialog
@@ -326,7 +298,7 @@ export const CupboardLocationsDialog = ({
 					setEntryToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteLink.isPending}
 			/>
 		</>
 	);

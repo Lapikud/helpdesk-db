@@ -2,25 +2,23 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { CupboardsInRoomsService } from "@/services/CupboardsInRoomsService";
-import { CupboardService } from "@/services/CupboardService";
-import { RoomService } from "@/services/RoomService";
+import { cupboardService, cupboardsInRoomsService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+	useCupboards,
+	useCupboardsInRooms,
+	useRooms,
+} from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
 import {
-	ICupboard,
 	ICupboardAdd,
 	ICupboardInRoom,
 	ICupboardInRoomAdd,
 	ICupboardInRoomWithNames,
-	IRoom,
 } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
@@ -35,27 +33,72 @@ export default function CupboardsInRooms() {
 	const { t: tCupboard } = useTranslation("cupboard");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const cupboardsInRoomsService: CupboardsInRoomsService = useMemo(
-		() => new CupboardsInRoomsService(),
-		[],
-	);
-	const cupboardService: CupboardService = useMemo(
-		() => new CupboardService(),
-		[],
-	);
-	const roomService: RoomService = useMemo(() => new RoomService(), []);
-	if (setAccountInfo) {
-		cupboardsInRoomsService.injectSetAccountInfo(setAccountInfo);
-		cupboardService.injectSetAccountInfo(setAccountInfo);
-		roomService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
+	const router = useRouter();
 
-	const [data, setData] = useState<ICupboardInRoomWithNames[]>([]);
-	const [allCupboards, setAllCupboards] = useState<ICupboard[]>([]);
-	const [rooms, setRooms] = useState<IRoom[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const {
+		data: cupboardsInRooms,
+		isError,
+		error,
+	} = useCupboardsInRooms();
+	const { data: allCupboards } = useCupboards();
+	const { data: rooms } = useRooms();
+
+	const data: ICupboardInRoomWithNames[] = useMemo(() => {
+		if (!cupboardsInRooms) return [];
+
+		const cupboardMap = new Map(
+			(allCupboards ?? []).map((c) => [c.id, c.codeName]),
+		);
+		const roomMap = new Map((rooms ?? []).map((r) => [r.id, r.roomName]));
+
+		return cupboardsInRooms.map((r) => ({
+			...r,
+			roomName: roomMap.get(r.roomId) ?? r.roomId,
+			codeName: cupboardMap.get(r.cupboardId) ?? r.cupboardId,
+		}));
+	}, [cupboardsInRooms, allCupboards, rooms]);
+
+	// The create dialog only offers cupboards that aren't placed in a room yet.
+	const availableCupboards = useMemo(() => {
+		const used = new Set((cupboardsInRooms ?? []).map((d) => d.cupboardId));
+		return (allCupboards ?? []).filter((c) => !used.has(c.id));
+	}, [cupboardsInRooms, allCupboards]);
+
+	const queryClient = useQueryClient();
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.cupboardsInRooms() });
+
+	const createCupboardInRoom = useMutation({
+		mutationFn: (dto: ICupboardInRoomAdd) =>
+			unwrap(cupboardsInRoomsService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const createCupboard = useMutation({
+		mutationFn: (dto: ICupboardAdd) => unwrap(cupboardService.addAsync(dto)),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: qk.cupboards() }),
+	});
+	const editCupboardInRoom = useMutation({
+		mutationFn: (dto: ICupboardInRoom) =>
+			unwrap(cupboardsInRoomsService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteCupboardInRoom = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(cupboardsInRoomsService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showCreateCupboard, setShowCreateCupboard] = useState(false);
@@ -72,134 +115,45 @@ export default function CupboardsInRooms() {
 		codeName: string;
 	} | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [createCupboardLoading, setCreateCupboardLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const [cirResult, cupboardsResult, roomsResult] = await Promise.all([
-			cupboardsInRoomsService.getAllAsync(),
-			cupboardService.getAllAsync(),
-			roomService.getAllAsync(),
-		]);
-
-		const cupboards = cupboardsResult.data ?? [];
-		const roomList = roomsResult.data ?? [];
-		setAllCupboards(cupboards);
-		setRooms(roomList);
-
-		const cupboardMap = new Map(cupboards.map((c) => [c.id, c.codeName]));
-		const roomMap = new Map(roomList.map((r) => [r.id, r.roomName]));
-
-		const records = cirResult.data ?? [];
-		setData(
-			records.map((r) => ({
-				...r,
-				roomName: roomMap.get(r.roomId) ?? r.roomId,
-				codeName: cupboardMap.get(r.cupboardId) ?? r.cupboardId,
-			})),
-		);
-	}, [cupboardsInRoomsService, cupboardService, roomService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
-	const availableCupboards = useMemo(() => {
-		const used = new Set(data.map((d) => d.cupboardId));
-		return allCupboards.filter((c) => !used.has(c.id));
-	}, [data, allCupboards]);
-
 	const handleCreate = async (dto: ICupboardInRoomAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await cupboardsInRoomsService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create cupboard in room",
-				};
-			}
-			await fetchData();
+			await createCupboardInRoom.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleCreateCupboard = async (dto: ICupboardAdd) => {
-		setCreateCupboardLoading(true);
 		try {
-			const result = await cupboardService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create cupboard",
-				};
-			}
-			await fetchData();
+			await createCupboard.mutateAsync(dto);
 			setShowCreateCupboard(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateCupboardLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ICupboardInRoom) => {
-		setEditLoading(true);
 		try {
-			const result = await cupboardsInRoomsService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update cupboard in room",
-				};
-			}
-			await fetchData();
+			await editCupboardInRoom.mutateAsync(dto);
 			setShowEdit(false);
 			setCupboardInRoomToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await cupboardsInRoomsService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete cupboard in room",
-				};
-			}
-			await fetchData();
+			await deleteCupboardInRoom.mutateAsync(id);
 			setShowDelete(false);
 			setCupboardInRoomToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tCupboardInRoom("Room"),
 				tCupboardInRoom("Cupboard"),
@@ -218,7 +172,7 @@ export default function CupboardsInRooms() {
 			item.roomName,
 			item.codeName,
 			item.comment || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -258,7 +212,7 @@ export default function CupboardsInRooms() {
 		<ListPageWrapper
 			title={tCupboardInRoom("CupboardsInRooms")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<div className="flex gap-2">
 						<button
 							type="button"
@@ -278,34 +232,40 @@ export default function CupboardsInRooms() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[600px]" />
 
 			<CreateCupboardDialog
 				open={showCreateCupboard}
 				onClose={() => setShowCreateCupboard(false)}
 				onConfirm={handleCreateCupboard}
-				isLoading={createCupboardLoading}
+				isLoading={createCupboard.isPending}
 			/>
 
 			<CreateCupboardInRoomDialog
 				open={showCreate}
 				cupboards={availableCupboards}
-				rooms={rooms}
+				rooms={rooms ?? []}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createCupboardInRoom.isPending}
 			/>
 
 			<EditCupboardInRoomDialog
 				open={showEdit}
 				cupboardInRoom={cupboardInRoomToEdit}
-				rooms={rooms}
+				rooms={rooms ?? []}
 				onClose={() => {
 					setShowEdit(false);
 					setCupboardInRoomToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editCupboardInRoom.isPending}
 			/>
 
 			<DeleteCupboardInRoomDialog
@@ -316,7 +276,7 @@ export default function CupboardsInRooms() {
 					setCupboardInRoomToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteCupboardInRoom.isPending}
 			/>
 
 			<CupboardLocationsDialog
