@@ -66,10 +66,11 @@ export default function AssetList({
 
 	const { accountInfo } = useContext(AccountContext);
 
-	const isAdmin = accountInfo?.roles?.includes("admins") ?? false;
-	const isMember = accountInfo?.roles?.includes("members") ?? false;
-	const isPixel = accountInfo?.roles?.includes("pixels") ?? false;
-	const showActions = isAdmin || isMember || isPixel;
+	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const isMember = accountInfo?.roles?.includes("members");
+	const isPixel = accountInfo?.roles?.includes("pixels");
+	const showActions = isAdmin || isHelpdeskDbAdmin || isMember || isPixel;
 
 	function getInitialSections() {
 		if (typeof window !== "undefined") {

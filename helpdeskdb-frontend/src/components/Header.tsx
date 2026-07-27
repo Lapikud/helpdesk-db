@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useContext, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AccountService } from "@/services/AccountService";
+import { accountService } from "@/services";
 
 export default function Header() {
 	const { t: tLayout } = useTranslation("_layout");
@@ -23,6 +23,8 @@ export default function Header() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
 
 	useEffect(() => {
 		function handleClickOutside(event: MouseEvent) {
@@ -48,8 +50,9 @@ export default function Header() {
 	const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
 	const handleLogout = async () => {
-		const accountService = new AccountService();
 		await accountService.logoutAsync();
+		// Clearing the identity is what drops the query cache — QueryCacheReset
+		// watches it, so no explicit queryClient.clear() belongs here.
 		setAccountInfo!({});
 		router.push("/login");
 		closeMobileMenu();
@@ -142,7 +145,7 @@ export default function Header() {
 						</div>
 					)}
 					{/* Admin Dropdown — desktop only */}
-					{accountInfo?.id && isAdmin && (
+					{accountInfo?.id && canManage && (
 						<div className="relative hidden md:block" ref={adminDropdownRef}>
 							<button
 								onClick={() =>
@@ -381,7 +384,7 @@ export default function Header() {
 						</>
 					)}
 
-					{accountInfo?.id && isAdmin && (
+					{accountInfo?.id && canManage && (
 						<>
 							<div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">
 								{tLayout("Admin")}
