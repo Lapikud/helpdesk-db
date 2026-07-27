@@ -2,12 +2,14 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { AssetService } from "@/services/AssetService";
+import { assetService } from "@/services";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAssets } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { IAsset, IAssetAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -23,16 +25,39 @@ export default function Assets() {
 	const { t: tAsset } = useTranslation("asset");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const assetService: AssetService = useMemo(() => new AssetService(), []);
-	if (setAccountInfo) {
-		assetService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<IAsset[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useAssets(true);
+
+	// Root key so both includeRemoved variants refetch — the false variant
+	// feeds the reservation create dialog's asset list.
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.assetsRoot() });
+
+	const createAsset = useMutation({
+		mutationFn: (dto: IAssetAdd) => unwrap(assetService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editAsset = useMutation({
+		mutationFn: (dto: IAsset) => unwrap(assetService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteAsset = useMutation({
+		mutationFn: (id: string) => unwrap(assetService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -41,92 +66,37 @@ export default function Assets() {
 	const [assetToEdit, setAssetToEdit] = useState<IAsset | null>(null);
 	const [assetToDelete, setAssetToDelete] = useState<IAsset | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await assetService.getAllAsync(true);
-		if (!result.errors && result.data) setData(result.data);
-	}, [assetService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
 
 	const handleCreate = async (dto: IAssetAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await assetService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create asset",
-				};
-			}
-			await fetchData();
+			await createAsset.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: IAsset) => {
-		setEditLoading(true);
 		try {
-			const result = await assetService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to update asset",
-				};
-			}
-			await fetchData();
+			await editAsset.mutateAsync(dto);
 			setShowEdit(false);
 			setAssetToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await assetService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to delete asset",
-				};
-			}
-			await fetchData();
+			await deleteAsset.mutateAsync(id);
 			setShowDelete(false);
 			setAssetToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tAsset("AssetName"),
 				tAsset("SerialNumber"),
@@ -148,7 +118,7 @@ export default function Assets() {
 			item.serialNumber || "-",
 			item.barcode || "-",
 			item.comment || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -175,7 +145,7 @@ export default function Assets() {
 		<ListPageWrapper
 			title={tAsset("Assets")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -186,13 +156,19 @@ export default function Assets() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateDbAssetDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createAsset.isPending}
 			/>
 
 			<EditDbAssetDialog
@@ -203,7 +179,7 @@ export default function Assets() {
 					setAssetToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editAsset.isPending}
 			/>
 
 			<DeleteDbAssetDialog
@@ -214,7 +190,7 @@ export default function Assets() {
 					setAssetToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteAsset.isPending}
 			/>
 		</ListPageWrapper>
 	);
