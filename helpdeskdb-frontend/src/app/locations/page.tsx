@@ -1,18 +1,15 @@
-
 "use client";
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { LocationService } from "@/services/LocationService";
-import {
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+import { locationService } from "@/services";
+import { useRouter } from "next/navigation";
+import { useContext, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocations } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
 import { ILocation, ILocationAdd } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
+import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
@@ -24,16 +21,35 @@ export default function Locations() {
 	const { t: tLocation } = useTranslation("location");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const locationService: LocationService = useMemo(
-		() => new LocationService(),
-		[],
-	);
-	if (setAccountInfo) locationService.injectSetAccountInfo(setAccountInfo);
+	const { accountInfo } = useContext(AccountContext);
+	const router = useRouter();
 
-	const [data, setData] = useState<ILocation[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const queryClient = useQueryClient();
+	const { data = [], isError, error } = useLocations();
+
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.locations() });
+	
+	const createLocation = useMutation({
+		mutationFn: (dto: ILocationAdd) => unwrap(locationService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editLocation = useMutation({
+		mutationFn: (dto: ILocation) => unwrap(locationService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteLocation = useMutation({
+		mutationFn: (id: string) => unwrap(locationService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -44,86 +60,36 @@ export default function Locations() {
 		null,
 	);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const result = await locationService.getAllAsync();
-		if (!result.errors && result.data) setData(result.data);
-	}, [locationService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
 	const handleCreate = async (dto: ILocationAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await locationService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to create location",
-				};
-			}
-			await fetchData();
+			await createLocation.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: ILocation) => {
-		setEditLoading(true);
 		try {
-			const result = await locationService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to update location",
-				};
-			}
-			await fetchData();
+			await editLocation.mutateAsync(dto);
 			setShowEdit(false);
 			setLocationToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await locationService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") || "Failed to delete location",
-				};
-			}
-			await fetchData();
+			await deleteLocation.mutateAsync(id);
 			setShowDelete(false);
 			setLocationToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tLocation("LocationName"),
 				tLocation("ShelfNum"),
@@ -142,7 +108,7 @@ export default function Locations() {
 			item.locationName,
 			item.shelfNum,
 			item.column,
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -169,7 +135,7 @@ export default function Locations() {
 		<ListPageWrapper
 			title={tLocation("Locations")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -180,13 +146,19 @@ export default function Locations() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[500px]" />
 
 			<CreateLocationDialog
 				open={showCreate}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createLocation.isPending}
 			/>
 
 			<EditLocationDialog
@@ -197,7 +169,7 @@ export default function Locations() {
 					setLocationToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editLocation.isPending}
 			/>
 
 			<DeleteLocationDialog
@@ -208,7 +180,7 @@ export default function Locations() {
 					setLocationToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteLocation.isPending}
 			/>
 		</ListPageWrapper>
 	);
