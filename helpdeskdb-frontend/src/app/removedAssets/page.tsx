@@ -2,16 +2,17 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { RemovedAssetsService } from "@/services/RemovedAssetsService";
-import { AssetService } from "@/services/AssetService";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { removedAssetsService } from "@/services";
+import { useContext, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAssets, useRemovedAssets } from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
 import {
-	IAsset,
 	IRemovedAsset,
 	IRemovedAssetAdd,
 	IRemovedAssetWithAssetName,
 } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -27,21 +28,53 @@ export default function RemovedAssets() {
 	const { t: tRemovedAssets } = useTranslation("removedassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const removedAssetsService: RemovedAssetsService = useMemo(
-		() => new RemovedAssetsService(),
-		[],
-	);
-	const assetService: AssetService = useMemo(() => new AssetService(), []);
-	if (setAccountInfo) {
-		removedAssetsService.injectSetAccountInfo(setAccountInfo);
-		assetService.injectSetAccountInfo(setAccountInfo);
-	}
-
-	const [data, setData] = useState<IRemovedAssetWithAssetName[]>([]);
-	const [assets, setAssets] = useState<IAsset[]>([]);
-	const [hydrated, setHydrated] = useState(false);
+	const { accountInfo } = useContext(AccountContext);
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	const { data: removedAssets, isError, error } = useRemovedAssets();
+	// The join needs the includeRemoved variant — removed assets are absent
+	// from the default list, which only feeds the dialog dropdowns below.
+	const { data: allAssets } = useAssets(true);
+	const { data: assets = [] } = useAssets(false, { enabled: !!canManage });
+
+	const data: IRemovedAssetWithAssetName[] = useMemo(() => {
+		if (!removedAssets) return [];
+
+		const nameById = new Map(
+			(allAssets ?? []).map((a) => [a.id, a.assetName]),
+		);
+
+		return removedAssets.map((ra) => ({
+			...ra,
+			assetName: nameById.get(ra.assetId) ?? ra.assetId,
+		}));
+	}, [removedAssets, allAssets]);
+
+	const queryClient = useQueryClient();
+	// Marking an asset removed (or undoing that) changes which assets the
+	// includeRemoved=false lists contain, so both caches must refetch.
+	const invalidate = () => {
+		queryClient.invalidateQueries({ queryKey: qk.removedAssets() });
+		queryClient.invalidateQueries({ queryKey: qk.assetsRoot() });
+	};
+
+	const createRemovedAsset = useMutation({
+		mutationFn: (dto: IRemovedAssetAdd) =>
+			unwrap(removedAssetsService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editRemovedAsset = useMutation({
+		mutationFn: (dto: IRemovedAsset) =>
+			unwrap(removedAssetsService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteRemovedAsset = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(removedAssetsService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -52,108 +85,38 @@ export default function RemovedAssets() {
 	const [removedAssetToDelete, setRemovedAssetToDelete] =
 		useState<IRemovedAssetWithAssetName | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		try {
-			const result = await removedAssetsService.getAllAsync();
-			if (result.errors || !result.data) return;
-			const assetsWithNames = await Promise.all(
-				result.data.map(async (asset) => ({
-					...asset,
-					assetName: await assetService.getAssetNameById(
-						asset.assetId,
-					),
-				})),
-			);
-			setData(assetsWithNames);
-		} catch (error) {
-			console.error("Error fetching data:", error);
-		}
-	}, [assetService, removedAssetsService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		fetchData();
-	}, [hydrated, fetchData]);
-
-	const loadAssets = useCallback(async () => {
-		if (assets.length > 0) return;
-		const res = await assetService.getAllAsync();
-		if (res.data) setAssets(res.data);
-	}, [assets.length, assetService]);
-
+	// mutateAsync (not mutate) so a failure rejects and can be surfaced through
+	// the dialogs' ConfirmResult contract.
 	const handleCreate = async (dto: IRemovedAssetAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await removedAssetsService.addAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create removed asset",
-				};
-			}
-			await fetchData();
+			await createRemovedAsset.mutateAsync(dto);
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
 	const handleEdit = async (dto: IRemovedAsset) => {
-		setEditLoading(true);
 		try {
-			const result = await removedAssetsService.updateAsync(dto);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update removed asset",
-				};
-			}
-			await fetchData();
+			await editRemovedAsset.mutateAsync(dto);
 			setShowEdit(false);
 			setRemovedAssetToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await removedAssetsService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete removed asset",
-				};
-			}
-			await fetchData();
+			await deleteRemovedAsset.mutateAsync(id);
 			setShowDelete(false);
 			setRemovedAssetToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tRemovedAssets("Asset"),
 				tCommon("Comment"),
@@ -172,13 +135,12 @@ export default function RemovedAssets() {
 			item.assetName,
 			item.comment || "-",
 			item.removedBy,
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={async () => {
-									await loadAssets();
+								onClick={() => {
 									setRemovedAssetToEdit(item);
 									setShowEdit(true);
 								}}
@@ -200,13 +162,10 @@ export default function RemovedAssets() {
 		<ListPageWrapper
 			title={tRemovedAssets("RemovedAssetsTitle")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
-						onClick={async () => {
-							await loadAssets();
-							setShowCreate(true);
-						}}
+						onClick={() => setShowCreate(true)}
 						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
 					>
 						{tCommon("CreateNewLink")}
@@ -214,6 +173,12 @@ export default function RemovedAssets() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[500px]" />
 
 			<CreateRemovedAssetDialog
@@ -221,7 +186,7 @@ export default function RemovedAssets() {
 				assets={assets}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createRemovedAsset.isPending}
 			/>
 
 			<EditRemovedAssetDialog
@@ -233,7 +198,7 @@ export default function RemovedAssets() {
 					setRemovedAssetToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editRemovedAsset.isPending}
 			/>
 
 			<DeleteRemovedAssetDialog
@@ -244,7 +209,7 @@ export default function RemovedAssets() {
 					setRemovedAssetToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteRemovedAsset.isPending}
 			/>
 		</ListPageWrapper>
 	);

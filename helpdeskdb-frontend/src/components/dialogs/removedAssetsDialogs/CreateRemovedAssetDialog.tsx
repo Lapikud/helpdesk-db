@@ -35,12 +35,7 @@ export const CreateRemovedAssetDialog = ({
 			options={options}
 			staticValues={{ userName: accountInfo?.name ?? "" }}
 			onClose={onClose}
-			onConfirm={(data) =>
-				onConfirm({
-					assetId: data.assetId,
-					comment: data.comment,
-				})
-			}
+			onConfirm={onConfirm}
 			isLoading={isLoading}
 		/>
 	);
