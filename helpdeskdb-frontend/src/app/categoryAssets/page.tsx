@@ -2,19 +2,22 @@
 
 import { useTranslation } from "react-i18next";
 import { AccountContext } from "@/context/AccountContext";
-import { CategoryAssetsService } from "@/services/CategoryAssetsService";
-import { CategoryService } from "@/services/CategoryService";
-import { AssetService } from "@/services/AssetService";
+import { categoryAssetsService } from "@/services";
 import { useRouter } from "next/navigation";
-
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-	IAsset,
-	ICategory,
+	useAssets,
+	useCategories,
+	useCategoryAssets,
+} from "@/hooks/queries/entityQueries";
+import { qk } from "@/lib/queryKeys";
+import { unwrap } from "@/services/errors";
+import {
+	ICategoryAsset,
 	ICategoryAssetAdd,
 	ICategoryAssetWithNames,
 } from "@/types/domain/DomainTypes";
-import Spinner from "@/components/LoadingSpinner";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
 import {
@@ -30,28 +33,66 @@ export default function CategoryAssets() {
 	const { t: tCategoryAssets } = useTranslation("categoryassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo, setAccountInfo } = useContext(AccountContext);
-	const categoryAssetsService: CategoryAssetsService = useMemo(
-		() => new CategoryAssetsService(),
-		[],
-	);
-	const categoryService: CategoryService = useMemo(
-		() => new CategoryService(),
-		[],
-	);
-	const assetService: AssetService = useMemo(() => new AssetService(), []);
-	if (setAccountInfo) {
-		categoryAssetsService.injectSetAccountInfo(setAccountInfo);
-		categoryService.injectSetAccountInfo(setAccountInfo);
-		assetService.injectSetAccountInfo(setAccountInfo);
-	}
+	const { accountInfo } = useContext(AccountContext);
 	const router = useRouter();
-	const [data, setData] = useState<ICategoryAssetWithNames[]>([]);
-	const [allAssets, setAllAssets] = useState<IAsset[]>([]);
-	const [allCategories, setAllCategories] = useState<ICategory[]>([]);
-	const [hydrated, setHydrated] = useState(false);
 
 	const isAdmin = accountInfo?.roles?.includes("admins");
+	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const canManage = isAdmin || isHelpdeskDbAdmin;
+
+	// Admin-only page: AuthGuard covers authentication, but the role check is
+	// this page's own.
+	useEffect(() => {
+		if (accountInfo && !canManage) router.push("/");
+	}, [accountInfo, canManage, router]);
+
+	const {
+		data: categoryAssets,
+		isError,
+		error,
+	} = useCategoryAssets();
+	const { data: assets } = useAssets(true);
+	const { data: categories } = useCategories();
+
+	const data: ICategoryAssetWithNames[] = useMemo(() => {
+		if (!categoryAssets) return [];
+
+		const assetById = new Map((assets ?? []).map((a) => [a.id, a]));
+		const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
+
+		return categoryAssets.map((ca) => ({
+			...ca,
+			assetName: assetById.get(ca.assetId)?.assetName ?? ca.assetId,
+			categoryName:
+				categoryById.get(ca.categoryId)?.categoryName ?? ca.categoryId,
+		}));
+	}, [categoryAssets, assets, categories]);
+
+	// The create dialog only offers assets that aren't mapped to a category yet.
+	const unusedAssets = useMemo(() => {
+		const used = new Set((categoryAssets ?? []).map((ca) => ca.assetId));
+		return (assets ?? []).filter((a) => !used.has(a.id));
+	}, [assets, categoryAssets]);
+
+	const queryClient = useQueryClient();
+	const invalidate = () =>
+		queryClient.invalidateQueries({ queryKey: qk.categoryAssets() });
+
+	const createCategoryAsset = useMutation({
+		mutationFn: (dto: ICategoryAssetAdd) =>
+			unwrap(categoryAssetsService.addAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const editCategoryAsset = useMutation({
+		mutationFn: (dto: ICategoryAsset) =>
+			unwrap(categoryAssetsService.updateAsync(dto)),
+		onSuccess: invalidate,
+	});
+	const deleteCategoryAsset = useMutation({
+		mutationFn: (id: string) =>
+			unwrap(categoryAssetsService.deleteAsync(id)),
+		onSuccess: invalidate,
+	});
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -62,142 +103,39 @@ export default function CategoryAssets() {
 	const [itemToDelete, setItemToDelete] =
 		useState<ICategoryAssetWithNames | null>(null);
 
-	const [createLoading, setCreateLoading] = useState(false);
-	const [editLoading, setEditLoading] = useState(false);
-	const [deleteLoading, setDeleteLoading] = useState(false);
-
-	useEffect(() => {
-		setHydrated(true);
-	}, []);
-
-	const fetchData = useCallback(async () => {
-		const [categoryAssetsResult, assetsResult, categoriesResult] =
-			await Promise.all([
-				categoryAssetsService.getAllAsync(),
-				assetService.getAllAsync(true),
-				categoryService.getAllAsync(),
-			]);
-
-		if (
-			categoryAssetsResult.errors ||
-			!categoryAssetsResult.data ||
-			assetsResult.errors ||
-			!assetsResult.data ||
-			categoriesResult.errors ||
-			!categoriesResult.data
-		) {
-			return;
-		}
-
-		const assetById = new Map(assetsResult.data.map((a) => [a.id, a]));
-		const categoryById = new Map(
-			categoriesResult.data.map((c) => [c.id, c]),
-		);
-
-		const withNames: ICategoryAssetWithNames[] =
-			categoryAssetsResult.data.map((ca) => ({
-				...ca,
-				assetName: assetById.get(ca.assetId)?.assetName ?? ca.assetId,
-				categoryName:
-					categoryById.get(ca.categoryId)?.categoryName ??
-					ca.categoryId,
-			}));
-
-		setData(withNames);
-		setAllAssets(assetsResult.data);
-		setAllCategories(categoriesResult.data);
-	}, [categoryAssetsService, assetService, categoryService]);
-
-	useEffect(() => {
-		if (!hydrated) return;
-
-		if (!isAdmin) {
-			router.push("/");
-			return;
-		}
-
-		fetchData();
-	}, [hydrated, router, isAdmin, fetchData]);
-
-	const unusedAssets = useMemo(() => {
-		const used = new Set(data.map((ca) => ca.assetId));
-		return allAssets.filter((a) => !used.has(a.id));
-	}, [allAssets, data]);
-
 	const handleCreate = async (dto: ICategoryAssetAdd) => {
-		setCreateLoading(true);
 		try {
-			const result = await categoryAssetsService.addAsync({
+			await createCategoryAsset.mutateAsync({
 				...dto,
 				createdBy: accountInfo?.name ?? "",
 			});
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to create category asset",
-				};
-			}
-			await fetchData();
 			setShowCreate(false);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setCreateLoading(false);
 		}
 	};
 
-	const handleEdit = async (dto: ICategoryAssetWithNames) => {
-		setEditLoading(true);
+	const handleEdit = async (dto: ICategoryAsset) => {
 		try {
-			const result = await categoryAssetsService.updateAsync({
-				id: dto.id,
-				assetId: dto.assetId,
-				categoryId: dto.categoryId,
-				comment: dto.comment,
-				createdBy: accountInfo?.name ?? dto.createdBy,
-			});
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to update category asset",
-				};
-			}
-			await fetchData();
+			await editCategoryAsset.mutateAsync(dto);
 			setShowEdit(false);
 			setItemToEdit(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setEditLoading(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		setDeleteLoading(true);
 		try {
-			const result = await categoryAssetsService.deleteAsync(id);
-			if (result.errors || (result.statusCode ?? 0) >= 400) {
-				return {
-					error:
-						result.errors?.join(", ") ||
-						"Failed to delete category asset",
-				};
-			}
-			await fetchData();
+			await deleteCategoryAsset.mutateAsync(id);
 			setShowDelete(false);
 			setItemToDelete(null);
 		} catch (error) {
 			return { error: (error as Error).message };
-		} finally {
-			setDeleteLoading(false);
 		}
 	};
 
-	if (!hydrated) return <Spinner className="h-64" />;
-
-	const columns = isAdmin
+	const columns = canManage
 		? [
 				tCategoryAssets("Asset"),
 				tCategoryAssets("Category"),
@@ -216,7 +154,7 @@ export default function CategoryAssets() {
 			item.assetName,
 			item.categoryName,
 			item.createdBy || "-",
-			...(isAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -243,7 +181,7 @@ export default function CategoryAssets() {
 		<ListPageWrapper
 			title={tCategoryAssets("CategoryAssetsTitle")}
 			createButton={
-				isAdmin && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}
@@ -254,27 +192,33 @@ export default function CategoryAssets() {
 				)
 			}
 		>
+			{isError && (
+				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
+					{tCommon("LoadFailed")}
+					{error?.message ? `: ${error.message}` : ""}
+				</div>
+			)}
 			<DataTable columns={columns} rows={rows} />
 
 			<CreateCategoryAssetDialog
 				open={showCreate}
 				assets={unusedAssets}
-				categories={allCategories}
+				categories={categories ?? []}
 				onClose={() => setShowCreate(false)}
 				onConfirm={handleCreate}
-				isLoading={createLoading}
+				isLoading={createCategoryAsset.isPending}
 			/>
 
 			<EditCategoryAssetDialog
 				open={showEdit}
 				categoryAsset={itemToEdit}
-				categories={allCategories}
+				categories={categories ?? []}
 				onClose={() => {
 					setShowEdit(false);
 					setItemToEdit(null);
 				}}
 				onConfirm={handleEdit}
-				isLoading={editLoading}
+				isLoading={editCategoryAsset.isPending}
 			/>
 
 			<DeleteCategoryAssetDialog
@@ -285,7 +229,7 @@ export default function CategoryAssets() {
 					setItemToDelete(null);
 				}}
 				onConfirm={handleDelete}
-				isLoading={deleteLoading}
+				isLoading={deleteCategoryAsset.isPending}
 			/>
 		</ListPageWrapper>
 	);
