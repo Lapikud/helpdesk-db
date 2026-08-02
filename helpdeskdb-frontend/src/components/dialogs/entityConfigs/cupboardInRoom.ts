@@ -1,5 +1,6 @@
 import {
 	ICupboard,
+	ICupboardInRoom,
 	ICupboardInRoomAdd,
 	ICupboardInRoomWithNames,
 	IRoom,
@@ -75,6 +76,25 @@ export const cupboardsToOptions = (cupboards: ICupboard[]): SelectOption[] =>
 
 export const roomsToOptions = (rooms: IRoom[]): SelectOption[] =>
 	toOptions(rooms, (room) => room.roomName);
+
+export const cupboardInRoomToForm = (
+	entry: ICupboardInRoomWithNames,
+): CupboardInRoomEditForm => ({
+	roomId: entry.roomId,
+	comment: entry.comment,
+});
+
+// The cupboard itself is fixed while editing — carry it over rather than
+// letting the default `{ id, ...form }` merge drop it.
+export const cupboardInRoomToUpdate = (
+	form: CupboardInRoomEditForm,
+	entity: ICupboardInRoomWithNames,
+): ICupboardInRoom => ({
+	id: entity.id,
+	cupboardId: entity.cupboardId,
+	roomId: form.roomId,
+	comment: form.comment,
+});
 
 export const cupboardInRoomDeleteSummary: DeleteSummaryField<ICupboardInRoomWithNames>[] =
 	[

@@ -15,8 +15,9 @@ import {
 	ILocationInCupboardAdd,
 	ILocationInCupboardWithNames,
 } from "@/types/domain/DomainTypes";
+import { EntityFormDialog } from "../common/EntityFormDialog";
+import { locationFormConfig } from "../entityConfigs/location";
 import { CreateLocationInCupboardDialog } from "./CreateLocationInCupboardDialog";
-import { CreateLocationDialog } from "../locationDialogs/CreateLocationDialog";
 import { EditLocationInCupboardDialog } from "./EditLocationInCupboardDialog";
 import { DeleteLocationInCupboardDialog } from "./DeleteLocationInCupboardDialog";
 
@@ -270,8 +271,10 @@ export const CupboardLocationsDialog = ({
 				isLoading={createLink.isPending}
 			/>
 
-			<CreateLocationDialog
+			<EntityFormDialog
 				open={showCreateLocation}
+				mode="create"
+				config={locationFormConfig}
 				onClose={() => setShowCreateLocation(false)}
 				onConfirm={handleCreateLocation}
 				isLoading={createLocationAndLink.isPending}

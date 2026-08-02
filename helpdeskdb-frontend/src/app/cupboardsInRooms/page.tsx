@@ -10,6 +10,7 @@ import {
 	useCupboardsInRooms,
 	useRooms,
 } from "@/hooks/queries/entityQueries";
+import { makeConfirmHandler, useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
 import { unwrap } from "@/services/errors";
 import {
@@ -20,11 +21,22 @@ import {
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
-import { CreateCupboardDialog } from "@/components/dialogs/cupboardDialogs/CreateCupboardDialog";
-import { CreateCupboardInRoomDialog } from "@/components/dialogs/cupboardInRoomDialogs/CreateCupboardInRoomDialog";
-import { EditCupboardInRoomDialog } from "@/components/dialogs/cupboardInRoomDialogs/EditCupboardInRoomDialog";
-import { DeleteCupboardInRoomDialog } from "@/components/dialogs/cupboardInRoomDialogs/DeleteCupboardInRoomDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import { cupboardFormConfig } from "@/components/dialogs/entityConfigs/cupboard";
+import {
+	cupboardInRoomCreateConfig,
+	cupboardInRoomDeleteSummary,
+	cupboardInRoomEditConfig,
+	cupboardInRoomToForm,
+	cupboardInRoomToUpdate,
+	cupboardsToOptions,
+	roomsToOptions,
+} from "@/components/dialogs/entityConfigs/cupboardInRoom";
 import { CupboardLocationsDialog } from "@/components/dialogs/locationInCupboardDialogs/CupboardLocationsDialog";
 
 export default function CupboardsInRooms() {
@@ -34,13 +46,18 @@ export default function CupboardsInRooms() {
 
 	const { canManage } = usePermissions();
 
-	const {
-		data: cupboardsInRooms,
-		isError,
-		error,
-	} = useCupboardsInRooms();
+	const { data: cupboardsInRooms, error } = useCupboardsInRooms();
 	const { data: allCupboards } = useCupboards();
 	const { data: rooms } = useRooms();
+
+	const crud = useEntityCrud<
+		ICupboardInRoomWithNames,
+		ICupboardInRoomAdd,
+		ICupboardInRoom
+	>({
+		service: cupboardsInRoomsService,
+		invalidateKeys: [qk.cupboardsInRooms()],
+	});
 
 	const data: ICupboardInRoomWithNames[] = useMemo(() => {
 		if (!cupboardsInRooms) return [];
@@ -63,96 +80,47 @@ export default function CupboardsInRooms() {
 		return (allCupboards ?? []).filter((c) => !used.has(c.id));
 	}, [cupboardsInRooms, allCupboards]);
 
-	const queryClient = useQueryClient();
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.cupboardsInRooms() });
+	const createOptions = useMemo(
+		() => ({
+			cupboards: cupboardsToOptions(availableCupboards),
+			rooms: roomsToOptions(rooms ?? []),
+		}),
+		[availableCupboards, rooms],
+	);
 
-	const createCupboardInRoom = useMutation({
-		mutationFn: (dto: ICupboardInRoomAdd) =>
-			unwrap(cupboardsInRoomsService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
+	// The edit dialog renders the cupboard as a readonly field, so only the room
+	// list is selectable.
+	const editOptions = useMemo(
+		() => ({ rooms: roomsToOptions(rooms ?? []) }),
+		[rooms],
+	);
+
+	// A cupboard can be created straight from this page. It lives outside the
+	// entity CRUD trio: different service, and it invalidates only qk.cupboards().
+	const queryClient = useQueryClient();
 	const createCupboard = useMutation({
 		mutationFn: (dto: ICupboardAdd) => unwrap(cupboardService.addAsync(dto)),
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: qk.cupboards() }),
 	});
-	const editCupboardInRoom = useMutation({
-		mutationFn: (dto: ICupboardInRoom) =>
-			unwrap(cupboardsInRoomsService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteCupboardInRoom = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(cupboardsInRoomsService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
-
-	const [showCreate, setShowCreate] = useState(false);
 	const [showCreateCupboard, setShowCreateCupboard] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-	const [showLocations, setShowLocations] = useState(false);
+	const handleCreateCupboard = makeConfirmHandler(
+		createCupboard.mutateAsync,
+		() => setShowCreateCupboard(false),
+	);
 
-	const [cupboardInRoomToEdit, setCupboardInRoomToEdit] =
-		useState<ICupboardInRoomWithNames | null>(null);
-	const [cupboardInRoomToDelete, setCupboardInRoomToDelete] =
-		useState<ICupboardInRoomWithNames | null>(null);
+	const [showLocations, setShowLocations] = useState(false);
 	const [selectedCupboard, setSelectedCupboard] = useState<{
 		id: string;
 		codeName: string;
 	} | null>(null);
 
-	const handleCreate = async (dto: ICupboardInRoomAdd) => {
-		try {
-			await createCupboardInRoom.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleCreateCupboard = async (dto: ICupboardAdd) => {
-		try {
-			await createCupboard.mutateAsync(dto);
-			setShowCreateCupboard(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: ICupboardInRoom) => {
-		try {
-			await editCupboardInRoom.mutateAsync(dto);
-			setShowEdit(false);
-			setCupboardInRoomToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteCupboardInRoom.mutateAsync(id);
-			setShowDelete(false);
-			setCupboardInRoomToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tCupboardInRoom("Room"),
-				tCupboardInRoom("Cupboard"),
-				tCommon("Comment"),
-				tCommon("Actions"),
-			]
-		: [
-				tCupboardInRoom("Room"),
-				tCupboardInRoom("Cupboard"),
-				tCommon("Comment"),
-			];
+	const columns = [
+		tCupboardInRoom("Room"),
+		tCupboardInRoom("Cupboard"),
+		tCommon("Comment"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -165,10 +133,7 @@ export default function CupboardsInRooms() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setCupboardInRoomToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<button
 								type="button"
@@ -185,10 +150,7 @@ export default function CupboardsInRooms() {
 							</button>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setCupboardInRoomToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -202,69 +164,49 @@ export default function CupboardsInRooms() {
 			createButton={
 				canManage && (
 					<div className="flex gap-2">
-						<button
-							type="button"
+						<CreateButton
 							onClick={() => setShowCreateCupboard(true)}
-							className="border border-[#ff9800] text-[#f0941d] hover:bg-orange-50 font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-						>
-							{tCupboard("NewCupboard")}
-						</button>
-						<button
-							type="button"
-							onClick={() => setShowCreate(true)}
-							className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-						>
-							{tCommon("CreateNewLink")}
-						</button>
+							label={tCupboard("NewCupboard")}
+							variant="outline"
+						/>
+						<CreateButton onClick={crud.openCreate} />
 					</div>
 				)
 			}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[600px]" />
 
-			<CreateCupboardDialog
+			<EntityFormDialog
 				open={showCreateCupboard}
+				mode="create"
+				config={cupboardFormConfig}
 				onClose={() => setShowCreateCupboard(false)}
 				onConfirm={handleCreateCupboard}
 				isLoading={createCupboard.isPending}
 			/>
 
-			<CreateCupboardInRoomDialog
-				open={showCreate}
-				cupboards={availableCupboards}
-				rooms={rooms ?? []}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createCupboardInRoom.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={cupboardInRoomCreateConfig}
+				options={createOptions}
+				{...crud.createDialogProps}
 			/>
 
-			<EditCupboardInRoomDialog
-				open={showEdit}
-				cupboardInRoom={cupboardInRoomToEdit}
-				rooms={rooms ?? []}
-				onClose={() => {
-					setShowEdit(false);
-					setCupboardInRoomToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editCupboardInRoom.isPending}
+			<EntityEditDialog
+				config={cupboardInRoomEditConfig}
+				toForm={cupboardInRoomToForm}
+				toUpdate={cupboardInRoomToUpdate}
+				options={editOptions}
+				staticValues={{ codeName: crud.entityToEdit?.codeName ?? "" }}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteCupboardInRoomDialog
-				open={showDelete}
-				cupboardInRoom={cupboardInRoomToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setCupboardInRoomToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteCupboardInRoom.isPending}
+			<EntityDeleteDialog
+				namespace={cupboardInRoomCreateConfig.namespace}
+				singularKey={cupboardInRoomCreateConfig.singularKey}
+				summaryFields={cupboardInRoomDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 
 			<CupboardLocationsDialog
