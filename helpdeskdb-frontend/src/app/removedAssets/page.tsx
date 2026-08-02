@@ -2,39 +2,60 @@
 
 import { useTranslation } from "react-i18next";
 import { removedAssetsService } from "@/services";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAssets, useRemovedAssets } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
-import { unwrap } from "@/services/errors";
 import {
+	IAsset,
 	IRemovedAsset,
 	IRemovedAssetAdd,
 	IRemovedAssetWithAssetName,
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
-import { CreateRemovedAssetDialog } from "@/components/dialogs/removedAssetsDialogs/CreateRemovedAssetDialog";
-import { EditRemovedAssetDialog } from "@/components/dialogs/removedAssetsDialogs/EditRemovedAssetDialog";
-import { DeleteRemovedAssetDialog } from "@/components/dialogs/removedAssetsDialogs/DeleteRemovedAssetDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	assetsToOptions,
+	removedAssetCreateConfig,
+	removedAssetDeleteSummary,
+	removedAssetEditConfig,
+	removedAssetToForm,
+	removedAssetToUpdate,
+} from "@/components/dialogs/entityConfigs/removedAsset";
 
 export default function RemovedAssets() {
 	const { t: tRemovedAssets } = useTranslation("removedassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { canManage } = usePermissions();
+	const { canManage, userName } = usePermissions();
 
-	const { data: removedAssets, isError, error } = useRemovedAssets();
+	const { data: removedAssets, error } = useRemovedAssets();
 	// The join needs the includeRemoved variant — removed assets are absent
 	// from the default list, which only feeds the dialog dropdowns below.
 	const { data: allAssets } = useAssets(true);
 	const { data: assets = [] } = useAssets(false, { enabled: !!canManage });
+
+	// Marking an asset removed (or undoing that) changes which assets the
+	// includeRemoved=false lists contain, so both caches must refetch.
+	const crud = useEntityCrud<
+		IRemovedAssetWithAssetName,
+		IRemovedAssetAdd,
+		IRemovedAsset
+	>({
+		service: removedAssetsService,
+		invalidateKeys: [qk.removedAssets(), qk.assetsRoot()],
+	});
 
 	const data: IRemovedAssetWithAssetName[] = useMemo(() => {
 		if (!removedAssets) return [];
@@ -49,82 +70,35 @@ export default function RemovedAssets() {
 		}));
 	}, [removedAssets, allAssets]);
 
-	const queryClient = useQueryClient();
-	// Marking an asset removed (or undoing that) changes which assets the
-	// includeRemoved=false lists contain, so both caches must refetch.
-	const invalidate = () => {
-		queryClient.invalidateQueries({ queryKey: qk.removedAssets() });
-		queryClient.invalidateQueries({ queryKey: qk.assetsRoot() });
-	};
+	const createOptions = useMemo(
+		() => ({ assets: assetsToOptions(assets) }),
+		[assets],
+	);
 
-	const createRemovedAsset = useMutation({
-		mutationFn: (dto: IRemovedAssetAdd) =>
-			unwrap(removedAssetsService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editRemovedAsset = useMutation({
-		mutationFn: (dto: IRemovedAsset) =>
-			unwrap(removedAssetsService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteRemovedAsset = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(removedAssetsService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
+	// The edited row's own asset is excluded from the "available assets" list
+	// (it is removed), so append it back or the select can't show the current
+	// value.
+	const { entityToEdit } = crud;
+	const editOptions = useMemo(() => {
+		const withCurrent =
+			!entityToEdit || assets.some((a) => a.id === entityToEdit.assetId)
+				? assets
+				: [
+						...assets,
+						{
+							id: entityToEdit.assetId,
+							assetName: entityToEdit.assetName,
+						} as IAsset,
+					];
+		return { assets: assetsToOptions(withCurrent) };
+	}, [assets, entityToEdit]);
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [removedAssetToEdit, setRemovedAssetToEdit] =
-		useState<IRemovedAssetWithAssetName | null>(null);
-	const [removedAssetToDelete, setRemovedAssetToDelete] =
-		useState<IRemovedAssetWithAssetName | null>(null);
-
-	// mutateAsync (not mutate) so a failure rejects and can be surfaced through
-	// the dialogs' ConfirmResult contract.
-	const handleCreate = async (dto: IRemovedAssetAdd) => {
-		try {
-			await createRemovedAsset.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: IRemovedAsset) => {
-		try {
-			await editRemovedAsset.mutateAsync(dto);
-			setShowEdit(false);
-			setRemovedAssetToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteRemovedAsset.mutateAsync(id);
-			setShowDelete(false);
-			setRemovedAssetToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tRemovedAssets("Asset"),
-				tCommon("Comment"),
-				tRemovedAssets("RemovedBy"),
-				tCommon("Actions"),
-			]
-		: [
-				tRemovedAssets("Asset"),
-				tCommon("Comment"),
-				tRemovedAssets("RemovedBy"),
-			];
+	const columns = [
+		tRemovedAssets("Asset"),
+		tCommon("Comment"),
+		tRemovedAssets("RemovedBy"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -137,17 +111,11 @@ export default function RemovedAssets() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setRemovedAssetToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setRemovedAssetToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -158,55 +126,32 @@ export default function RemovedAssets() {
 	return (
 		<ListPageWrapper
 			title={tRemovedAssets("RemovedAssetsTitle")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[500px]" />
 
-			<CreateRemovedAssetDialog
-				open={showCreate}
-				assets={assets}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createRemovedAsset.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={removedAssetCreateConfig}
+				options={createOptions}
+				staticValues={{ userName: userName ?? "" }}
+				{...crud.createDialogProps}
 			/>
 
-			<EditRemovedAssetDialog
-				open={showEdit}
-				removedAsset={removedAssetToEdit}
-				assets={assets}
-				onClose={() => {
-					setShowEdit(false);
-					setRemovedAssetToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editRemovedAsset.isPending}
+			<EntityEditDialog
+				config={removedAssetEditConfig}
+				toForm={removedAssetToForm}
+				toUpdate={removedAssetToUpdate}
+				options={editOptions}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteRemovedAssetDialog
-				open={showDelete}
-				removedAsset={removedAssetToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setRemovedAssetToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteRemovedAsset.isPending}
+			<EntityDeleteDialog
+				namespace={removedAssetCreateConfig.namespace}
+				singularKey={removedAssetCreateConfig.singularKey}
+				summaryFields={removedAssetDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);

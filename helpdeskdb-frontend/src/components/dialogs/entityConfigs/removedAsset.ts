@@ -1,5 +1,6 @@
 import {
 	IAsset,
+	IRemovedAsset,
 	IRemovedAssetWithAssetName,
 } from "@/types/domain/DomainTypes";
 import {
@@ -63,6 +64,25 @@ export const removedAssetEditConfig: FormDialogConfig<RemovedAssetForm> = {
 
 export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
 	toOptions(assets, (asset) => asset.assetName);
+
+export const removedAssetToForm = (
+	removedAsset: IRemovedAssetWithAssetName,
+): RemovedAssetForm => ({
+	assetId: removedAsset.assetId,
+	comment: removedAsset.comment ?? "",
+});
+
+// Explicit field list — assetName is not part of the update body, and
+// removedBy is carried over from the existing record.
+export const removedAssetToUpdate = (
+	form: RemovedAssetForm,
+	entity: IRemovedAssetWithAssetName,
+): IRemovedAsset => ({
+	id: entity.id,
+	assetId: form.assetId,
+	comment: form.comment,
+	removedBy: entity.removedBy,
+});
 
 export const removedAssetDeleteSummary: DeleteSummaryField<IRemovedAssetWithAssetName>[] =
 	[
