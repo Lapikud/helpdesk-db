@@ -2,16 +2,15 @@
 
 import { useTranslation } from "react-i18next";
 import { locationAssetsService } from "@/services";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssets,
 	useLocations,
 	useLocationAssets,
 } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
-import { unwrap } from "@/services/errors";
 import {
 	ILocationAsset,
 	ILocationAssetAdd,
@@ -19,10 +18,25 @@ import {
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
-import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
-import { CreateLocationAssetDialog } from "@/components/dialogs/locationAssetDialogs/CreateLocationAssetDialog";
-import { EditLocationAssetDialog } from "@/components/dialogs/locationAssetDialogs/EditLocationAssetDialog";
-import { DeleteLocationAssetDialog } from "@/components/dialogs/locationAssetDialogs/DeleteLocationAssetDialog";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	assetsToOptions,
+	locationAssetDeleteSummary,
+	locationAssetFormConfig,
+	locationAssetToAdd,
+	locationAssetToForm,
+	locationAssetToUpdate,
+	locationsToOptions,
+} from "@/components/dialogs/entityConfigs/locationAsset";
 
 export default function LocationAssets() {
 	const { t: tLocationAssets } = useTranslation("locationassets");
@@ -30,13 +44,20 @@ export default function LocationAssets() {
 
 	const { canManage, userName } = usePermissions();
 
-	const {
-		data: locationAssets,
-		isError,
-		error,
-	} = useLocationAssets();
+	const { data: locationAssets, error } = useLocationAssets();
 	const { data: assets } = useAssets(true);
 	const { data: locations } = useLocations();
+
+	const crud = useEntityCrud<
+		ILocationAssetWithNames,
+		ILocationAssetAdd,
+		ILocationAsset
+	>({
+		service: locationAssetsService,
+		invalidateKeys: [qk.locationAssets()],
+		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
+	});
+	const { entityToEdit } = crud;
 
 	const data: ILocationAssetWithNames[] = useMemo(() => {
 		if (!locationAssets) return [];
@@ -57,91 +78,40 @@ export default function LocationAssets() {
 		return (assets ?? []).filter((a) => !used.has(a.id));
 	}, [assets, locationAssets]);
 
-	const queryClient = useQueryClient();
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.locationAssets() });
-
-	const createLocationAsset = useMutation({
-		mutationFn: (dto: ILocationAssetAdd) =>
-			unwrap(locationAssetsService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editLocationAsset = useMutation({
-		mutationFn: (dto: ILocationAsset) =>
-			unwrap(locationAssetsService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteLocationAsset = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(locationAssetsService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
-
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [itemToEdit, setItemToEdit] =
-		useState<ILocationAssetWithNames | null>(null);
-	const [itemToDelete, setItemToDelete] =
-		useState<ILocationAssetWithNames | null>(null);
-
 	// The edit dialog offers the unused assets plus the row's own asset — so
 	// the mapping can keep its asset or move to a free one, but never steal an
 	// asset already mapped to another location.
 	const assetsForEdit = useMemo(() => {
-		if (!itemToEdit) return unusedAssets;
-		const current = (assets ?? []).find((a) => a.id === itemToEdit.assetId);
+		if (!entityToEdit) return unusedAssets;
+		const current = (assets ?? []).find((a) => a.id === entityToEdit.assetId);
 		if (!current || unusedAssets.some((a) => a.id === current.id)) {
 			return unusedAssets;
 		}
 		return [current, ...unusedAssets];
-	}, [unusedAssets, assets, itemToEdit]);
+	}, [unusedAssets, assets, entityToEdit]);
 
-	const handleCreate = async (dto: ILocationAssetAdd) => {
-		try {
-			await createLocationAsset.mutateAsync({
-				...dto,
-				createdBy: userName ?? "",
-			});
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
+	const createOptions = useMemo(
+		() => ({
+			assets: assetsToOptions(unusedAssets),
+			locations: locationsToOptions(locations ?? []),
+		}),
+		[unusedAssets, locations],
+	);
 
-	const handleEdit = async (dto: ILocationAsset) => {
-		try {
-			await editLocationAsset.mutateAsync(dto);
-			setShowEdit(false);
-			setItemToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
+	const editOptions = useMemo(
+		() => ({
+			assets: assetsToOptions(assetsForEdit),
+			locations: locationsToOptions(locations ?? []),
+		}),
+		[assetsForEdit, locations],
+	);
 
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteLocationAsset.mutateAsync(id);
-			setShowDelete(false);
-			setItemToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tLocationAssets("Asset"),
-				tLocationAssets("Location"),
-				tCommon("CreatedBy"),
-				tCommon("Actions"),
-			]
-		: [
-				tLocationAssets("Asset"),
-				tLocationAssets("Location"),
-				tCommon("CreatedBy"),
-			];
+	const columns = [
+		tLocationAssets("Asset"),
+		tLocationAssets("Location"),
+		tCommon("CreatedBy"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -154,17 +124,11 @@ export default function LocationAssets() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setItemToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setItemToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -175,57 +139,32 @@ export default function LocationAssets() {
 	return (
 		<ListPageWrapper
 			title={tLocationAssets("LocationAssetsTitle")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[600px]" />
 
-			<CreateLocationAssetDialog
-				open={showCreate}
-				assets={unusedAssets}
-				locations={locations ?? []}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createLocationAsset.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={locationAssetFormConfig}
+				options={createOptions}
+				{...crud.createDialogProps}
+				onConfirm={(form) => crud.handleCreate(locationAssetToAdd(form))}
 			/>
 
-			<EditLocationAssetDialog
-				open={showEdit}
-				locationAsset={itemToEdit}
-				assets={assetsForEdit}
-				locations={locations ?? []}
-				onClose={() => {
-					setShowEdit(false);
-					setItemToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editLocationAsset.isPending}
+			<EntityEditDialog
+				config={locationAssetFormConfig}
+				toForm={locationAssetToForm}
+				toUpdate={locationAssetToUpdate}
+				options={editOptions}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteLocationAssetDialog
-				open={showDelete}
-				locationAsset={itemToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setItemToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteLocationAsset.isPending}
+			<EntityDeleteDialog
+				namespace={locationAssetFormConfig.namespace}
+				singularKey={locationAssetFormConfig.singularKey}
+				summaryFields={locationAssetDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);

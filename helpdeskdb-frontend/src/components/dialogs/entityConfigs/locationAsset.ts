@@ -1,6 +1,7 @@
 import {
 	IAsset,
 	ILocation,
+	ILocationAsset,
 	ILocationAssetAdd,
 	ILocationAssetWithNames,
 } from "@/types/domain/DomainTypes";
@@ -44,6 +45,24 @@ export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
 
 export const locationsToOptions = (locations: ILocation[]): SelectOption[] =>
 	toOptions(locations, (location) => location.locationName);
+
+export const locationAssetToForm = (
+	locationAsset: ILocationAssetWithNames,
+): LocationAssetForm => ({
+	assetId: locationAsset.assetId,
+	locationId: locationAsset.locationId,
+});
+
+// Explicit field list — the enriched names are not part of the update body.
+export const locationAssetToUpdate = (
+	form: LocationAssetForm,
+	entity: ILocationAssetWithNames,
+): ILocationAsset => ({
+	id: entity.id,
+	assetId: form.assetId,
+	locationId: form.locationId,
+	createdBy: entity.createdBy,
+});
 
 // createdBy is stamped by the page from AccountContext — the placeholder just
 // satisfies the DTO shape.
