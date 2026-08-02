@@ -1,6 +1,7 @@
 import {
 	IAsset,
 	ICategory,
+	ICategoryAsset,
 	ICategoryAssetAdd,
 	ICategoryAssetWithNames,
 } from "@/types/domain/DomainTypes";
@@ -90,6 +91,26 @@ export const categoryAssetDeleteSummary: DeleteSummaryField<ICategoryAssetWithNa
 		{ labelKey: "common:Comment", render: (ca) => ca.comment || "-" },
 		{ labelKey: "common:CreatedBy", render: (ca) => ca.createdBy || "-" },
 	];
+
+export const categoryAssetToForm = (
+	categoryAsset: ICategoryAssetWithNames,
+): CategoryAssetEditForm => ({
+	categoryId: categoryAsset.categoryId,
+	comment: categoryAsset.comment ?? "",
+});
+
+// Explicit field list — the enriched names are not part of the update body;
+// assetId and createdBy carry over from the existing record.
+export const categoryAssetToUpdate = (
+	form: CategoryAssetEditForm,
+	entity: ICategoryAssetWithNames,
+): ICategoryAsset => ({
+	id: entity.id,
+	assetId: entity.assetId,
+	categoryId: form.categoryId,
+	comment: form.comment,
+	createdBy: entity.createdBy,
+});
 
 export const categoryAssetToAdd = (
 	data: CategoryAssetCreateForm,

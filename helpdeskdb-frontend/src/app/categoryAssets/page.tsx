@@ -2,16 +2,15 @@
 
 import { useTranslation } from "react-i18next";
 import { categoryAssetsService } from "@/services";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssets,
 	useCategories,
 	useCategoryAssets,
 } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
-import { unwrap } from "@/services/errors";
 import {
 	ICategoryAsset,
 	ICategoryAssetAdd,
@@ -19,14 +18,26 @@ import {
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
-import { CreateCategoryAssetDialog } from "@/components/dialogs/categoryAssetDialogs/CreateCategoryAssetDialog";
-import { EditCategoryAssetDialog } from "@/components/dialogs/categoryAssetDialogs/EditCategoryAssetDialog";
-import { DeleteCategoryAssetDialog } from "@/components/dialogs/categoryAssetDialogs/DeleteCategoryAssetDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	assetsToOptions,
+	categoriesToOptions,
+	categoryAssetCreateConfig,
+	categoryAssetDeleteSummary,
+	categoryAssetEditConfig,
+	categoryAssetToAdd,
+	categoryAssetToForm,
+	categoryAssetToUpdate,
+} from "@/components/dialogs/entityConfigs/categoryAsset";
 
 export default function CategoryAssets() {
 	const { t: tCategoryAssets } = useTranslation("categoryassets");
@@ -34,13 +45,19 @@ export default function CategoryAssets() {
 
 	const { canManage, userName } = usePermissions();
 
-	const {
-		data: categoryAssets,
-		isError,
-		error,
-	} = useCategoryAssets();
+	const { data: categoryAssets, error } = useCategoryAssets();
 	const { data: assets } = useAssets(true);
 	const { data: categories } = useCategories();
+
+	const crud = useEntityCrud<
+		ICategoryAssetWithNames,
+		ICategoryAssetAdd,
+		ICategoryAsset
+	>({
+		service: categoryAssetsService,
+		invalidateKeys: [qk.categoryAssets()],
+		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
+	});
 
 	const data: ICategoryAssetWithNames[] = useMemo(() => {
 		if (!categoryAssets) return [];
@@ -62,79 +79,27 @@ export default function CategoryAssets() {
 		return (assets ?? []).filter((a) => !used.has(a.id));
 	}, [assets, categoryAssets]);
 
-	const queryClient = useQueryClient();
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.categoryAssets() });
+	const createOptions = useMemo(
+		() => ({
+			assets: assetsToOptions(unusedAssets),
+			categories: categoriesToOptions(categories ?? []),
+		}),
+		[unusedAssets, categories],
+	);
 
-	const createCategoryAsset = useMutation({
-		mutationFn: (dto: ICategoryAssetAdd) =>
-			unwrap(categoryAssetsService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editCategoryAsset = useMutation({
-		mutationFn: (dto: ICategoryAsset) =>
-			unwrap(categoryAssetsService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteCategoryAsset = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(categoryAssetsService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
+	// The edit dialog renders the asset as a display field, so only the
+	// category list is selectable.
+	const editOptions = useMemo(
+		() => ({ categories: categoriesToOptions(categories ?? []) }),
+		[categories],
+	);
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [itemToEdit, setItemToEdit] =
-		useState<ICategoryAssetWithNames | null>(null);
-	const [itemToDelete, setItemToDelete] =
-		useState<ICategoryAssetWithNames | null>(null);
-
-	const handleCreate = async (dto: ICategoryAssetAdd) => {
-		try {
-			await createCategoryAsset.mutateAsync({
-				...dto,
-				createdBy: userName ?? "",
-			});
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: ICategoryAsset) => {
-		try {
-			await editCategoryAsset.mutateAsync(dto);
-			setShowEdit(false);
-			setItemToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteCategoryAsset.mutateAsync(id);
-			setShowDelete(false);
-			setItemToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tCategoryAssets("Asset"),
-				tCategoryAssets("Category"),
-				tCommon("CreatedBy"),
-				tCommon("Actions"),
-			]
-		: [
-				tCategoryAssets("Asset"),
-				tCategoryAssets("Category"),
-				tCommon("CreatedBy"),
-			];
+	const columns = [
+		tCategoryAssets("Asset"),
+		tCategoryAssets("Category"),
+		tCommon("CreatedBy"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -147,17 +112,11 @@ export default function CategoryAssets() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setItemToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setItemToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -168,56 +127,33 @@ export default function CategoryAssets() {
 	return (
 		<ListPageWrapper
 			title={tCategoryAssets("CategoryAssetsTitle")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} />
 
-			<CreateCategoryAssetDialog
-				open={showCreate}
-				assets={unusedAssets}
-				categories={categories ?? []}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createCategoryAsset.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={categoryAssetCreateConfig}
+				options={createOptions}
+				{...crud.createDialogProps}
+				onConfirm={(form) => crud.handleCreate(categoryAssetToAdd(form))}
 			/>
 
-			<EditCategoryAssetDialog
-				open={showEdit}
-				categoryAsset={itemToEdit}
-				categories={categories ?? []}
-				onClose={() => {
-					setShowEdit(false);
-					setItemToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editCategoryAsset.isPending}
+			<EntityEditDialog
+				config={categoryAssetEditConfig}
+				toForm={categoryAssetToForm}
+				toUpdate={categoryAssetToUpdate}
+				options={editOptions}
+				staticValues={{ assetName: crud.entityToEdit?.assetName ?? "" }}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteCategoryAssetDialog
-				open={showDelete}
-				categoryAsset={itemToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setItemToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteCategoryAsset.isPending}
+			<EntityDeleteDialog
+				namespace={categoryAssetCreateConfig.namespace}
+				singularKey={categoryAssetCreateConfig.singularKey}
+				summaryFields={categoryAssetDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);
