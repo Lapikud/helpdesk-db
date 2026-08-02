@@ -8,6 +8,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type CupboardInRoomEditForm = {
@@ -70,13 +71,10 @@ export const cupboardInRoomEditConfig: FormDialogConfig<CupboardInRoomEditForm> 
 	};
 
 export const cupboardsToOptions = (cupboards: ICupboard[]): SelectOption[] =>
-	cupboards.map((cupboard) => ({
-		value: cupboard.id,
-		label: cupboard.codeName,
-	}));
+	toOptions(cupboards, (cupboard) => cupboard.codeName);
 
 export const roomsToOptions = (rooms: IRoom[]): SelectOption[] =>
-	rooms.map((room) => ({ value: room.id, label: room.roomName }));
+	toOptions(rooms, (room) => room.roomName);
 
 export const cupboardInRoomDeleteSummary: DeleteSummaryField<ICupboardInRoomWithNames>[] =
 	[

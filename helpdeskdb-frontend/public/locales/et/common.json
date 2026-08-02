@@ -43,5 +43,6 @@
   "Logout": "Logi välja",
   "Loading": "Laadimine...",
   "Processing": "Töötlemine...",
-  "LoadFailed": "Andmete laadimine ebaõnnestus. Palun proovi uuesti."
+  "LoadFailed": "Andmete laadimine ebaõnnestus. Palun proovi uuesti.",
+  "NoRows": "Andmeid pole kuvamiseks."
 }

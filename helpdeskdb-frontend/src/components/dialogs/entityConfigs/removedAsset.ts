@@ -6,6 +6,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type RemovedAssetForm = {
@@ -61,7 +62,7 @@ export const removedAssetEditConfig: FormDialogConfig<RemovedAssetForm> = {
 };
 
 export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
-	assets.map((asset) => ({ value: asset.id, label: asset.assetName }));
+	toOptions(assets, (asset) => asset.assetName);
 
 export const removedAssetDeleteSummary: DeleteSummaryField<IRemovedAssetWithAssetName>[] =
 	[

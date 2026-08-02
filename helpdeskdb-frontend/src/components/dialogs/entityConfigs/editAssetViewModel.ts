@@ -10,7 +10,11 @@ import {
 	IAssetViewModel,
 	IAssetViewModelUpdate,
 } from "@/types/domain/IAssetViewModels";
-import { FormDialogConfig, SelectOption } from "../common/entityDialogTypes";
+import {
+	FormDialogConfig,
+	SelectOption,
+	toOptions,
+} from "../common/entityDialogTypes";
 
 export type EditAssetForm = {
 	assetName: string;
@@ -125,10 +129,10 @@ export const editAssetToUpdate = (
 });
 
 export const categoriesToOptions = (categories: ICategory[]): SelectOption[] =>
-	categories.map((c) => ({ value: c.id, label: c.categoryName }));
+	toOptions(categories, (c) => c.categoryName);
 
 export const ownersToOptions = (owners: IOwner[]): SelectOption[] =>
-	owners.map((o) => ({ value: o.id, label: o.ownerName }));
+	toOptions(owners, (o) => o.ownerName);
 
 export const locationsToOptions = (locations: ILocation[]): SelectOption[] =>
-	locations.map((l) => ({ value: l.id, label: l.locationName }));
+	toOptions(locations, (l) => l.locationName);

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 const gridMap: Record<number, string> = {
 	1: "grid-cols-1",
 	2: "grid-cols-2",
@@ -25,8 +27,9 @@ export default function DataTable({
 	columns,
 	rows,
 	minWidth = "min-w-[400px]",
-	emptyMessage = "No data to display.",
+	emptyMessage,
 }: DataTableProps) {
+	const { t: tCommon } = useTranslation("common");
 	const gridCols = gridMap[columns.length] ?? "grid-cols-4";
 
 	return (
@@ -50,7 +53,7 @@ export default function DataTable({
 					<div className="flex flex-col gap-1 p-4 max-h-[600px] overflow-y-auto">
 						{rows.length === 0 ? (
 							<div className="text-center py-8 text-gray-500">
-								{emptyMessage}
+								{emptyMessage ?? tCommon("NoRows")}
 							</div>
 						) : (
 							rows.map((row) => (

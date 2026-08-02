@@ -8,6 +8,13 @@ export interface SelectOption {
 	label: string;
 }
 
+/** Maps an entity list to select options; `label` picks the display field. */
+export const toOptions = <T extends { id: string }>(
+	items: T[] | undefined,
+	label: (item: T) => string,
+): SelectOption[] =>
+	(items ?? []).map((item) => ({ value: item.id, label: label(item) }));
+
 // Declarative validation rules; the generic dialog turns these into
 // react-hook-form rules with the standard "validationerrors" messages.
 export interface ValidationSpec {

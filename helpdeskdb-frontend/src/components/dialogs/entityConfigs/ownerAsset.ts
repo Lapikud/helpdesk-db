@@ -8,6 +8,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type OwnerAssetCreateForm = {
@@ -61,10 +62,10 @@ export const ownerAssetEditConfig: FormDialogConfig<OwnerAssetEditForm> = {
 };
 
 export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
-	assets.map((asset) => ({ value: asset.id, label: asset.assetName }));
+	toOptions(assets, (asset) => asset.assetName);
 
 export const ownersToOptions = (owners: IOwner[]): SelectOption[] =>
-	owners.map((owner) => ({ value: owner.id, label: owner.ownerName }));
+	toOptions(owners, (owner) => owner.ownerName);
 
 // createdBy is stamped by the page from AccountContext — the placeholder just
 // satisfies the DTO shape.

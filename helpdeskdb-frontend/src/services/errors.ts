@@ -20,6 +20,11 @@ export class ApiError extends Error {
 	}
 }
 
+/** Best-effort human-readable message from an unknown thrown value. */
+export function getErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 /** Unwraps an `IResultObject` into its data, throwing `ApiError` on failure. */
 export async function unwrap<T>(promise: Promise<IResultObject<T>>): Promise<T> {
 	const result = await promise;

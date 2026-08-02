@@ -6,6 +6,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type LocationInCupboardForm = {
@@ -30,10 +31,7 @@ export const locationInCupboardFormConfig: FormDialogConfig<LocationInCupboardFo
 	};
 
 export const locationsToOptions = (locations: ILocation[]): SelectOption[] =>
-	locations.map((location) => ({
-		value: location.id,
-		label: location.locationName,
-	}));
+	toOptions(locations, (location) => location.locationName);
 
 export const locationInCupboardDeleteSummary: DeleteSummaryField<ILocationInCupboardWithNames>[] =
 	[

@@ -8,6 +8,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type CategoryAssetCreateForm = {
@@ -77,13 +78,10 @@ export const categoryAssetEditConfig: FormDialogConfig<CategoryAssetEditForm> =
 	};
 
 export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
-	assets.map((asset) => ({ value: asset.id, label: asset.assetName }));
+	toOptions(assets, (asset) => asset.assetName);
 
 export const categoriesToOptions = (categories: ICategory[]): SelectOption[] =>
-	categories.map((category) => ({
-		value: category.id,
-		label: category.categoryName,
-	}));
+	toOptions(categories, (category) => category.categoryName);
 
 export const categoryAssetDeleteSummary: DeleteSummaryField<ICategoryAssetWithNames>[] =
 	[

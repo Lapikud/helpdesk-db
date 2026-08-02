@@ -39,5 +39,6 @@
   "Logout": "Logout",
   "Loading": "Loading...",
   "Processing": "Processing...",
-  "LoadFailed": "Failed to load data. Please try again."
+  "LoadFailed": "Failed to load data. Please try again.",
+  "NoRows": "No data to display."
 }

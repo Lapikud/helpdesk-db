@@ -8,6 +8,7 @@ import {
 	DeleteSummaryField,
 	FormDialogConfig,
 	SelectOption,
+	toOptions,
 } from "../common/entityDialogTypes";
 
 export type LocationAssetForm = {
@@ -39,13 +40,10 @@ export const locationAssetFormConfig: FormDialogConfig<LocationAssetForm> = {
 };
 
 export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
-	assets.map((asset) => ({ value: asset.id, label: asset.assetName }));
+	toOptions(assets, (asset) => asset.assetName);
 
 export const locationsToOptions = (locations: ILocation[]): SelectOption[] =>
-	locations.map((location) => ({
-		value: location.id,
-		label: location.locationName,
-	}));
+	toOptions(locations, (location) => location.locationName);
 
 // createdBy is stamped by the page from AccountContext — the placeholder just
 // satisfies the DTO shape.
