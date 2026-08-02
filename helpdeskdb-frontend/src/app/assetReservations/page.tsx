@@ -2,17 +2,16 @@
 
 import { useTranslation } from "react-i18next";
 import { assetReservationService } from "@/services";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssetReservations,
 	useAssets,
 	useRemovedAssets,
 	useUsers,
 } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
-import { unwrap } from "@/services/errors";
 import {
 	IAssetReservation,
 	IAssetReservationAdd,
@@ -20,6 +19,8 @@ import {
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
@@ -39,28 +40,33 @@ export default function AssetReservations() {
 		canSeeReservationActions: showActions,
 	} = usePermissions();
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
 	// Four independent queries instead of one sequential fetch: each list is
 	// cached under its own key, so the three lookup lists are shared with every
 	// other page that needs them rather than refetched here.
-	const {
-		data: reservations,
-		isError,
-		error,
-	} = useAssetReservations();
+	const { data: reservations, error } = useAssetReservations();
 	const { data: assetsForNames } = useAssets(true);
 	const { data: users } = useUsers();
 	const { data: removedAssets } = useRemovedAssets();
+
+	const crud = useEntityCrud<
+		IAssetReservationWithNames,
+		IAssetReservationAdd,
+		IAssetReservation
+	>({
+		service: assetReservationService,
+		// The overview's asset cards carry reservation state (`reserved`,
+		// `reservationTo`, `closestReservationBy`), so a reservation mutation
+		// here has to mark that list stale too — otherwise navigating to
+		// /overview within its 30s staleTime serves the pre-mutation cache.
+		invalidateKeys: [qk.assetReservationsRoot(), qk.overviewRoot()],
+	});
 
 	// Note the different cache key: the create dialog offers only non-removed
 	// assets, so this is qk.assets(false) — a genuinely different list from the
 	// qk.assets(true) used for name lookup above. Fetched only once the dialog
 	// is opened, matching the previous lazy `loadAssets`.
 	const { data: selectableAssets = [] } = useAssets(false, {
-		enabled: showCreate,
+		enabled: crud.showCreate,
 	});
 
 	const data: IAssetReservationWithNames[] = useMemo(() => {
@@ -87,60 +93,6 @@ export default function AssetReservations() {
 			);
 	}, [reservations, assetsForNames, users, removedAssets]);
 
-	const queryClient = useQueryClient();
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.assetReservationsRoot() });
-
-	const createReservation = useMutation({
-		mutationFn: (dto: IAssetReservationAdd) =>
-			unwrap(assetReservationService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editReservation = useMutation({
-		mutationFn: (dto: IAssetReservation) =>
-			unwrap(assetReservationService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteReservation = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(assetReservationService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
-
-	const [reservationToEdit, setReservationToEdit] =
-		useState<IAssetReservationWithNames | null>(null);
-	const [reservationToDelete, setReservationToDelete] =
-		useState<IAssetReservationWithNames | null>(null);
-
-	const handleCreate = async (dto: IAssetReservationAdd) => {
-		try {
-			await createReservation.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: IAssetReservation) => {
-		try {
-			await editReservation.mutateAsync(dto);
-			setShowEdit(false);
-			setReservationToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteReservation.mutateAsync(id);
-			setShowDelete(false);
-			setReservationToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
 	const renderActionCell = (item: IAssetReservationWithNames) => {
 		if (item.isRemoved) {
 			return (
@@ -161,17 +113,11 @@ export default function AssetReservations() {
 				<>
 					<EditButton
 						label={tCommon("EditLink")}
-						onClick={() => {
-							setReservationToEdit(item);
-							setShowEdit(true);
-						}}
+						onClick={() => crud.openEdit(item)}
 					/>
 					<DeleteButton
 						label={tCommon("DeleteLink")}
-						onClick={() => {
-							setReservationToDelete(item);
-							setShowDelete(true);
-						}}
+						onClick={() => crud.openDelete(item)}
 					/>
 				</>
 			);
@@ -179,22 +125,14 @@ export default function AssetReservations() {
 		return null;
 	};
 
-	const columns = showActions
-		? [
-				tAssetReservation("AssetId"),
-				tAssetReservation("UserId"),
-				tAssetReservation("ReservationFrom"),
-				tAssetReservation("ReservationTo"),
-				tAssetReservation("IsReturned"),
-				tCommon("Actions"),
-			]
-		: [
-				tAssetReservation("AssetId"),
-				tAssetReservation("UserId"),
-				tAssetReservation("ReservationFrom"),
-				tAssetReservation("ReservationTo"),
-				tAssetReservation("IsReturned"),
-			];
+	const columns = [
+		tAssetReservation("AssetId"),
+		tAssetReservation("UserId"),
+		tAssetReservation("ReservationFrom"),
+		tAssetReservation("ReservationTo"),
+		tAssetReservation("IsReturned"),
+		...(showActions ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -219,54 +157,33 @@ export default function AssetReservations() {
 	return (
 		<ListPageWrapper
 			title={tAssetReservation("AssetReservations")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[700px]" />
 
 			<CreateAssetReservationDialog
-				open={showCreate}
 				assets={selectableAssets}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createReservation.isPending}
+				{...crud.createDialogProps}
 			/>
 
+			{/* These three dialogs take `reservation`, not the generic `entity`
+			    prop, so their props are wired explicitly rather than spread.
+			    Phase 4 rebuilds them on the generic dialogs. */}
 			<EditAssetReservationDialog
-				open={showEdit}
-				reservation={reservationToEdit}
-				onClose={() => {
-					setShowEdit(false);
-					setReservationToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editReservation.isPending}
+				open={crud.entityToEdit !== null}
+				reservation={crud.entityToEdit}
+				onClose={crud.editDialogProps.onClose}
+				onConfirm={crud.handleEdit}
+				isLoading={crud.editMutation.isPending}
 			/>
 
 			<DeleteAssetReservationDialog
-				open={showDelete}
-				reservation={reservationToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setReservationToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteReservation.isPending}
+				open={crud.entityToDelete !== null}
+				reservation={crud.entityToDelete}
+				onClose={crud.deleteDialogProps.onClose}
+				onConfirm={crud.handleDelete}
+				isLoading={crud.deleteMutation.isPending}
 			/>
 		</ListPageWrapper>
 	);
