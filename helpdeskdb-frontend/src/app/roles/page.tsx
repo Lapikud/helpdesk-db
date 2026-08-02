@@ -2,23 +2,28 @@
 
 import { useTranslation } from "react-i18next";
 import { roleService } from "@/services";
-import { useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoles } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
 import { IRole, IRoleAdd } from "@/types/domain/DomainTypes";
-import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
-import { CreateRoleDialog } from "@/components/dialogs/roleDialogs/CreateRoleDialog";
-import { EditRoleDialog } from "@/components/dialogs/roleDialogs/EditRoleDialog";
-import { DeleteRoleDialog } from "@/components/dialogs/roleDialogs/DeleteRoleDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	roleDeleteSummary,
+	roleFormConfig,
+	roleToForm,
+} from "@/components/dialogs/entityConfigs/role";
 
 export default function Roles() {
 	const { t: tRole } = useTranslation("approle");
@@ -26,64 +31,16 @@ export default function Roles() {
 
 	const { canManage } = usePermissions();
 
-	const queryClient = useQueryClient();
-	const { data = [], isError, error } = useRoles();
-
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.roles() });
-
-	const createRole = useMutation({
-		mutationFn: (dto: IRoleAdd) => unwrap(roleService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editRole = useMutation({
-		mutationFn: (dto: IRole) => unwrap(roleService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteRole = useMutation({
-		mutationFn: (id: string) => unwrap(roleService.deleteAsync(id)),
-		onSuccess: invalidate,
+	const { data = [], error } = useRoles();
+	const crud = useEntityCrud<IRole, IRoleAdd>({
+		service: roleService,
+		invalidateKeys: [qk.roles()],
 	});
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [roleToEdit, setRoleToEdit] = useState<IRole | null>(null);
-	const [roleToDelete, setRoleToDelete] = useState<IRole | null>(null);
-
-	const handleCreate = async (dto: IRoleAdd) => {
-		try {
-			await createRole.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: IRole) => {
-		try {
-			await editRole.mutateAsync(dto);
-			setShowEdit(false);
-			setRoleToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteRole.mutateAsync(id);
-			setShowDelete(false);
-			setRoleToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [tRole("AppRoleName"), tCommon("Actions")]
-		: [tRole("AppRoleName")];
+	const columns = [
+		tRole("AppRoleName"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -94,17 +51,11 @@ export default function Roles() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setRoleToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setRoleToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -115,53 +66,28 @@ export default function Roles() {
 	return (
 		<ListPageWrapper
 			title={tRole("AppRoles")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} />
 
-			<CreateRoleDialog
-				open={showCreate}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createRole.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={roleFormConfig}
+				{...crud.createDialogProps}
 			/>
 
-			<EditRoleDialog
-				open={showEdit}
-				role={roleToEdit}
-				onClose={() => {
-					setShowEdit(false);
-					setRoleToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editRole.isPending}
+			<EntityEditDialog
+				config={roleFormConfig}
+				toForm={roleToForm}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteRoleDialog
-				open={showDelete}
-				role={roleToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setRoleToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteRole.isPending}
+			<EntityDeleteDialog
+				namespace={roleFormConfig.namespace}
+				singularKey={roleFormConfig.singularKey}
+				summaryFields={roleDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);

@@ -2,19 +2,28 @@
 
 import { useTranslation } from "react-i18next";
 import { locationService } from "@/services";
-import { useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocations } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
 import { ILocation, ILocationAdd } from "@/types/domain/DomainTypes";
-import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
-import { ActionCell, EditButton, DeleteButton } from "@/components/TableActions";
-import { CreateLocationDialog } from "@/components/dialogs/locationDialogs/CreateLocationDialog";
-import { EditLocationDialog } from "@/components/dialogs/locationDialogs/EditLocationDialog";
-import { DeleteLocationDialog } from "@/components/dialogs/locationDialogs/DeleteLocationDialog";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
+import {
+	ActionCell,
+	EditButton,
+	DeleteButton,
+} from "@/components/TableActions";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	locationDeleteSummary,
+	locationFormConfig,
+	locationToForm,
+} from "@/components/dialogs/entityConfigs/location";
 
 export default function Locations() {
 	const { t: tLocation } = useTranslation("location");
@@ -22,75 +31,18 @@ export default function Locations() {
 
 	const { canManage } = usePermissions();
 
-	const queryClient = useQueryClient();
-	const { data = [], isError, error } = useLocations();
-
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.locations() });
-	
-	const createLocation = useMutation({
-		mutationFn: (dto: ILocationAdd) => unwrap(locationService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editLocation = useMutation({
-		mutationFn: (dto: ILocation) => unwrap(locationService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteLocation = useMutation({
-		mutationFn: (id: string) => unwrap(locationService.deleteAsync(id)),
-		onSuccess: invalidate,
+	const { data = [], error } = useLocations();
+	const crud = useEntityCrud<ILocation, ILocationAdd>({
+		service: locationService,
+		invalidateKeys: [qk.locations()],
 	});
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [locationToEdit, setLocationToEdit] = useState<ILocation | null>(null);
-	const [locationToDelete, setLocationToDelete] = useState<ILocation | null>(
-		null,
-	);
-
-	const handleCreate = async (dto: ILocationAdd) => {
-		try {
-			await createLocation.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: ILocation) => {
-		try {
-			await editLocation.mutateAsync(dto);
-			setShowEdit(false);
-			setLocationToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteLocation.mutateAsync(id);
-			setShowDelete(false);
-			setLocationToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tLocation("LocationName"),
-				tLocation("ShelfNum"),
-				tLocation("Column"),
-				tCommon("Actions"),
-			]
-		: [
-				tLocation("LocationName"),
-				tLocation("ShelfNum"),
-				tLocation("Column"),
-			];
+	const columns = [
+		tLocation("LocationName"),
+		tLocation("ShelfNum"),
+		tLocation("Column"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -103,17 +55,11 @@ export default function Locations() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setLocationToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setLocationToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -124,53 +70,28 @@ export default function Locations() {
 	return (
 		<ListPageWrapper
 			title={tLocation("Locations")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} minWidth="min-w-[500px]" />
 
-			<CreateLocationDialog
-				open={showCreate}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createLocation.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={locationFormConfig}
+				{...crud.createDialogProps}
 			/>
 
-			<EditLocationDialog
-				open={showEdit}
-				location={locationToEdit}
-				onClose={() => {
-					setShowEdit(false);
-					setLocationToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editLocation.isPending}
+			<EntityEditDialog
+				config={locationFormConfig}
+				toForm={locationToForm}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteLocationDialog
-				open={showDelete}
-				location={locationToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setLocationToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteLocation.isPending}
+			<EntityDeleteDialog
+				namespace={locationFormConfig.namespace}
+				singularKey={locationFormConfig.singularKey}
+				summaryFields={locationDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);

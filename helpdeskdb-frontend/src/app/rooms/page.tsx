@@ -2,23 +2,28 @@
 
 import { useTranslation } from "react-i18next";
 import { roomService } from "@/services";
-import { useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
 import { IRoom, IRoomAdd } from "@/types/domain/DomainTypes";
-import { unwrap } from "@/services/errors";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
-import { CreateRoomDialog } from "@/components/dialogs/roomDialogs/CreateRoomDialog";
-import { EditRoomDialog } from "@/components/dialogs/roomDialogs/EditRoomDialog";
-import { DeleteRoomDialog } from "@/components/dialogs/roomDialogs/DeleteRoomDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	roomDeleteSummary,
+	roomFormConfig,
+	roomToForm,
+} from "@/components/dialogs/entityConfigs/room";
 
 export default function Rooms() {
 	const { t: tRoom } = useTranslation("room");
@@ -26,66 +31,17 @@ export default function Rooms() {
 
 	const { canManage } = usePermissions();
 
-	const queryClient = useQueryClient();
-	const { data = [], isError, error } = useRooms();
-
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.rooms() });
-
-	const createRoom = useMutation({
-		mutationFn: (dto: IRoomAdd) => unwrap(roomService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editRoom = useMutation({
-		mutationFn: (dto: IRoom) => unwrap(roomService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteRoom = useMutation({
-		mutationFn: (id: string) => unwrap(roomService.deleteAsync(id)),
-		onSuccess: invalidate,
+	const { data = [], error } = useRooms();
+	const crud = useEntityCrud<IRoom, IRoomAdd>({
+		service: roomService,
+		invalidateKeys: [qk.rooms()],
 	});
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [roomToEdit, setRoomToEdit] = useState<IRoom | null>(null);
-	const [roomToDelete, setRoomToDelete] = useState<IRoom | null>(null);
-
-	// mutateAsync (not mutate) so a failure rejects and can be surfaced through
-	// the dialogs' ConfirmResult contract.
-	const handleCreate = async (dto: IRoomAdd) => {
-		try {
-			await createRoom.mutateAsync(dto);
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: IRoom) => {
-		try {
-			await editRoom.mutateAsync(dto);
-			setShowEdit(false);
-			setRoomToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteRoom.mutateAsync(id);
-			setShowDelete(false);
-			setRoomToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [tRoom("RoomName"), tCommon("Comment"), tCommon("Actions")]
-		: [tRoom("RoomName"), tCommon("Comment")];
+	const columns = [
+		tRoom("RoomName"),
+		tCommon("Comment"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -97,17 +53,11 @@ export default function Rooms() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setRoomToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setRoomToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -118,53 +68,28 @@ export default function Rooms() {
 	return (
 		<ListPageWrapper
 			title={tRoom("Rooms")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} />
 
-			<CreateRoomDialog
-				open={showCreate}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createRoom.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={roomFormConfig}
+				{...crud.createDialogProps}
 			/>
 
-			<EditRoomDialog
-				open={showEdit}
-				room={roomToEdit}
-				onClose={() => {
-					setShowEdit(false);
-					setRoomToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editRoom.isPending}
+			<EntityEditDialog
+				config={roomFormConfig}
+				toForm={roomToForm}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteRoomDialog
-				open={showDelete}
-				room={roomToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setRoomToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteRoom.isPending}
+			<EntityDeleteDialog
+				namespace={roomFormConfig.namespace}
+				singularKey={roomFormConfig.singularKey}
+				summaryFields={roomDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);
