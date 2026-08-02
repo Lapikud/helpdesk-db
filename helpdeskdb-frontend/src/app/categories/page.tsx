@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { categoryService } from "@/services";
-import { useContext, useState } from "react";
+import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "@/hooks/queries/entityQueries";
 import { qk } from "@/lib/queryKeys";
@@ -24,10 +24,7 @@ export default function Categories() {
 	const { t: tCategory } = useTranslation("category");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
+	const { canManage } = usePermissions();
 
 	const queryClient = useQueryClient();
 	const { data = [], isError, error } = useCategories();

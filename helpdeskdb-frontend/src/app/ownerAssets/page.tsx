@@ -1,10 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { ownerAssetsService } from "@/services";
-import { useRouter } from "next/navigation";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssets,
@@ -33,16 +32,7 @@ export default function OwnerAssets() {
 	const { t: tOwnerAssets } = useTranslation("ownerassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const router = useRouter();
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
-
-	useEffect(() => {
-		if (accountInfo && !canManage) router.push("/");
-	}, [accountInfo, canManage, router]);
+	const { canManage, userName } = usePermissions();
 
 	const {
 		data: ownerAssets,
@@ -105,7 +95,7 @@ export default function OwnerAssets() {
 		try {
 			await createOwnerAsset.mutateAsync({
 				...dto,
-				createdBy: accountInfo?.name ?? "",
+				createdBy: userName ?? "",
 			});
 			setShowCreate(false);
 		} catch (error) {

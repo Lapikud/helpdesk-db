@@ -1,10 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { locationAssetsService } from "@/services";
-import { useRouter } from "next/navigation";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssets,
@@ -29,18 +28,7 @@ export default function LocationAssets() {
 	const { t: tLocationAssets } = useTranslation("locationassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const router = useRouter();
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
-
-	// Admin-only page: AuthGuard covers authentication, but the role check is
-	// this page's own.
-	useEffect(() => {
-		if (accountInfo && !canManage) router.push("/");
-	}, [accountInfo, canManage, router]);
+	const { canManage, userName } = usePermissions();
 
 	const {
 		data: locationAssets,
@@ -114,7 +102,7 @@ export default function LocationAssets() {
 		try {
 			await createLocationAsset.mutateAsync({
 				...dto,
-				createdBy: accountInfo?.name ?? "",
+				createdBy: userName ?? "",
 			});
 			setShowCreate(false);
 		} catch (error) {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useContext, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { accountService } from "@/services";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function Header() {
 	const { t: tLayout } = useTranslation("_layout");
@@ -22,9 +23,7 @@ export default function Header() {
 
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
+	const { canManage } = usePermissions();
 
 	useEffect(() => {
 		function handleClickOutside(event: MouseEvent) {

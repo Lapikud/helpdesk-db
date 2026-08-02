@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { assetReservationService } from "@/services";
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssetReservations,
@@ -33,13 +33,11 @@ export default function AssetReservations() {
 	const { t: tAssetReservation } = useTranslation("assetreservation");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const isMember = accountInfo?.roles?.includes("members");
-	const isPixel = accountInfo?.roles?.includes("pixels");
-	const showActions = isAdmin || isHelpdeskDbAdmin || isMember || isPixel;
+	const {
+		userId,
+		canManage,
+		canSeeReservationActions: showActions,
+	} = usePermissions();
 
 	const [showCreate, setShowCreate] = useState(false);
 	const [showEdit, setShowEdit] = useState(false);
@@ -158,7 +156,7 @@ export default function AssetReservations() {
 				</span>
 			);
 		}
-		if (item.userId === accountInfo?.id) {
+		if (item.userId === userId) {
 			return (
 				<>
 					<EditButton
@@ -222,7 +220,7 @@ export default function AssetReservations() {
 		<ListPageWrapper
 			title={tAssetReservation("AssetReservations")}
 			createButton={
-				(isAdmin || isHelpdeskDbAdmin) && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}

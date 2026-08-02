@@ -1,9 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
-import { useRouter } from "next/navigation";
-import { useContext, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useRefreshTokens, useUsers } from "@/hooks/queries/entityQueries";
 import { IRefreshTokenWithUsername } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
@@ -12,17 +10,6 @@ import DataTable from "@/components/DataTable";
 export default function RefreshTokens() {
 	const { t: tRefreshToken } = useTranslation("refreshtoken");
 	const { t: tCommon } = useTranslation("common");
-
-	const { accountInfo } = useContext(AccountContext);
-	const router = useRouter();
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
-
-	useEffect(() => {
-		if (accountInfo && !canManage) router.push("/");
-	}, [accountInfo, canManage, router]);
 
 	const { data: tokens, isError, error } = useRefreshTokens();
 	const { data: users } = useUsers();

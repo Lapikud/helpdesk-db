@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { removedAssetsService } from "@/services";
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAssets, useRemovedAssets } from "@/hooks/queries/entityQueries";
 import { qk } from "@/lib/queryKeys";
@@ -28,10 +28,7 @@ export default function RemovedAssets() {
 	const { t: tRemovedAssets } = useTranslation("removedassets");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
+	const { canManage } = usePermissions();
 
 	const { data: removedAssets, isError, error } = useRemovedAssets();
 	// The join needs the includeRemoved variant — removed assets are absent

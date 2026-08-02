@@ -1,10 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { locationService } from "@/services";
-import { useRouter } from "next/navigation";
-import { useContext, useEffect, useState } from "react";
+import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocations } from "@/hooks/queries/entityQueries";
 import { qk } from "@/lib/queryKeys";
@@ -21,16 +20,7 @@ export default function Locations() {
 	const { t: tLocation } = useTranslation("location");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const router = useRouter();
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
-
-	useEffect(() => {
-		if (accountInfo && !canManage) router.push("/");
-	}, [accountInfo, canManage, router]);
+	const { canManage } = usePermissions();
 
 	const queryClient = useQueryClient();
 	const { data = [], isError, error } = useLocations();

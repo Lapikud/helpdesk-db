@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { cupboardService } from "@/services";
-import { useContext, useState } from "react";
+import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCupboards } from "@/hooks/queries/entityQueries";
 import { qk } from "@/lib/queryKeys";
@@ -24,9 +24,7 @@ export default function Cupboards() {
 	const { t: tCupboard } = useTranslation("cupboard");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
+	const { canManage } = usePermissions();
 
 	const queryClient = useQueryClient();
 	const { data = [], isError, error } = useCupboards();
@@ -87,7 +85,7 @@ export default function Cupboards() {
 		}
 	};
 
-	const columns = isAdmin || isHelpdeskDbAdmin
+	const columns = canManage
 		? [tCupboard("CodeName"), tCommon("Actions")]
 		: [tCupboard("CodeName")];
 
@@ -95,7 +93,7 @@ export default function Cupboards() {
 		id: item.id,
 		cells: [
 			item.codeName,
-			...(isAdmin || isHelpdeskDbAdmin
+			...(canManage
 				? [
 						<ActionCell key="actions">
 							<EditButton
@@ -122,7 +120,7 @@ export default function Cupboards() {
 		<ListPageWrapper
 			title={tCupboard("Cupboards")}
 			createButton={
-				(isAdmin || isHelpdeskDbAdmin) && (
+				canManage && (
 					<button
 						type="button"
 						onClick={() => setShowCreate(true)}

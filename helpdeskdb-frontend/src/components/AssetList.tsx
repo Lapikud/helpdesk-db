@@ -1,7 +1,7 @@
 import { IAssetViewModel } from "@/types/domain/IAssetViewModels";
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
-import { useContext, useState } from "react";
+import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AssetCardDetails } from "./AssetCardDetails";
 import { AssetLineDetails } from "./AssetLineDetails";
 
@@ -64,13 +64,7 @@ export default function AssetList({
 	const { t: tCommon } = useTranslation("common");
 	const { t: tAssetViewModel } = useTranslation("assetviewmodel");
 
-	const { accountInfo } = useContext(AccountContext);
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const isMember = accountInfo?.roles?.includes("members");
-	const isPixel = accountInfo?.roles?.includes("pixels");
-	const showActions = isAdmin || isHelpdeskDbAdmin || isMember || isPixel;
+	const { canSeeReservationActions: showActions } = usePermissions();
 
 	function getInitialSections() {
 		if (typeof window !== "undefined") {

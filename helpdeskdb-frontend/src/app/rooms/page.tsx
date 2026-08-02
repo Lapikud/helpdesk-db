@@ -1,10 +1,9 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AccountContext } from "@/context/AccountContext";
 import { roomService } from "@/services";
-import { useRouter } from "next/navigation";
-import { useContext, useEffect, useState } from "react";
+import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/queries/entityQueries";
 import { qk } from "@/lib/queryKeys";
@@ -25,18 +24,7 @@ export default function Rooms() {
 	const { t: tRoom } = useTranslation("room");
 	const { t: tCommon } = useTranslation("common");
 
-	const { accountInfo } = useContext(AccountContext);
-	const router = useRouter();
-
-	const isAdmin = accountInfo?.roles?.includes("admins");
-	const isHelpdeskDbAdmin = accountInfo?.roles?.includes("helpdesk_db_admins");
-	const canManage = isAdmin || isHelpdeskDbAdmin;
-
-	// Admin-only page: AuthGuard covers authentication, but the role check is
-	// this page's own.
-	useEffect(() => {
-		if (accountInfo && !canManage) router.push("/");
-	}, [accountInfo, canManage, router]);
+	const { canManage } = usePermissions();
 
 	const queryClient = useQueryClient();
 	const { data = [], isError, error } = useRooms();
