@@ -33,57 +33,67 @@ import {
  */
 const REFERENCE_DATA_STALE_TIME = 5 * 60_000;
 
+/**
+ * Builds a list hook for a constant-key query. Every hook produced this way
+ * takes a uniform optional `{ enabled? }`, so callers can gate the fetch
+ * (e.g. only while a dialog is open) without the hook needing a bespoke
+ * signature.
+ */
+function makeListQuery<T>(config: {
+	queryKey: readonly unknown[];
+	queryFn: () => Promise<T>;
+	staleTime?: number;
+}) {
+	// Named function (not an arrow) so eslint's react-hooks plugin treats the
+	// returned value as a hook.
+	return function useListQuery(options: { enabled?: boolean } = {}) {
+		return useQuery({ ...config, enabled: options.enabled ?? true });
+	};
+}
+
 // ---------------------------------------------------------------- reference
 
-export const useCategories = () =>
-	useQuery({
-		queryKey: qk.categories(),
-		queryFn: () => unwrap(categoryService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useCategories = makeListQuery({
+	queryKey: qk.categories(),
+	queryFn: () => unwrap(categoryService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useOwners = () =>
-	useQuery({
-		queryKey: qk.owners(),
-		queryFn: () => unwrap(ownerService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useOwners = makeListQuery({
+	queryKey: qk.owners(),
+	queryFn: () => unwrap(ownerService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useRooms = () =>
-	useQuery({
-		queryKey: qk.rooms(),
-		queryFn: () => unwrap(roomService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useRooms = makeListQuery({
+	queryKey: qk.rooms(),
+	queryFn: () => unwrap(roomService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useCupboards = () =>
-	useQuery({
-		queryKey: qk.cupboards(),
-		queryFn: () => unwrap(cupboardService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useCupboards = makeListQuery({
+	queryKey: qk.cupboards(),
+	queryFn: () => unwrap(cupboardService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useLocations = (options: { enabled?: boolean } = {}) =>
-	useQuery({
-		queryKey: qk.locations(),
-		queryFn: () => unwrap(locationService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-		enabled: options.enabled ?? true,
-	});
+export const useLocations = makeListQuery({
+	queryKey: qk.locations(),
+	queryFn: () => unwrap(locationService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useRoles = () =>
-	useQuery({
-		queryKey: qk.roles(),
-		queryFn: () => unwrap(roleService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useRoles = makeListQuery({
+	queryKey: qk.roles(),
+	queryFn: () => unwrap(roleService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
-export const useUsers = () =>
-	useQuery({
-		queryKey: qk.users(),
-		queryFn: () => unwrap(userService.getAllAsync()),
-		staleTime: REFERENCE_DATA_STALE_TIME,
-	});
+export const useUsers = makeListQuery({
+	queryKey: qk.users(),
+	queryFn: () => unwrap(userService.getAllAsync()),
+	staleTime: REFERENCE_DATA_STALE_TIME,
+});
 
 // ------------------------------------------------------------ transactional
 
@@ -102,62 +112,50 @@ export const useAssets = (
 		enabled: options.enabled ?? true,
 	});
 
-export const useAssetReservations = () =>
-	useQuery({
-		queryKey: qk.assetReservations(),
-		queryFn: () => unwrap(assetReservationService.getAllAsync()),
-	});
+export const useAssetReservations = makeListQuery({
+	queryKey: qk.assetReservations(),
+	queryFn: () => unwrap(assetReservationService.getAllAsync()),
+});
 
-export const useRemovedAssets = () =>
-	useQuery({
-		queryKey: qk.removedAssets(),
-		queryFn: () => unwrap(removedAssetsService.getAllAsync()),
-	});
+export const useRemovedAssets = makeListQuery({
+	queryKey: qk.removedAssets(),
+	queryFn: () => unwrap(removedAssetsService.getAllAsync()),
+});
 
-export const useCategoryAssets = () =>
-	useQuery({
-		queryKey: qk.categoryAssets(),
-		queryFn: () => unwrap(categoryAssetsService.getAllAsync()),
-	});
+export const useCategoryAssets = makeListQuery({
+	queryKey: qk.categoryAssets(),
+	queryFn: () => unwrap(categoryAssetsService.getAllAsync()),
+});
 
-export const useLocationAssets = () =>
-	useQuery({
-		queryKey: qk.locationAssets(),
-		queryFn: () => unwrap(locationAssetsService.getAllAsync()),
-	});
+export const useLocationAssets = makeListQuery({
+	queryKey: qk.locationAssets(),
+	queryFn: () => unwrap(locationAssetsService.getAllAsync()),
+});
 
-export const useOwnerAssets = () =>
-	useQuery({
-		queryKey: qk.ownerAssets(),
-		queryFn: () => unwrap(ownerAssetsService.getAllAsync()),
-	});
+export const useOwnerAssets = makeListQuery({
+	queryKey: qk.ownerAssets(),
+	queryFn: () => unwrap(ownerAssetsService.getAllAsync()),
+});
 
-export const useCupboardsInRooms = () =>
-	useQuery({
-		queryKey: qk.cupboardsInRooms(),
-		queryFn: () => unwrap(cupboardsInRoomsService.getAllAsync()),
-	});
+export const useCupboardsInRooms = makeListQuery({
+	queryKey: qk.cupboardsInRooms(),
+	queryFn: () => unwrap(cupboardsInRoomsService.getAllAsync()),
+});
 
-export const useLocationsInCupboards = (
-	options: { enabled?: boolean } = {},
-) =>
-	useQuery({
-		queryKey: qk.locationsInCupboards(),
-		queryFn: () => unwrap(locationInCupboardService.getAllAsync()),
-		enabled: options.enabled ?? true,
-	});
+export const useLocationsInCupboards = makeListQuery({
+	queryKey: qk.locationsInCupboards(),
+	queryFn: () => unwrap(locationInCupboardService.getAllAsync()),
+});
 
-export const useUserRoles = () =>
-	useQuery({
-		queryKey: qk.userRoles(),
-		queryFn: () => unwrap(userRoleService.getAllAsync()),
-	});
+export const useUserRoles = makeListQuery({
+	queryKey: qk.userRoles(),
+	queryFn: () => unwrap(userRoleService.getAllAsync()),
+});
 
-export const useRefreshTokens = () =>
-	useQuery({
-		queryKey: qk.refreshTokens(),
-		queryFn: () => unwrap(refreshTokenService.getAllAsync()),
-	});
+export const useRefreshTokens = makeListQuery({
+	queryKey: qk.refreshTokens(),
+	queryFn: () => unwrap(refreshTokenService.getAllAsync()),
+});
 
 // -------------------------------------------------------------- single entity
 
