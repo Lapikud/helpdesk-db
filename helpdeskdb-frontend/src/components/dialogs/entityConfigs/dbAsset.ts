@@ -1,4 +1,4 @@
-import { IAsset } from "@/types/domain/DomainTypes";
+import { IAsset, IAssetAdd } from "@/types/domain/DomainTypes";
 import {
 	DeleteSummaryField,
 	FormDialogConfig,
@@ -52,6 +52,20 @@ export const dbAssetToForm = (asset: IAsset): DbAssetForm => ({
 	comment: asset.comment,
 	serialNumber: asset.serialNumber ?? "",
 	barcode: asset.barcode ?? "",
+});
+
+// The optional fields are nullable on the wire; an untouched input yields ""
+// and must be sent as null.
+export const dbAssetToAdd = (form: DbAssetForm): IAssetAdd => ({
+	assetName: form.assetName,
+	comment: form.comment,
+	serialNumber: form.serialNumber || null,
+	barcode: form.barcode || null,
+});
+
+export const dbAssetToUpdate = (form: DbAssetForm, asset: IAsset): IAsset => ({
+	id: asset.id,
+	...dbAssetToAdd(form),
 });
 
 export const dbAssetDeleteSummary: DeleteSummaryField<IAsset>[] = [
