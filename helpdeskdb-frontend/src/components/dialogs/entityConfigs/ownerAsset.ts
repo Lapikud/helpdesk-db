@@ -1,6 +1,7 @@
 import {
 	IAsset,
 	IOwner,
+	IOwnerAsset,
 	IOwnerAssetAdd,
 	IOwnerAssetWithNames,
 } from "@/types/domain/DomainTypes";
@@ -66,6 +67,24 @@ export const assetsToOptions = (assets: IAsset[]): SelectOption[] =>
 
 export const ownersToOptions = (owners: IOwner[]): SelectOption[] =>
 	toOptions(owners, (owner) => owner.ownerName);
+
+export const ownerAssetToForm = (
+	ownerAsset: IOwnerAssetWithNames,
+): OwnerAssetEditForm => ({
+	ownerId: ownerAsset.ownerId,
+});
+
+// Explicit field list — the enriched names are not part of the update body;
+// assetId and createdBy carry over from the existing record.
+export const ownerAssetToUpdate = (
+	form: OwnerAssetEditForm,
+	entity: IOwnerAssetWithNames,
+): IOwnerAsset => ({
+	id: entity.id,
+	assetId: entity.assetId,
+	ownerId: form.ownerId,
+	createdBy: entity.createdBy,
+});
 
 // createdBy is stamped by the page from AccountContext — the placeholder just
 // satisfies the DTO shape.

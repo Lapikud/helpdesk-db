@@ -2,16 +2,15 @@
 
 import { useTranslation } from "react-i18next";
 import { ownerAssetsService } from "@/services";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	useAssets,
 	useOwners,
 	useOwnerAssets,
 } from "@/hooks/queries/entityQueries";
+import { useEntityCrud } from "@/hooks/useEntityCrud";
 import { qk } from "@/lib/queryKeys";
-import { unwrap } from "@/services/errors";
 import {
 	IOwnerAsset,
 	IOwnerAssetAdd,
@@ -19,14 +18,26 @@ import {
 } from "@/types/domain/DomainTypes";
 import ListPageWrapper from "@/components/ListPageWrapper";
 import DataTable from "@/components/DataTable";
+import ErrorBanner from "@/components/ErrorBanner";
+import CreateButton from "@/components/CreateButton";
 import {
 	ActionCell,
 	EditButton,
 	DeleteButton,
 } from "@/components/TableActions";
-import { CreateOwnerAssetDialog } from "@/components/dialogs/ownerAssetDialogs/CreateOwnerAssetDialog";
-import { EditOwnerAssetDialog } from "@/components/dialogs/ownerAssetDialogs/EditOwnerAssetDialog";
-import { DeleteOwnerAssetDialog } from "@/components/dialogs/ownerAssetDialogs/DeleteOwnerAssetDialog";
+import { EntityFormDialog } from "@/components/dialogs/common/EntityFormDialog";
+import { EntityEditDialog } from "@/components/dialogs/common/EntityEditDialog";
+import { EntityDeleteDialog } from "@/components/dialogs/common/EntityDeleteDialog";
+import {
+	assetsToOptions,
+	ownerAssetCreateConfig,
+	ownerAssetDeleteSummary,
+	ownerAssetEditConfig,
+	ownerAssetToAdd,
+	ownerAssetToForm,
+	ownerAssetToUpdate,
+	ownersToOptions,
+} from "@/components/dialogs/entityConfigs/ownerAsset";
 
 export default function OwnerAssets() {
 	const { t: tOwnerAssets } = useTranslation("ownerassets");
@@ -34,13 +45,19 @@ export default function OwnerAssets() {
 
 	const { canManage, userName } = usePermissions();
 
-	const {
-		data: ownerAssets,
-		isError,
-		error,
-	} = useOwnerAssets();
+	const { data: ownerAssets, error } = useOwnerAssets();
 	const { data: assets } = useAssets(true);
 	const { data: owners } = useOwners();
+
+	const crud = useEntityCrud<
+		IOwnerAssetWithNames,
+		IOwnerAssetAdd,
+		IOwnerAsset
+	>({
+		service: ownerAssetsService,
+		invalidateKeys: [qk.ownerAssets()],
+		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
+	});
 
 	const data: IOwnerAssetWithNames[] = useMemo(() => {
 		if (!ownerAssets) return [];
@@ -51,8 +68,7 @@ export default function OwnerAssets() {
 		return ownerAssets.map((oa) => ({
 			...oa,
 			assetName: assetById.get(oa.assetId)?.assetName ?? oa.assetId,
-			ownerName:
-				ownerById.get(oa.ownerId)?.ownerName ?? oa.ownerId,
+			ownerName: ownerById.get(oa.ownerId)?.ownerName ?? oa.ownerId,
 		}));
 	}, [ownerAssets, assets, owners]);
 
@@ -62,75 +78,27 @@ export default function OwnerAssets() {
 		return (assets ?? []).filter((a) => !used.has(a.id));
 	}, [assets, ownerAssets]);
 
-	const queryClient = useQueryClient();
-	const invalidate = () =>
-		queryClient.invalidateQueries({ queryKey: qk.ownerAssets() });
+	const createOptions = useMemo(
+		() => ({
+			assets: assetsToOptions(unusedAssets),
+			owners: ownersToOptions(owners ?? []),
+		}),
+		[unusedAssets, owners],
+	);
 
-	const createOwnerAsset = useMutation({
-		mutationFn: (dto: IOwnerAssetAdd) =>
-			unwrap(ownerAssetsService.addAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const editOwnerAsset = useMutation({
-		mutationFn: (dto: IOwnerAsset) =>
-			unwrap(ownerAssetsService.updateAsync(dto)),
-		onSuccess: invalidate,
-	});
-	const deleteOwnerAsset = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(ownerAssetsService.deleteAsync(id)),
-		onSuccess: invalidate,
-	});
+	// The edit dialog renders the asset as a display field, so only the owner
+	// list is selectable.
+	const editOptions = useMemo(
+		() => ({ owners: ownersToOptions(owners ?? []) }),
+		[owners],
+	);
 
-	const [showCreate, setShowCreate] = useState(false);
-	const [showEdit, setShowEdit] = useState(false);
-	const [showDelete, setShowDelete] = useState(false);
-
-	const [itemToEdit, setItemToEdit] =
-		useState<IOwnerAssetWithNames | null>(null);
-	const [itemToDelete, setItemToDelete] =
-		useState<IOwnerAssetWithNames | null>(null);
-
-	const handleCreate = async (dto: IOwnerAssetAdd) => {
-		try {
-			await createOwnerAsset.mutateAsync({
-				...dto,
-				createdBy: userName ?? "",
-			});
-			setShowCreate(false);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleEdit = async (dto: IOwnerAsset) => {
-		try {
-			await editOwnerAsset.mutateAsync(dto);
-			setShowEdit(false);
-			setItemToEdit(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const handleDelete = async (id: string) => {
-		try {
-			await deleteOwnerAsset.mutateAsync(id);
-			setShowDelete(false);
-			setItemToDelete(null);
-		} catch (error) {
-			return { error: (error as Error).message };
-		}
-	};
-
-	const columns = canManage
-		? [
-				tOwnerAssets("Asset"),
-				tOwnerAssets("Owner"),
-				tCommon("CreatedBy"),
-				tCommon("Actions"),
-			]
-		: [tOwnerAssets("Asset"), tOwnerAssets("Owner"), tCommon("CreatedBy")];
+	const columns = [
+		tOwnerAssets("Asset"),
+		tOwnerAssets("Owner"),
+		tCommon("CreatedBy"),
+		...(canManage ? [tCommon("Actions")] : []),
+	];
 
 	const rows = data.map((item) => ({
 		id: item.id,
@@ -143,17 +111,11 @@ export default function OwnerAssets() {
 						<ActionCell key="actions">
 							<EditButton
 								label={tCommon("EditLink")}
-								onClick={() => {
-									setItemToEdit(item);
-									setShowEdit(true);
-								}}
+								onClick={() => crud.openEdit(item)}
 							/>
 							<DeleteButton
 								label={tCommon("DeleteLink")}
-								onClick={() => {
-									setItemToDelete(item);
-									setShowDelete(true);
-								}}
+								onClick={() => crud.openDelete(item)}
 							/>
 						</ActionCell>,
 					]
@@ -164,56 +126,33 @@ export default function OwnerAssets() {
 	return (
 		<ListPageWrapper
 			title={tOwnerAssets("OwnerAssetsTitle")}
-			createButton={
-				canManage && (
-					<button
-						type="button"
-						onClick={() => setShowCreate(true)}
-						className="bg-[#ff9800] hover:bg-[#f0941d] text-white font-medium px-6 py-3 rounded-full text-sm whitespace-nowrap transition-colors duration-150"
-					>
-						{tCommon("CreateNewLink")}
-					</button>
-				)
-			}
+			createButton={canManage && <CreateButton onClick={crud.openCreate} />}
 		>
-			{isError && (
-				<div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3">
-					{tCommon("LoadFailed")}
-					{error?.message ? `: ${error.message}` : ""}
-				</div>
-			)}
+			<ErrorBanner error={error} />
 			<DataTable columns={columns} rows={rows} />
 
-			<CreateOwnerAssetDialog
-				open={showCreate}
-				assets={unusedAssets}
-				owners={owners ?? []}
-				onClose={() => setShowCreate(false)}
-				onConfirm={handleCreate}
-				isLoading={createOwnerAsset.isPending}
+			<EntityFormDialog
+				mode="create"
+				config={ownerAssetCreateConfig}
+				options={createOptions}
+				{...crud.createDialogProps}
+				onConfirm={(form) => crud.handleCreate(ownerAssetToAdd(form))}
 			/>
 
-			<EditOwnerAssetDialog
-				open={showEdit}
-				ownerAsset={itemToEdit}
-				owners={owners ?? []}
-				onClose={() => {
-					setShowEdit(false);
-					setItemToEdit(null);
-				}}
-				onConfirm={handleEdit}
-				isLoading={editOwnerAsset.isPending}
+			<EntityEditDialog
+				config={ownerAssetEditConfig}
+				toForm={ownerAssetToForm}
+				toUpdate={ownerAssetToUpdate}
+				options={editOptions}
+				staticValues={{ assetName: crud.entityToEdit?.assetName ?? "" }}
+				{...crud.editDialogProps}
 			/>
 
-			<DeleteOwnerAssetDialog
-				open={showDelete}
-				ownerAsset={itemToDelete}
-				onClose={() => {
-					setShowDelete(false);
-					setItemToDelete(null);
-				}}
-				onConfirm={handleDelete}
-				isLoading={deleteOwnerAsset.isPending}
+			<EntityDeleteDialog
+				namespace={ownerAssetCreateConfig.namespace}
+				singularKey={ownerAssetCreateConfig.singularKey}
+				summaryFields={ownerAssetDeleteSummary}
+				{...crud.deleteDialogProps}
 			/>
 		</ListPageWrapper>
 	);
