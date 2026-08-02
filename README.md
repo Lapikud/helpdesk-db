@@ -104,6 +104,8 @@ To test HTTPS locally: `dotnet run --project WebApp/WebApp.csproj --launch-profi
 
 **Option B — full stack in Docker (deployment):**
 
+> Deploying to a server? [`DEPLOYMENT.md`](DEPLOYMENT.md) covers the full production setup on Proxmox VE (VM creation, Docker install, `.env` values, TLS options, backups).
+
 ```bash
 # from HelpdeskDb/
 docker compose up -d --build

@@ -13,7 +13,16 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    restart: on-failure
+    healthcheck:
+      # Lets the app service wait for Postgres to accept connections before
+      # starting (DataSeeder runs migrations on startup and would crash-loop
+      # against a db that is still initializing).
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # unless-stopped (not on-failure) so the stack comes back up after a host reboot
+    restart: unless-stopped
     logging:
       options:
         max-size: 10m
@@ -29,7 +38,7 @@ services:
       # Browser traffic goes through the frontend container's /api proxy; this host
       # port only exposes the MVC admin surface to the host itself (e.g. SSH tunnel).
       - "127.0.0.1:80:8080"
-    restart: on-failure
+    restart: unless-stopped
     logging:
       options:
         max-size: 10m
@@ -50,7 +59,8 @@ services:
       ASPNETCORE_ENVIRONMENT: "Production"
       ASPNETCORE_URLS: "http://+:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -68,7 +78,7 @@ services:
       # via docker-compose.caddy.yml). The backend runs as Production, so its auth
       # cookies are always Secure - without HTTPS in front, login will not work.
       - "127.0.0.1:3000:3000"
-    restart: on-failure
+    restart: unless-stopped
     logging:
       options:
         max-size: 10m

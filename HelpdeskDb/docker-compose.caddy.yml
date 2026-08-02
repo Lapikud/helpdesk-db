@@ -23,7 +23,7 @@ services:
       # otherwise every deploy re-requests certs and hits Let's Encrypt rate limits.
       - caddy-data:/data
       - caddy-config:/config
-    restart: on-failure
+    restart: unless-stopped
     logging:
       options:
         max-size: 10m
