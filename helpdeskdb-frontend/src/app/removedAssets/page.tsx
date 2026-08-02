@@ -54,7 +54,7 @@ export default function RemovedAssets() {
 		IRemovedAsset
 	>({
 		service: removedAssetsService,
-		invalidateKeys: [qk.removedAssets(), qk.assetsRoot()],
+		invalidateKeys: [qk.removedAssets(), qk.assetsRoot(), qk.overviewRoot()],
 	});
 
 	const data: IRemovedAssetWithAssetName[] = useMemo(() => {

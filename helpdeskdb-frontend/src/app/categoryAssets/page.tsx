@@ -55,7 +55,7 @@ export default function CategoryAssets() {
 		ICategoryAsset
 	>({
 		service: categoryAssetsService,
-		invalidateKeys: [qk.categoryAssets()],
+		invalidateKeys: [qk.categoryAssets(), qk.overviewRoot()],
 		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
 	});
 

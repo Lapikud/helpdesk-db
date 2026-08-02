@@ -38,7 +38,7 @@ export default function Assets() {
 	// feeds the reservation create dialog's asset list.
 	const crud = useEntityCrud<IAsset, IAssetAdd>({
 		service: assetService,
-		invalidateKeys: [qk.assetsRoot()],
+		invalidateKeys: [qk.assetsRoot(), qk.overviewRoot()],
 	});
 
 	const columns = [

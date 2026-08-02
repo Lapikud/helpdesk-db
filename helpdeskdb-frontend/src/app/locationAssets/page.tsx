@@ -54,7 +54,7 @@ export default function LocationAssets() {
 		ILocationAsset
 	>({
 		service: locationAssetsService,
-		invalidateKeys: [qk.locationAssets()],
+		invalidateKeys: [qk.locationAssets(), qk.overviewRoot()],
 		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
 	});
 	const { entityToEdit } = crud;

@@ -55,7 +55,7 @@ export default function OwnerAssets() {
 		IOwnerAsset
 	>({
 		service: ownerAssetsService,
-		invalidateKeys: [qk.ownerAssets()],
+		invalidateKeys: [qk.ownerAssets(), qk.overviewRoot()],
 		decorateCreate: (dto) => ({ ...dto, createdBy: userName ?? "" }),
 	});
 
